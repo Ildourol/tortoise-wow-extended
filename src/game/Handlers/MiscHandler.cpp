@@ -261,6 +261,9 @@ public:
             data << result.playerClass;
             data << result.race;
             data << result.zone;
+#if SUPPORTED_CLIENT_BUILD <= CLIENT_BUILD_1_8_4
+            data << uint32(0);                                  // unknown
+#endif
         }
 
         sess->SendPacket(&data);
