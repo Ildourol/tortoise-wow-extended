@@ -2361,7 +2361,7 @@ bool Creature::CanAssistTo(const Unit* u, const Unit* enemy, bool checkfaction /
         return false;
 
     // only free creature
-    if (GetCharmerOrOwnerGuid())
+    if (IsPet() || GetCharmerOrOwnerGuid())
         return false;
 
     // Invisible
