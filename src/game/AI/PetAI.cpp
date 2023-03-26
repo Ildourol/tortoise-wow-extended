@@ -655,6 +655,9 @@ void PetAI::DoAttack(Unit* target, bool chase)
 
 void PetAI::MovementInform(uint32 moveType, uint32 data)
 {
+    if (!m_creature->GetCharmInfo())
+        return;
+
     // Receives notification when pet reaches stay or follow owner
     switch (moveType)
     {
@@ -675,7 +678,7 @@ void PetAI::MovementInform(uint32 moveType, uint32 data)
         {
             // If data is owner's GUIDLow then we've reached follow point,
             // otherwise we're probably chasing a creature
-            if (m_creature->GetCharmInfo() && m_creature->GetCharmInfo()->IsReturning() && data == m_creature->GetCharmerOrOwnerGuid().GetCounter())
+            if (m_creature->GetCharmInfo()->IsReturning() && data == m_creature->GetCharmerOrOwnerGuid().GetCounter())
             {
                 ClearCharmInfoFlags();
                 m_creature->GetCharmInfo()->SetIsFollowing(true);
