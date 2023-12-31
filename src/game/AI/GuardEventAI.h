@@ -28,7 +28,6 @@ public:
     ~GuardEventAI() {}
 
     void MoveInLineOfSight(Unit *) override;
-    void EnterCombat(Unit *) override;
     static int Permissible(const Creature *);
 
 private:
