@@ -518,7 +518,7 @@ void AuctionHouseMgr::LoadAuctions()
 
         auction->auctionHouseEntry = sAuctionHouseStore.LookupEntry(houseid);
 
-        if (!houseid)
+        if (!auction->auctionHouseEntry)
         {
             // need for send mail, use goblin auctionhouse
             auction->auctionHouseEntry = sAuctionHouseStore.LookupEntry(7);
