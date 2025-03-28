@@ -53,6 +53,8 @@ struct instance_molten_core : ScriptedInstance
 
     uint64 GOUseGuidList[7];
 
+    std::string strInstData;
+
     void Initialize() override
     {
         memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
@@ -385,9 +387,8 @@ struct instance_molten_core : ScriptedInstance
                    << RuneActive[2] << " " << RuneActive[3] << " " << RuneActive[4] << " "
                    << RuneActive[5] << " " << RuneActive[6];
 
-        // TODO: Fuite de memoire. Mais empeche un crash.
-        std::string* strInstData = new std::string(saveStream.str());
-        return strInstData->c_str();
+        strInstData = saveStream.str();
+        return strInstData.c_str();
     }
 
     uint32 GetData(uint32 uiType) override
