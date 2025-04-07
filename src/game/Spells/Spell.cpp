@@ -4596,6 +4596,10 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, SpellCas
                 data << uint32(sSpellMgr.GetRequiredAreaForSpell(spellInfo->Id));
                 break;
             case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
+            case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_10_2
+            case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
+#endif
                 data << uint32(spellInfo->EquippedItemClass);
                 data << uint32(spellInfo->EquippedItemSubClassMask);
                 data << uint32(spellInfo->EquippedItemInventoryTypeMask);
@@ -7399,7 +7403,17 @@ SpellCastResult Spell::CheckItems()
 
         if (!pPlayer->HasItemFitToSpellReqirements(m_spellInfo, ignore))
         {
-            return m_IsTriggeredSpell ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+            if (m_IsTriggeredSpell)
+                return SPELL_FAILED_DONT_REPORT;
+
+            if (m_spellInfo->HasAttribute(SPELL_ATTR_EX3_REQUIRES_MAIN_HAND_WEAPON))
+                return SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND;
+
+            if (m_spellInfo->HasAttribute(SPELL_ATTR_EX3_REQUIRES_OFFHAND_WEAPON))
+                return SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND;
+
+            return SPELL_FAILED_EQUIPPED_ITEM_CLASS;
+
         }
     }
 
