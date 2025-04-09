@@ -158,7 +158,7 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         return;
     }
 
-    WorldSession::AsyncMailSendRequest* req = new WorldSession::AsyncMailSendRequest();
+    std::unique_ptr<WorldSession::AsyncMailSendRequest> req = std::make_unique<WorldSession::AsyncMailSendRequest>();
     req->accountId = GetAccountId();
     req->senderGuid = GetMasterPlayer()->GetObjectGuid();
     recv_data >> req->receiverName;
@@ -181,22 +181,15 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
 
     // packet read complete, now do check
     if (req->subject.size() > 64)
-    {
-        delete req;
         return;
-    }
 
     if (req->body.size() > 500)
-    {
-        delete req;
         return;
-    }
 
     // client interface limit
     if (req->COD > 100000000)
     {
         ProcessAnticheatAction("PassiveAnticheat", "Attempt to send more than 10000g COD mail", CHEAT_ACTION_INFO_LOG);
-        delete req;
         return;
     }
 
@@ -208,17 +201,11 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
     if (!sWorld.getConfig(CONFIG_BOOL_GM_ALLOW_TRADES) && GetSecurity() > SEC_PLAYER)
     {
         if (!req->itemGuid.IsEmpty() || req->money)
-        {
-            delete req;
             return;
-        }
     }
 
     if (req->receiverName.empty())
-    {
-        delete req;
         return;
-    }
 
     MasterPlayer* pl = GetMasterPlayer();
 
@@ -230,7 +217,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         DETAIL_LOG("%s is sending mail to %s (GUID: nonexistent!) with subject %s and body %s includes %u items, %u copper and %u COD copper with unk1 = %u, unk2 = %u",
                    pl->GetGuidStr().c_str(), req->receiverName.c_str(), req->subject.c_str(), req->body.c_str(), req->itemGuid ? 1 : 0, req->money, req->COD, unk1, unk2);
         SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_NOT_FOUND);
-        delete req;
         return;
     }
 
@@ -240,7 +226,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
     if (pl->GetObjectGuid() == req->receiver)
     {
         SendMailResult(0, MAIL_SEND, MAIL_ERR_CANNOT_SEND_TO_SELF);
-        delete req;
         return;
     }
 
@@ -251,7 +236,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
     {
         SendMailResult(0, MAIL_SEND, MAIL_ERR_DISABLED_FOR_TRIAL_ACC);
         GetPlayer()->GetSession()->SendNotification("Hardcore characters can use mail, but with no attachments.");
-        delete req;
         return;
     }
 
@@ -262,7 +246,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         WorldPacket data;
         ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, "Sending mail prevented. You might be a victim of a scam addon. Please use a different mail subject!");
         SendPacket(&data);
-        delete req;
         return;
     }
 
@@ -277,7 +260,6 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
             {
                 SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_NOT_FOUND);
                 GetPlayer()->GetSession()->SendNotification("Hardcore characters can not receive attachments and gold in mail.");
-                delete req;
                 return;
             }
         }
@@ -286,7 +268,7 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
         ASSERT(receiverMasterPlayer);
         req->rcTeam = receiverMasterPlayer->GetTeam();
         req->mailsCount = receiverMasterPlayer->GetMailSize();
-        req->Callback(nullptr);
+        req.release()->Callback(nullptr);
     }
     else
     {
@@ -302,14 +284,14 @@ void WorldSession::HandleSendMail(WorldPacket& recv_data)
             {
                 SendMailResult(0, MAIL_SEND, MAIL_ERR_RECIPIENT_NOT_FOUND);
                 GetPlayer()->GetSession()->SendNotification("Hardcore characters can not receive attachments and gold in mail.");
-                delete req;
                 return;
             }
         }
 
+        uint32 const receiverCounter = req->receiver.GetCounter();
         req->rcTeam = sObjectMgr.GetPlayerTeamByGUID(req->receiver);
         // Unsafe query: can modify items, accesses online players ...
-        CharacterDatabase.AsyncPQueryUnsafe(req, &WorldSession::AsyncMailSendRequest::Callback, "SELECT COUNT(*) FROM `mail` WHERE `receiver` = '%u' AND isDeleted = 0", req->receiver.GetCounter());
+        CharacterDatabase.AsyncPQueryUnsafe(req.release(), &WorldSession::AsyncMailSendRequest::Callback, "SELECT COUNT(*) FROM `mail` WHERE `receiver` = '%u' AND isDeleted = 0", receiverCounter);
     }
 }
 
