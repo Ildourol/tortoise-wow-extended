@@ -453,7 +453,7 @@ bool StartDB()
                 ++occurrence;
 
             if (occurrence == 3 && start == dbStringLog.end())
-                start = ++itr;
+                start = itr + 1;
             else if (occurrence == 4 && end == dbStringLog.end())
                 end = itr;
 
