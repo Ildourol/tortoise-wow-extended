@@ -770,6 +770,7 @@ class Creature : public Unit
         const char* GetNameForLocaleIdx(int32 locale_idx) const override;
 
         void SetDeathState(DeathState s) override;                   // overwrite virtual Unit::SetDeathState
+        void CancelSummonPossessedCharm();
         bool FallGround();
 
         bool LoadFromDB(uint32 guid, Map *map, bool force = false);

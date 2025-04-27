@@ -293,6 +293,8 @@ void Creature::RemoveFromWorld()
             script->OnCreatureRemoveWorld(this);
         });
 
+        if (GetUInt32Value(UNIT_CREATED_BY_SPELL))
+            CancelSummonPossessedCharm();
         if (AI())
             AI()->OnRemoveFromWorld();
         if (GetObjectGuid().GetHigh() == HIGHGUID_UNIT)
@@ -2029,6 +2031,9 @@ void Creature::SetDeathState(DeathState s)
 
     if (s == JUST_DIED)
     {
+        if (GetUInt32Value(UNIT_CREATED_BY_SPELL))
+            CancelSummonPossessedCharm();
+
         // Turtle: Store players in map during raid creature death,
         // to allow trading of soulbound items among eligible players.
         if (IsInWorld() && FindMap() && FindMap()->IsRaid())
@@ -4071,5 +4076,22 @@ std::string Creature::GetDebuffs()
 	//sLog.outInfo(" ----------------------- ");
 
 	return "TW_BUFF:" + rd;
-
 }
+
+void Creature::CancelSummonPossessedCharm()
+{
+    if (HasUnitState(UNIT_STAT_POSSESSED))
+    {
+        if (SpellEntry const* pSpellInfo = sSpellMgr.GetSpellEntry(GetUInt32Value(UNIT_CREATED_BY_SPELL)))
+        {
+            if (pSpellInfo->HasEffect(SPELL_EFFECT_SUMMON_POSSESSED))
+            {
+                if (Unit* pOwner = GetCharmer())
+                {
+                    pOwner->RemoveAurasDueToSpell(GetUInt32Value(UNIT_CREATED_BY_SPELL));
+                }
+            }
+        }
+    }
+}
+
