@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -601,7 +601,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         pCurrChar->SetSession(this);
 
         // Need to attach packet bcaster to the new socket
-        pCurrChar->m_broadcaster->ChangeSocket(GetSocket());
+        if (pCurrChar->m_broadcaster)
+            pCurrChar->m_broadcaster->ChangeSocket(GetSocket());
+        else
+            pCurrChar->CreatePacketBroadcaster();
         alreadyOnline = true;
 
         // If the character had a logout request, then he is articifially stunned (cf CMSG_LOGOUT_REQUEST handler). Fix it here.
