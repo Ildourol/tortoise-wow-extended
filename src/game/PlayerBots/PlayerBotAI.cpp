@@ -647,7 +647,6 @@ bool PlayerBotAI::SpawnNewPlayer(WorldSession* sess, uint8 class_, uint32 race_,
         return false;
     }
     newChar->Relocate(x, y, z, o);
-    sObjectMgr.InsertPlayerInCache(newChar);
     newChar->SetMap(map);
     newChar->SaveRecallPosition();
     newChar->CreatePacketBroadcaster();
@@ -660,6 +659,7 @@ bool PlayerBotAI::SpawnNewPlayer(WorldSession* sess, uint8 class_, uint32 race_,
         delete newChar;
         return false;
     }
+    sObjectMgr.InsertPlayerInCache(newChar);
     sess->SetPlayer(newChar);
     sess->SetMasterPlayer(mPlayer);
     sObjectAccessor.AddObject(newChar);
