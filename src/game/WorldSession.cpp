@@ -54,6 +54,7 @@
 #include "Channel.h"
 #include "AccountMgr.h"
 #include "MasterPlayer.h"
+#include "PacketBroadcast/PlayerBroadcaster.h"
 #include "miscellaneous/feature_transmog.h"
 #include "Anticheat/Warden/Warden.hpp"
 #include "Logging/DatabaseLogger.hpp"
@@ -420,6 +421,9 @@ bool WorldSession::Update(PacketFilter& updater)
             static SqlStatementID id;
             SqlStatement stmt = LoginDatabase.CreateStatement(id, "UPDATE account SET current_realm = ?, online = 0 WHERE id = ?");
             stmt.PExecute(uint32(0), GetAccountId());
+
+            if (GetPlayer() && GetPlayer()->m_broadcaster)
+                GetPlayer()->m_broadcaster->ChangeSocket(nullptr);
 
             // Character stays IG for 2 minutes
             return ForcePlayerLogoutDelay();
