@@ -16679,7 +16679,7 @@ void Player::SendPushToPartyResponse(Player *pPlayer, uint8 msg) const
     }
 }
 
-void Player::SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32 /*current*/, uint32 count)
+void Player::SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32 current, uint32 count)
 {
     DEBUG_LOG("WORLD: Sent SMSG_QUESTUPDATE_ADD_ITEM");
     WorldPacket data(SMSG_QUESTUPDATE_ADD_ITEM, (4 + 4));
@@ -16687,10 +16687,15 @@ void Player::SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32
     data << count;
     GetSession()->SendPacket(&data);
 
-    // ItemAddedQuestCheck already updates/persists m_itemcount. The packet
-    // updates the quest watcher; packed quest-log counters belong to creature/
-    // GO objectives, not items. Writing slot + objective count corrupts another
-    // quest (or fields beyond the quest log when this is the last slot).
+    // Update player field and fire UNIT_QUEST_LOG_CHANGED for self
+    uint16 slot = FindQuestSlot(pQuest->GetQuestId());
+    if (slot < MAX_QUEST_LOG_SIZE)
+    {
+        // item counters are stored after the creature or GO counters within the same quest slot
+        uint8 counterIdx = uint8(item_idx + pQuest->GetReqCreatureOrGOcount());
+        if (counterIdx < QUEST_OBJECTIVES_COUNT)
+            SetQuestSlotCounter(slot, counterIdx, uint8(current + count));
+    }
 }
 
 void Player::SendQuestUpdateAddCreatureOrGo(Quest const* pQuest, ObjectGuid guid, uint32 creatureOrGO_idx, uint32 count)
