@@ -55,6 +55,14 @@ false for every request even with the full AHBot service compiled and linked.
 `AhBotChatDispatchTest` exercises both production forwarding functions with
 recorded arguments, caller identity, null input and both service return values.
 It verifies dispatch, not live auction rebuild or persistence behavior.
+AHBot rebuild refill must bypass ordinary sell-delay admission while preserving
+item eligibility and category/per-item caps. Retire exhausted candidates and
+count only successfully created listings. `AhBotRefillTest` executes production
+selection against deterministic services for normal pacing, rebuild capacity,
+exhausted pools and failures. Generated AuctionEntry objects must initialize
+`ownerAccount` before native auction publication; rebuild/status and account
+indexes depend on that field. Neither regression proves the final live auction
+count: overlapping categories, eligible items and per-item limits constrain it.
 
 There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
 

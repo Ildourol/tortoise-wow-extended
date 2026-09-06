@@ -127,7 +127,6 @@ void AhBot::Update()
 
     if (updating)
     {
-        sLog.outString("[AhBot] Update skipped — previous check still running");
         return;
     }
 
@@ -659,15 +658,23 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
 
     int added = 0;
     int ladded = 0;
+    bool const rebuilding = rebuildPassesRemaining.load() > 0;
     std::vector<uint32> available = availableItems.Get(category);
-    for (int32 i = 0; i <= maxAllowedAuctionCount && available.size() > 0 && inAuctionItems->GetCount(category) < maxAllowedAuctionCount; ++i)
+    // A rebuild fills immediately; ordinary passes retain their sale pacing.
+    // Retire exhausted/rejected candidates so a few capped items cannot use
+    // the entire refill attempt budget while other eligible items remain.
+    size_t const attempts = rebuilding ? size_t(maxAllowedAuctionCount) + available.size() : size_t(maxAllowedAuctionCount) + 1;
+    for (size_t i = 0; i < attempts && !available.empty() && inAuctionItems->GetCount(category) < maxAllowedAuctionCount; ++i)
     {
         uint32 index = urand(0, available.size() - 1);
         uint32 itemId = available[index];
 
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
         if (!proto)
+        {
+            available.erase(available.begin() + index);
             continue;
+        }
 
         ItemOverride overrideData;
         if (GetItemOverride(itemId, overrideData) && overrideData.addChance &&
@@ -679,10 +686,11 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
         {
             sLog.outDetail("%s in auction %d: has reached max %d/%d",
                 proto->Name1.c_str(), auctionIds[auction], inAuctionItems->GetCount(category, proto->ItemId), maxAllowedItems);
+            available.erase(available.begin() + index);
             continue;
         }
 
-        uint32 sellTime = GetSellTime(proto->ItemId, auctionIds[auction], category);
+        uint32 sellTime = rebuilding ? uint32(time(0)) : GetSellTime(proto->ItemId, auctionIds[auction], category);
         if (time(0) - sellTime < 0)
         {
             ladded += 1;
@@ -696,8 +704,14 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
                     proto->Name1.c_str(), auctionIds[auction], time(0) - sellTime);
             continue;
         }
-        inAuctionItems->Add(proto);
-        added += AddAuction(auction, category, proto);
+        int const listed = AddAuction(auction, category, proto);
+        if (listed)
+        {
+            inAuctionItems->Add(proto);
+            added += listed;
+        }
+        else
+            available.erase(available.begin() + index);
     }
 
     if (added > 0 || ladded > 0)
@@ -766,13 +780,14 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
 
     uint32 auction_time = uint32(urand(8, 24) * HOUR * sWorld.getConfig(CONFIG_FLOAT_RATE_AUCTION_TIME));
 
-    AuctionEntry* auctionEntry = new AuctionEntry;
+    AuctionEntry* auctionEntry = new AuctionEntry();
     auctionEntry->Id = sObjectMgr.GenerateAuctionID();
     auctionEntry->itemGuidLow = item->GetObjectGuid().GetCounter();
     auctionEntry->itemTemplate = item->GetEntry();
     auctionEntry->itemCount = item->GetCount();
     auctionEntry->itemRandomPropertyId = item->GetItemRandomPropertyId();
     auctionEntry->owner = owner;
+    auctionEntry->ownerAccount = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, owner));
     auctionEntry->startbid = bidPrice;
     auctionEntry->bidder = 0;
     auctionEntry->bid = 0;
