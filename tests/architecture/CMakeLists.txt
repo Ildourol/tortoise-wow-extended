@@ -27,6 +27,17 @@ function(extract_native_fragment source start end output)
 endfunction()
 set(CORE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(TRAVEL_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/playerbot")
+extract_native_fragment("${TRAVEL_ROOT}/PlayerbotAI.cpp"
+    "bool ChatHandler::HandleAhBotCommand(char* args)" "float PlayerbotAI::GetRange" NativeAhBotChatDispatch.inc)
+extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
+    "bool AhBot::HandleAhBotCommand(ChatHandler* handler, char const* args)" "uint32 AhBot::auctionIds" NativeAhBotModuleDispatch.inc)
+add_executable(AhBotChatDispatchTest AhBotChatDispatchTest.cpp)
+target_compile_features(AhBotChatDispatchTest PRIVATE cxx_std_17)
+target_include_directories(AhBotChatDispatchTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+if(MSVC)
+    target_compile_options(AhBotChatDispatchTest PRIVATE /EHsc)
+endif()
+add_test(NAME AhBotChatDispatchTest COMMAND AhBotChatDispatchTest)
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"
     "void TravelNodeMap::generateTaxiPaths()" "void TravelNodeMap::removeLowNodes()" NativeTaxiGeneration.inc)
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"

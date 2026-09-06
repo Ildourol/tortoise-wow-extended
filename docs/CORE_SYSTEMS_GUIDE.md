@@ -49,6 +49,12 @@ background house passes after the native auction expiry sweep; do not replace
 this with CMaNGOS's synchronous refill on the world thread. Item overrides are
 stored in character DB `ahbot_items`; reload reconstructs the available-item
 bag and clears the previous category/bidder caches without duplicating entries.
+The host entry point is `ChatHandler::HandleAhBotCommand` in `PlayerbotAI.cpp`;
+it must forward to `ahbot::AhBot::HandleAhBotCommand`. An old dummy returned
+false for every request even with the full AHBot service compiled and linked.
+`AhBotChatDispatchTest` exercises both production forwarding functions with
+recorded arguments, caller identity, null input and both service return values.
+It verifies dispatch, not live auction rebuild or persistence behavior.
 
 There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
 
