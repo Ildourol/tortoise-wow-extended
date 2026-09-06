@@ -77,9 +77,10 @@ enum BattleBotWsgWaitSpot
     BB_WSG_WAIT_SPOT_RIGHT
 };
 
-std::vector<uint32> const vFlagsAB = { BG_AB_BANNER_ALLIANCE , BG_AB_BANNER_CONTESTED_A , BG_AB_BANNER_HORDE , BG_AB_BANNER_CONTESTED_H ,
-                                       BG_AB_BANNER_STABLE, BG_AB_BANNER_BLACKSMITH, BG_AB_BANNER_FARM, BG_AB_BANNER_LUMBER_MILL,
-                                       BG_AB_BANNER_MINE };
+// GO entries, not the compatibility shim's BG_AB_BANNER_* node/state indices.
+// Keep those indices unchanged for the tactical node-selection callers.
+std::vector<uint32> const vFlagsAB = { 180058, 180059, 180060, 180061,
+                                     180087, 180088, 180089, 180090, 180091 };
 
 std::vector<uint32> const vFlagsWS = { GO_WS_SILVERWING_FLAG, GO_WS_WARSONG_FLAG, GO_WS_SILVERWING_FLAG_DROP, GO_WS_WARSONG_FLAG_DROP };
 static std::map<uint32, GameObject*> botSelectedObjectives;
@@ -4423,6 +4424,19 @@ bool BGTactics::startNewPathFree(std::vector<BattleBotPath*> const& vPaths)
     return moveToObjectiveWp(currentPath, currentPoint, reverse);
 }
 
+bool BGTactics::CanAttemptAbCapture()
+{
+    // The existing qualified value belongs to this bot's AI context. Do not
+    // introduce a shared GUID map across concurrently updated battlegrounds.
+    auto* lastCast = context->GetValue<time_t>("last spell cast time", "capture banner");
+    time_t const now = time(nullptr);
+    time_t const previous = lastCast->Get();
+    if (previous && now >= previous && now - previous < 4)
+        return false;
+    lastCast->Set(now);
+    return true;
+}
+
 bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<uint32> const& vFlagIds)
 {
     BattleGround *bg = bot->GetBattleGround();
@@ -4526,7 +4540,11 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
                          sServerFacade.isSpawned(go) ? 1u : 0u, go->IsInUse() ? 1u : 0u, uint32(go->GetGoState()),
                          bot->IsInCombat() ? 1u : 0u);
         };
-        if (!sServerFacade.isSpawned(go) || go->IsInUse() || go->GetGoState() != GO_STATE_READY)
+        // AB assault banners are BUTTONs and can be non-READY/in-use. Native
+        // capture completion validates the node, match status and ownership.
+        // Other battlegrounds retain their existing interaction-state gate.
+        if (!sServerFacade.isSpawned(go) ||
+            (bgType != BATTLEGROUND_AB && (go->IsInUse() || go->GetGoState() != GO_STATE_READY)))
         {
             abSay("skipped: not spawned / in use / not READY");
             continue;
@@ -4563,6 +4581,12 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
         case BATTLEGROUND_IC:
 #endif
         {
+            SpellEntry const *spellInfo = sServerFacade.LookupSpellInfo(SPELL_CAPTURE_BANNER);
+            if (!spellInfo)
+                return false;
+            if (bgType == BATTLEGROUND_AB && !CanAttemptAbCapture())
+                continue;
+
             if (bot->IsMounted())
                 bot->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 
@@ -4575,10 +4599,6 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
 
             // cast banner spell
             ai->StopMoving();
-
-            SpellEntry const *spellInfo = sServerFacade.LookupSpellInfo(SPELL_CAPTURE_BANNER);
-            if (!spellInfo)
-                return false;
 
             Spell *spell = new Spell(bot, spellInfo, false);
             spell->m_targets.setGOTarget(go);

@@ -22,7 +22,8 @@ DELETE FROM `creature_movement`
 WHERE `id` IN (
     8880, 8988, 9001, 9296, 9581, 9874, 21173, 21218, 660961, 1068616,
     2562709, 2562710, 2562711, 2562712, 2562713
-);
+)
+AND NOT EXISTS (SELECT 1 FROM `creature` c WHERE c.guid = creature_movement.id);
 
 -- ==============================================
 -- FILE: cleanup_orphaned_creature_linking.sql
@@ -42,4 +43,5 @@ WHERE `guid` IN (
     2570745, 2570747, 2570748, 2570750, 2570752, 2570753, 2570754, 2570755, 2570757, 2570758, 2570759,
     2570760, 2570762, 2570766, 2570769, 2570803, 2570817, 2570818, 2570826, 2570830, 2570831, 2570832,
     2570833, 2570834, 2570837, 2577558, 2577560
-);
+)
+AND NOT EXISTS (SELECT 1 FROM `creature` c WHERE c.guid = creature_linking.guid);

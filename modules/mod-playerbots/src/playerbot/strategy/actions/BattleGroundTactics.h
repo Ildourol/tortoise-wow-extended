@@ -71,6 +71,7 @@ private:
     bool wsgRoofJump();
     bool eotsJump();
     bool atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<uint32> const& vFlagIds);
+    bool CanAttemptAbCapture();
     bool CheckFlagAv();
     bool flagTaken();
     bool teamFlagTaken();

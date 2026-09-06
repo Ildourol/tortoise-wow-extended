@@ -2,7 +2,8 @@
 -- FILE: broadcast_text_northwindfixes.sql
 -- GENERATED: 20260903115534
 -- ==============================================
-INSERT INTO `broadcast_text`
+-- Adaptation: never overwrite locally authored dialogue or menu bindings.
+INSERT IGNORE INTO `broadcast_text`
 (
     `entry`,
     `male_text`,
@@ -31,13 +32,13 @@ UPDATE `creature_template`
 SET `gossip_menu_id` = `entry`
 WHERE `entry` IN (
     62306, 62380, 62480, 62479
-    );
+    ) AND `gossip_menu_id` = 0;
 
 -- ==============================================
 -- FILE: gossip_menu_northwindfixes.sql
 -- GENERATED: 20260903115534
 -- ==============================================
-INSERT INTO `gossip_menu`
+INSERT IGNORE INTO `gossip_menu`
 (
     `entry`,
     `text_id`,
@@ -54,7 +55,7 @@ VALUES
 -- FILE: npc_text_northwindfixes.sql
 -- GENERATED: 20260903115534
 -- ==============================================
-INSERT INTO `npc_text`
+INSERT IGNORE INTO `npc_text`
 (
     `ID`,
     `BroadcastTextID0`,

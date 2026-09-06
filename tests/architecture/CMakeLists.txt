@@ -207,6 +207,16 @@ if(MSVC)
     target_compile_options(ForkIntegrationTest PRIVATE /EHsc)
 endif()
 add_test(NAME ForkIntegrationTest COMMAND ForkIntegrationTest)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/BattleGroundTactics.cpp"
+    "std::vector<uint32> const vFlagsAB" "std::vector<uint32> const vFlagsWS" UpstreamAbEntries.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/BattleGroundTactics.cpp"
+    "bool BGTactics::CanAttemptAbCapture()" "bool BGTactics::atFlag(" UpstreamAbThrottle.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/BattleGroundTactics.cpp"
+    "        // AB assault banners" "        // Test the cheap side first" UpstreamAbStateGate.inc)
+add_executable(UpstreamAbCaptureTest UpstreamAbCaptureTest.cpp)
+target_compile_features(UpstreamAbCaptureTest PRIVATE cxx_std_17)
+target_include_directories(UpstreamAbCaptureTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME UpstreamAbCaptureTest COMMAND UpstreamAbCaptureTest)
 extract_native_fragment("${TRAVEL_ROOT}/strategy/values/TravelValues.h"
     "inline bool IsTravelSearchPending(" "    typedef std::set<uint32>" TravelPending.inc)
 extract_native_fragment("${TRAVEL_ROOT}/PlayerbotAI.cpp"

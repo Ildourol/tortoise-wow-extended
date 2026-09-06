@@ -68,18 +68,16 @@
     ]
   },
   {
-    "name": "spell_uldaman_awaken_vault_warder",
-    "file": "src/scripts/dungeons/uldaman/uldaman.cpp",
-    "line": 333,
+    "name": "spell_hateforge_dispel_counterpart",
+    "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
+    "line": 269,
     "cmake_listed": true,
     "file_loader_call_found": true,
     "dependency_signals": [
       "ai_update",
       "spells",
-      "movement",
       "death_reset",
-      "instance_state",
-      "threat"
+      "timers"
     ]
   },
   {
@@ -106,9 +104,9 @@
     ]
   },
   {
-    "name": "go_sandworm_base",
-    "file": "src/scripts/dungeons/temple_of_ahnqiraj/boss_ouro.cpp",
-    "line": 658,
+    "name": "spell_gargoyle_stoneform",
+    "file": "src/scripts/dungeons/naxxramas/instance_naxxramas.cpp",
+    "line": 2113,
     "cmake_listed": true,
     "file_loader_call_found": true,
     "dependency_signals": [
@@ -118,21 +116,42 @@
       "summons",
       "death_reset",
       "instance_state",
+      "doors",
       "timers",
       "threat"
     ]
   },
   {
-    "name": "spell_hateforge_dispel_counterpart",
-    "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
-    "line": 269,
+    "name": "spell_unrelenting_rider_shadow_bolt_volley",
+    "file": "src/scripts/dungeons/naxxramas/instance_naxxramas.cpp",
+    "line": 2118,
     "cmake_listed": true,
     "file_loader_call_found": true,
     "dependency_signals": [
       "ai_update",
       "spells",
+      "movement",
+      "summons",
       "death_reset",
-      "timers"
+      "instance_state",
+      "doors",
+      "timers",
+      "threat"
+    ]
+  },
+  {
+    "name": "spell_uldaman_awaken_vault_warder",
+    "file": "src/scripts/dungeons/uldaman/uldaman.cpp",
+    "line": 333,
+    "cmake_listed": true,
+    "file_loader_call_found": true,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "movement",
+      "death_reset",
+      "instance_state",
+      "threat"
     ]
   },
   {
@@ -157,6 +176,23 @@
     "dependency_signals": [
       "ai_update",
       "spells",
+      "summons",
+      "death_reset",
+      "instance_state",
+      "timers",
+      "threat"
+    ]
+  },
+  {
+    "name": "go_sandworm_base",
+    "file": "src/scripts/dungeons/temple_of_ahnqiraj/boss_ouro.cpp",
+    "line": 658,
+    "cmake_listed": true,
+    "file_loader_call_found": true,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "movement",
       "summons",
       "death_reset",
       "instance_state",
@@ -211,6 +247,37 @@
     ]
   },
   {
+    "name": "go_fixed_trap",
+    "file": "src/scripts/dungeons/dire_maul/instance_dire_maul.cpp",
+    "line": 2488,
+    "cmake_listed": true,
+    "file_loader_call_found": true,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "movement",
+      "summons",
+      "death_reset",
+      "instance_state",
+      "doors",
+      "timers",
+      "threat"
+    ]
+  },
+  {
+    "name": "boss_mother_smolderweb",
+    "file": "src/scripts/dungeons/blackrock_spire/boss_mother_smolderweb.cpp",
+    "line": 100,
+    "cmake_listed": true,
+    "file_loader_call_found": false,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "death_reset",
+      "timers"
+    ]
+  },
+  {
     "name": "spell_ubrs_freeze_rookery_egg",
     "file": "src/scripts/dungeons/blackrock_spire/instance_blackrock_spire.cpp",
     "line": 1031,
@@ -237,73 +304,6 @@
       "movement",
       "summons",
       "death_reset",
-      "timers",
-      "threat"
-    ]
-  },
-  {
-    "name": "boss_mother_smolderweb",
-    "file": "src/scripts/dungeons/blackrock_spire/boss_mother_smolderweb.cpp",
-    "line": 100,
-    "cmake_listed": true,
-    "file_loader_call_found": false,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "death_reset",
-      "timers"
-    ]
-  },
-  {
-    "name": "go_fixed_trap",
-    "file": "src/scripts/dungeons/dire_maul/instance_dire_maul.cpp",
-    "line": 2488,
-    "cmake_listed": true,
-    "file_loader_call_found": true,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "movement",
-      "summons",
-      "death_reset",
-      "instance_state",
-      "doors",
-      "timers",
-      "threat"
-    ]
-  },
-  {
-    "name": "spell_gargoyle_stoneform",
-    "file": "src/scripts/dungeons/naxxramas/instance_naxxramas.cpp",
-    "line": 2113,
-    "cmake_listed": true,
-    "file_loader_call_found": true,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "movement",
-      "summons",
-      "death_reset",
-      "instance_state",
-      "doors",
-      "timers",
-      "threat"
-    ]
-  },
-  {
-    "name": "spell_unrelenting_rider_shadow_bolt_volley",
-    "file": "src/scripts/dungeons/naxxramas/instance_naxxramas.cpp",
-    "line": 2118,
-    "cmake_listed": true,
-    "file_loader_call_found": true,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "movement",
-      "summons",
-      "death_reset",
-      "instance_state",
-      "doors",
       "timers",
       "threat"
     ]

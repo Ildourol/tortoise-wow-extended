@@ -202,6 +202,11 @@ Knowing that a service touches `SPELL_EFFECT_LEARN_SPELL` is only the start. The
 
 - Selected fork adaptations are recorded in
   [SELECTED_FORK_INTEGRATION_2026-09-05.md](SELECTED_FORK_INTEGRATION_2026-09-05.md).
+  September 6 AB capture compares real GO entries, not the shim's node indices.
+  Only AB bypasses the BUTTON readiness gate; range/interaction/spell/native
+  match/node/team validation remain. Attempt spacing uses the existing
+  per-bot qualified `last spell cast time` value, never a shared GUID map.
+  `UpstreamAbCaptureTest` covers the extracted entry/state/throttle boundaries.
   Null-owner PathInfo calls return NOPATH, not partial paths; native AB discovery
   retains range/eligibility/capture checks; bot broadcasts honor their global gate.
   PetIsDeadValue caches only its database fallback per value instance, not live
