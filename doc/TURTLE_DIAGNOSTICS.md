@@ -2,6 +2,30 @@
 
 Purpose: explain server-side action latency at the configured population without logging every bot action. This is an instrumentation/removal inventory, not a claim of live performance validation.
 
+## AHBot rebuild acceptance, September 6
+
+Read-only evidence from `server_2026-09-06_11-03-10.log` and `gm.log`: rebuild
+was requested at 11:05:32 during the 11:05:09--11:06:03 auction check. The old
+command rejected a busy worker; no `Rebuild queued` entry or refill passes
+followed. Larger config caps were being read (equip.white=3000), but ordinary
+passes retained future sell delays. The contemporary database read showed
+503/769/388 listings in houses 1/6/7, not a hard global 1400 ceiling.
+
+Added one log line per accepted/coalesced rebuild request and an on-demand
+pending status line. Existing per-house completion summaries remain the refill
+evidence. Worker/rebuild failures log exceptions and release ownership instead
+of retaining a permanent busy flag. There is no new periodic scan or per-item
+diagnostic. Remove acceptance/status text independently of the pending-request
+state machine; the queue and worker reservation are correctness mechanisms.
+
+`AhBotRebuildLifecycleTest` covers the actual busy-command timeline, reservation
+before worker startup, native expiry wait, three sell-only refill passes,
+duplicate commands, explicit all, disabled/shutdown and worker failure paths.
+`AhBotRefillTest` covers native selection up to 6000 listings under a per-item
+cap. Test storage is mocked: final live counts, expiry/mail persistence and
+full-load behavior remain deployment acceptance checks. No production config
+or database mutations were performed during this correction.
+
 Current contract review: see `docs/CORE_COMPATIBILITY_AUDIT_2026-09-05.md` and
 `docs/CORE_SYSTEMS_GUIDE.md` at baseline `b2d5a854`. Historical port coverage below
 does not certify runtime behavior or exact native equivalence. In particular,

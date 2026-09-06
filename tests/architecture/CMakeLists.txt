@@ -47,6 +47,19 @@ if(MSVC)
     target_compile_options(AhBotRefillTest PRIVATE /EHsc)
 endif()
 add_test(NAME AhBotRefillTest COMMAND AhBotRefillTest)
+extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
+    "bool AhBot::StartUpdate()" "void AhBot::ForceUpdate()" NativeAhBotScheduler.inc)
+extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
+    "void AhBot::ForceUpdate()" "struct SortByPricePredicate" NativeAhBotWorker.inc)
+extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
+    "    if (action == \"rebuild\" || action == \"expire\")" "    if (action == \"status\"" NativeAhBotRebuildCommand.inc)
+add_executable(AhBotRebuildLifecycleTest AhBotRebuildLifecycleTest.cpp)
+target_compile_features(AhBotRebuildLifecycleTest PRIVATE cxx_std_17)
+target_include_directories(AhBotRebuildLifecycleTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+if(MSVC)
+    target_compile_options(AhBotRebuildLifecycleTest PRIVATE /EHsc)
+endif()
+add_test(NAME AhBotRebuildLifecycleTest COMMAND AhBotRebuildLifecycleTest)
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"
     "void TravelNodeMap::generateTaxiPaths()" "void TravelNodeMap::removeLowNodes()" NativeTaxiGeneration.inc)
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"

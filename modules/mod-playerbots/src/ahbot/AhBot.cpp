@@ -95,16 +95,82 @@ void AhbotThread()
 }
 #endif
 
-void activateAhbotThread()
+bool activateAhbotThread()
 {
 #ifdef MANGOS
     AhbotThread *thread = new AhbotThread();
-    thread->activate();
+    if (thread->activate() == -1)
+    {
+        delete thread;
+        return false;
+    }
 #endif
 #ifdef CMANGOS
     boost::thread t(AhbotThread);
     t.detach();
 #endif
+    return true;
+}
+
+bool AhBot::StartUpdate()
+{
+    if (!sAhBotConfig.enabled || pendingRebuild.load())
+        return false;
+    bool expected = false;
+    if (!updating.compare_exchange_strong(expected, true))
+        return false;
+    // Reserve before launching: commands must also see a not-yet-started
+    // worker as busy, or a rebuild/reload can race its initialization.
+    try
+    {
+        if (activateAhbotThread())
+            return true;
+    }
+    catch (std::exception const& error)
+    {
+        sLog.outError("[AhBot] Worker launch failed: %s", error.what());
+    }
+    updating = false;
+    return false;
+}
+
+bool AhBot::QueueRebuild(bool includePlayerBids)
+{
+    // Repeated requests during refill must not expire the newly created stock.
+    if (rebuildPassesRemaining.load())
+        return false;
+    uint32 const requested = includePlayerBids ? 2 : 1;
+    uint32 previous = pendingRebuild.load();
+    while (previous < requested &&
+        !pendingRebuild.compare_exchange_weak(previous, requested)) {}
+    return true;
+}
+
+bool AhBot::ProcessPendingRebuild()
+{
+    if (!pendingRebuild.load())
+        return false;
+    bool expected = false;
+    if (!updating.compare_exchange_strong(expected, true))
+        return true; // retain request until the active worker releases ownership
+    struct ReleaseRebuild { std::atomic<bool>& busy; ~ReleaseRebuild() { busy = false; } } release{updating};
+    uint32 const request = pendingRebuild.exchange(0);
+    try
+    {
+    if (sAhBotConfig.enabled)
+    {
+        uint32 protectedBids = 0;
+        Rebuild(request == 2, protectedBids);
+    }
+    else
+        sLog.outString("[AhBot] Pending rebuild canceled: AHBot is disabled.");
+    }
+    catch (std::exception const& error)
+    {
+        pendingRebuild = request;
+        sLog.outError("[AhBot] Rebuild failed: %s. Request retained.", error.what());
+    }
+    return true;
 }
 
 void AhBot::Update()
@@ -118,6 +184,8 @@ void AhBot::Update()
     // Carry out whatever the bot thread decided on last pass. This has to come
     // before the nextAICheckTime early-out below, or queued work would only run
     // once every check interval instead of on the next tick.
+    if (ProcessPendingRebuild())
+        return;
     RunQueuedWork();
 
     time_t now = time(0);
@@ -134,22 +202,20 @@ void AhBot::Update()
     uint32 const sliceInterval = rebuilding ? 1 : std::max<uint32>(1, sAhBotConfig.updateInterval / MAX_AUCTIONS);
     sLog.outString("[AhBot] Scheduling incremental auction-house check (next in %u seconds)", sliceInterval);
     nextAICheckTime = time(0) + sliceInterval;
-    activateAhbotThread();
+    StartUpdate();
     CleanupPropositions();
 }
 
 void AhBot::ForceUpdate()
 {
+    // Includes early returns and exceptions: a failed pass must not leave
+    // future updates/rebuilds permanently marked busy.
+    struct ReleaseWorker { std::atomic<bool>& busy; ~ReleaseWorker() { busy = false; } } release{updating};
+    try
+    {
 	if (!sAhBotConfig.enabled)
 	{
 		sLog.outString("[AhBot] ForceUpdate called but AhBot is disabled in ahbot.conf");
-		return;
-	}
-
-	bool expected = false;
-	if (!updating.compare_exchange_strong(expected, true))
-	{
-		sLog.outString("[AhBot] ForceUpdate called but previous check is still running — skipping");
 		return;
 	}
 
@@ -164,7 +230,6 @@ void AhBot::ForceUpdate()
 	if (!allBidders.size())
 	{
 		sLog.outError("[AhBot] No bidders available — cannot post or answer auctions. Check that AhBot.GUID is set to a valid character GUID in ahbot.conf.");
-		updating = false;
 		return;
 	}
 
@@ -182,10 +247,14 @@ void AhBot::ForceUpdate()
     inAuctionItems.Init(true);
 
     int ahAnswered = 0, ahAdded = 0;
+    bool const rebuilding = rebuildPassesRemaining.load() > 0;
     for (int j = 0; j < CategoryList::instance.size(); j++)
     {
         Category* category = CategoryList::instance[j];
-        ahAnswered += Answer(i, category, &inAuctionItems);
+        // Like CMaNGOS rebuild, refill sells only; do not immediately buy
+        // from the market that is being reconstructed.
+        if (!rebuilding)
+            ahAnswered += Answer(i, category, &inAuctionItems);
         ahAdded += AddAuctions(i, category, &inAuctionItems);
     }
 
@@ -200,7 +269,11 @@ void AhBot::ForceUpdate()
     while (remaining > 0 && !rebuildPassesRemaining.compare_exchange_weak(remaining, remaining - 1))
     {
     }
-    updating = false;
+    }
+    catch (std::exception const& error)
+    {
+        sLog.outError("[AhBot] Auction check failed: %s. Pending rebuild/refill retained for retry.", error.what());
+    }
 }
 
 struct SortByPricePredicate
@@ -837,9 +910,9 @@ bool AhBot::HandleCommand(ChatHandler* handler, std::string command)
             handler->SendSysMessage("Usage: .ahbot reload");
             return false;
         }
-        if (updating.load())
+        if (updating.load() || pendingRebuild.load() || rebuildPassesRemaining.load())
         {
-            handler->SendSysMessage("AHBot reload refused: an auction update is currently running. Try again after .ahbot status reports idle.");
+            handler->SendSysMessage("AHBot reload refused: an update or rebuild is active/pending. Try again after .ahbot status reports idle.");
             return false;
         }
         if (!sAhBotConfig.Reload())
@@ -880,17 +953,16 @@ bool AhBot::HandleCommand(ChatHandler* handler, std::string command)
             handler->SendSysMessage("AHBot rebuild refused: AhBot is disabled. Change ahbot.conf and run .ahbot reload first.");
             return false;
         }
-        if (updating.load())
+        if (!QueueRebuild(includePlayerBids))
         {
-            handler->SendSysMessage("AHBot rebuild refused: an auction update is currently running. Try again after .ahbot status reports idle.");
-            return false;
+            handler->SendSysMessage("AHBot rebuild already in progress; the existing refill will continue.");
+            return true;
         }
-
-        uint32 protectedPlayerBids = 0;
-        uint32 const expired = Rebuild(includePlayerBids, protectedPlayerBids);
-        handler->PSendSysMessage("AHBot rebuild queued: %u bot auction(s) marked to expire; %u auction(s) with real-player bids preserved.",
-            expired, protectedPlayerBids);
-        handler->SendSysMessage("The native auction update will remove them within about one minute; AHBot refill begins immediately afterward using the current configuration.");
+        handler->PSendSysMessage("AHBot rebuild accepted: waiting for the current check to finish; player bids %s. See .ahbot status for progress.",
+            includePlayerBids ? "included (all requested)" : "protected");
+        sLog.outString("[AhBot] Rebuild request accepted (include player bids=%u, worker busy=%u).",
+            includePlayerBids ? 1u : 0u, updating.load() ? 1u : 0u);
+        handler->SendSysMessage("After the current check finishes, expiry takes about one minute, followed by three background refill passes. No need to submit rebuild again.");
         return true;
     }
 
@@ -922,7 +994,11 @@ bool AhBot::HandleCommand(ChatHandler* handler, std::string command)
             handler->SendSysMessage("AHBot update not needed: a rebuild refill is already queued.");
             return false;
         }
-        activateAhbotThread();
+        if (!StartUpdate())
+        {
+            handler->SendSysMessage("AHBot update could not start: worker busy, rebuild pending or worker launch failed.");
+            return false;
+        }
         handler->SendSysMessage("AHBot update requested.");
         return true;
     }
@@ -1172,6 +1248,13 @@ bool AhBot::IsBotCharacter(uint32 guid)
 
 uint32 AhBot::Rebuild(bool includePlayerBids, uint32& protectedPlayerBids)
 {
+    // No producer is active here. Decisions about old listings must not buy
+    // or advertise them while the native expiry sweep removes them.
+    {
+        std::lock_guard<std::mutex> guard(queuedWorkMutex);
+        queuedPurchases.clear();
+        queuedPropositions.clear();
+    }
     uint32 expired = 0;
     protectedPlayerBids = 0;
     std::set<AuctionHouseObject*> visited;
@@ -1233,6 +1316,8 @@ void AhBot::PrintStatus(ChatHandler* handler, bool detailed)
 
     time_t const now = time(0);
     uint32 const nextSeconds = nextAICheckTime > now ? (uint32)(nextAICheckTime - now) : 0;
+    if (pendingRebuild.load())
+        handler->SendSysMessage("AHBot rebuild: REQUEST ACCEPTED, waiting for the current worker; auctions have not been expired yet.");
     handler->PSendSysMessage("AHBot: %s; worker %s; next check in %us; rebuild passes %u; queued purchases/propositions %u/%u.",
         sAhBotConfig.enabled ? "enabled" : "disabled", updating.load() ? "running" : "idle",
         nextSeconds, rebuildPassesRemaining.load(), queuedPurchasesCount, queuedPropositionsCount);

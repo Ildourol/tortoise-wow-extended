@@ -64,6 +64,20 @@ exhausted pools and failures. Generated AuctionEntry objects must initialize
 indexes depend on that field. Neither regression proves the final live auction
 count: overlapping categories, eligible items and per-item limits constrain it.
 
+September 6 AHBot command lifecycle correction: rebuild requests made during
+an active check must be retained, not rejected. `QueueRebuild` coalesces one
+pending request (explicit `all` may upgrade it); `ProcessPendingRebuild` runs
+it on the world owner after the worker is idle, before the normal interval gate.
+`StartUpdate` reserves `updating` before thread launch, including the interval
+between scheduling and execution. Never retain a ChatHandler/session for later
+use. Repeated commands during the three-house refill do not restart expiry.
+Refill suppresses buying, as CMaNGOS does, and clears old queued purchase/mail
+propositions before expiry. Ordinary updates retain their sell delays. Reload
+must not cancel an accepted rebuild. `AhBotRebuildLifecycleTest` executes native
+command, scheduler and worker bodies against mock storage; `AhBotRefillTest`
+also covers 6,000 successful listings in a category with per-item limits.
+These tests do not establish production stock volume or database persistence.
+
 There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
 
 ## Creature, boss and trash AI: actual selection

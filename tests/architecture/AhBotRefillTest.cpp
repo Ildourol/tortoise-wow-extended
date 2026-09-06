@@ -78,5 +78,16 @@ int main() {
         bot.categoryMaxAuctionCount["test"]=10; bot.rebuildPassesRemaining=3;
         CHECK(bot.AddAuctions(0,&cat,&stock)==0 && bot.listingCalls==0);
     }
+    { // Large configured capacity must not have a hidden ~1400 listing ceiling.
+        AhBot bot; ItemBag stock; Category large; large.perItem=10;
+        for(uint32 id=1;id<=650;++id) {
+            sObjectMgr.items[id]={id}; bot.availableItems.items.push_back(id);
+        }
+        bot.categoryMaxAuctionCount["test"]=6000; bot.rebuildPassesRemaining=3;
+        CHECK(bot.AddAuctions(0,&large,&stock)==6000);
+        CHECK(stock.items.size()==6000 && bot.timerCalls==0);
+        CHECK(bot.AddAuctions(0,&large,&stock)==0);
+        for(uint32 id=1;id<=650;++id) CHECK(stock.GetCount(&large,id)<=10);
+    }
     std::cout << "Native AHBot refill pacing/caps/failure tests passed\n";
 }

@@ -47,7 +47,7 @@ namespace ahbot
         ObjectGuid GetAHBplayerGUID();
         void Init();
         void Update();
-        void ForceUpdate();
+        void ForceUpdate(); // worker body; StartUpdate reserves ownership first
         bool HandleCommand(ChatHandler* handler, std::string command);
         void Won(AuctionEntry* entry) { AddToHistory(entry); }
         void Expired(AuctionEntry* entry) {}
@@ -65,6 +65,9 @@ namespace ahbot
         bool IsItemBanned(uint32 itemId) const;
 
     private:
+        bool StartUpdate();
+        bool ProcessPendingRebuild(); // world thread, before normal scheduling
+        bool QueueRebuild(bool includePlayerBids);
         int Answer(int auction, Category* category, ItemBag* inAuctionItems);
         int AddAuctions(int auction, Category* category, ItemBag* inAuctionItems);
         int AddAuction(int auction, Category* category, const ItemPrototype* proto);
@@ -153,6 +156,9 @@ namespace ahbot
         // is much heavier, so perform the equivalent refill as consecutive
         // background passes instead of freezing the world thread.
         std::atomic<uint32> rebuildPassesRemaining;
+        // One coalesced request: 0 none, 1 preserve player bids, 2 explicit all.
+        // Never retain a ChatHandler/session while waiting for the worker.
+        std::atomic<uint32> pendingRebuild{0};
         std::mutex queuedWorkMutex;
         std::deque<PendingPurchase> queuedPurchases;
         std::deque<PendingProposition> queuedPropositions;
