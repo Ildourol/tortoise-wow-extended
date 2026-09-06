@@ -38,28 +38,33 @@ if(MSVC)
     target_compile_options(AhBotChatDispatchTest PRIVATE /EHsc)
 endif()
 add_test(NAME AhBotChatDispatchTest COMMAND AhBotChatDispatchTest)
-extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
-    "int AhBot::AddAuctions(" "int AhBot::AddAuction(" NativeAhBotRefill.inc)
-add_executable(AhBotRefillTest AhBotRefillTest.cpp)
-target_compile_features(AhBotRefillTest PRIVATE cxx_std_17)
-target_include_directories(AhBotRefillTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-if(MSVC)
-    target_compile_options(AhBotRefillTest PRIVATE /EHsc)
-endif()
-add_test(NAME AhBotRefillTest COMMAND AhBotRefillTest)
-extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
-    "bool AhBot::StartUpdate()" "void AhBot::ForceUpdate()" NativeAhBotScheduler.inc)
-extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
-    "void AhBot::ForceUpdate()" "struct SortByPricePredicate" NativeAhBotWorker.inc)
-extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
-    "    if (action == \"rebuild\" || action == \"expire\")" "    if (action == \"status\"" NativeAhBotRebuildCommand.inc)
-add_executable(AhBotRebuildLifecycleTest AhBotRebuildLifecycleTest.cpp)
-target_compile_features(AhBotRebuildLifecycleTest PRIVATE cxx_std_17)
-target_include_directories(AhBotRebuildLifecycleTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-if(MSVC)
-    target_compile_options(AhBotRebuildLifecycleTest PRIVATE /EHsc)
-endif()
-add_test(NAME AhBotRebuildLifecycleTest COMMAND AhBotRebuildLifecycleTest)
+# Replace tests for the retired category engine with production CMaNGOS paths.
+set(AHBOT_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/ahbot")
+extract_native_fragment("${AHBOT_ROOT}/AhBot.h"
+    "namespace ahbot" "#define auctionbot" NativeMarketDeclarations.inc)
+extract_native_fragment("${AHBOT_ROOT}/AhBot.cpp"
+    "bool ReadNumbers(" "bool QueryIds(" NativeMarketParser.inc)
+extract_native_fragment("${AHBOT_ROOT}/AhBot.cpp"
+    "bool AhBot::IsBotOwner(" "void AhBot::Status(" NativeMarketWork.inc)
+# Commands include item parsing through EOF, isolated with the end marker.
+extract_native_fragment("${AHBOT_ROOT}/AhBot.cpp"
+    "bool AhBot::HandleCommand(" "// End market command implementation." NativeMarketCommands.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/AuctionHouse/AuctionHouseMgr.cpp"
+    "void AuctionHouseObject::ExpireAuction(" "void AuctionHouseObject::Update()" NativeMarketExpiry.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/AuctionHouse/AuctionHouseMgr.cpp"
+    "void AuctionHouseMgr::SendAuctionOutbiddedMail(" "void AuctionHouseObject::BuildListBidderItems(" NativeMarketRefund.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/AuctionHouse/AuctionHouseMgr.cpp"
+    "std::vector<AuctionSnapshot> AuctionHouseObject::GetAuctionsSnapshotPage(" "AuctionHouseMgr::AuctionHouseMgr()" NativeMarketPage.inc)
+foreach(test AhBotMarketTest AuctionSettlementTest)
+    add_executable(${test} ${test}.cpp)
+    target_compile_features(${test} PRIVATE cxx_std_17)
+    target_include_directories(${test} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}" "${AHBOT_ROOT}" "${CORE_ROOT}/src/shared")
+    if(MSVC)
+        target_compile_options(${test} PRIVATE /EHsc)
+    endif()
+    add_test(NAME ${test} COMMAND ${test})
+    set_tests_properties(${test} PROPERTIES TIMEOUT 30)
+endforeach()
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"
     "void TravelNodeMap::generateTaxiPaths()" "void TravelNodeMap::removeLowNodes()" NativeTaxiGeneration.inc)
 extract_native_fragment("${TRAVEL_ROOT}/TravelNode.cpp"

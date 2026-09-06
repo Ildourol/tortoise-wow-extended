@@ -2,7 +2,25 @@
 
 Purpose: explain server-side action latency at the configured population without logging every bot action. This is an instrumentation/removal inventory, not a claim of live performance validation.
 
-## AHBot rebuild acceptance, September 6
+## CMaNGOS-policy AHBot replacement, September 6
+
+On `feature/cmangos-ahbot`, old detached-worker/category/per-listing diagnostics
+are removed with that engine. The replacement emits source counts at load and
+one expiry/refill completion summary per rebuild. `.ahbot status [all]` reports
+phase, queued request, remaining simulation checks, listed/bought/expired/
+protected/failed counters and last/max measured slice microseconds. No periodic
+auction-count SQL or per-item log was added. Existing DetailedWork and
+ExecutionWatch wrappers still apply to the single AHBot Update call.
+
+Budget clocks are required by WorkSlice (default 32 attempts / 2ms), not an
+optional trace. Last/max/counters and summary text can be removed independently
+after live acceptance; do not remove the work budget, bid protections or queue.
+No background worker retains core object pointers. Initialization/reload does
+read source/owner data synchronously; it is not part of normal tick sampling.
+Tests use deterministic services; live latency, DB mail delivery, restart
+persistence and final stock volume still require the user-operated deployment.
+
+## Historical AHBot rebuild acceptance, September 6 (retired category engine)
 
 Read-only evidence from `server_2026-09-06_11-03-10.log` and `gm.log`: rebuild
 was requested at 11:05:32 during the 11:05:09--11:06:03 auction check. The old

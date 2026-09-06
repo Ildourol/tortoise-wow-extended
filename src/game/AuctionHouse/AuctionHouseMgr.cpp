@@ -124,13 +124,18 @@ void AuctionHouseObject::AddAuction(AuctionEntry *ah)
 
 std::vector<AuctionSnapshot> AuctionHouseObject::GetAuctionsSnapshot() const
 {
+    return GetAuctionsSnapshotPage(0, std::numeric_limits<uint32>::max());
+}
+
+std::vector<AuctionSnapshot> AuctionHouseObject::GetAuctionsSnapshotPage(uint32 afterId, uint32 limit) const
+{
     Guard g(m_auctionsLock);
 
     std::vector<AuctionSnapshot> out;
-    out.reserve(AuctionsMap.size());
-    for (const auto& itr : AuctionsMap)
+    out.reserve(std::min<size_t>(AuctionsMap.size(), limit));
+    for (auto itr = AuctionsMap.upper_bound(afterId); itr != AuctionsMap.end() && out.size() < limit; ++itr)
     {
-        AuctionEntry const* e = itr.second;
+        AuctionEntry const* e = itr->second;
         if (!e)
             continue;
 
@@ -721,70 +726,101 @@ AuctionHouseEntry const* AuctionHouseMgr::GetAuctionHouseEntry(uint32 factionTem
     return sAuctionHouseStore.LookupEntry(houseid);
 }
 
+void AuctionHouseObject::ExpireAuction(AuctionEntry* entry)
+{
+    Guard g(m_auctionsLock);
+    if (!entry || GetAuction(entry->Id) != entry)
+        return;
+    ///- Either cancel the auction if there was no bidder
+    if (entry->bidder == 0)
+    {
+        ScriptRegistry<AuctionHouseScript>::ForEach([&](AuctionHouseScript* script)
+        {
+            script->OnAuctionExpire(this, entry);
+        });
+        sAuctionMgr.SendAuctionExpiredMail(entry);
+    }
+    ///- Or perform the transaction
+    else
+    {
+        ScriptRegistry<AuctionHouseScript>::ForEach([&](AuctionHouseScript* script)
+        {
+            script->OnAuctionSuccessful(this, entry);
+        });
+
+        PlayerTransactionData data;
+        data.type = "Bid";
+        data.parts[0].lowGuid = entry->owner;
+        data.parts[0].itemsEntries[0] = entry->itemTemplate;
+        Item* item = sAuctionMgr.GetAItem(entry->itemGuidLow);
+        data.parts[0].itemsCount[0] = item ? item->GetCount() : 0;
+        data.parts[0].itemsGuid[0] = entry->itemGuidLow;
+        data.parts[1].lowGuid = entry->bidder;
+        data.parts[1].money = entry->bid;
+
+        //we should send an "item sold" message if the seller is online
+        //we send the item to the winner
+        //we send the money to the seller
+        sAuctionMgr.SendAuctionSuccessfulMail(entry);
+        sAuctionMgr.SendAuctionWonMail(entry);
+    }
+
+    ///- In any case clear the auction
+    entry->DeleteFromDB();
+    sAuctionMgr.RemoveAItem(entry->itemGuidLow);
+    // Invalidates the ref to itr, cannot call delete on itr->second
+    // after removal
+    RemoveAuction(entry);
+
+    delete entry;
+
+}
+
 void AuctionHouseObject::Update()
 {
     Guard g(m_auctionsLock);
     time_t curTime = sWorld.GetGameTime();
-    ///- Handle expired auctions
-    AuctionEntryMap::iterator next;
-    // Store a ref to the entry and use it rather than derefencing the itr.
-    // Also required to properly erase the itr and delete the entry if
-    // necessary
-    AuctionEntry* entry = nullptr;
-    for (AuctionEntryMap::iterator itr = AuctionsMap.begin(); itr != AuctionsMap.end(); itr = next)
+    for (auto itr = AuctionsMap.begin(); itr != AuctionsMap.end();)
     {
-        entry = itr->second;
-        if (entry->depositTime + 5*60 < curTime) // Locked for 5 minutes on IP to prevent AH snipping
+        AuctionEntry* entry = (itr++)->second;
+        if (entry->depositTime + 5*60 < curTime)
             entry->lockedIpAddress.clear();
+        if (curTime > entry->expireTime)
+            ExpireAuction(entry);
+    }
+}
 
-        next = itr;
-        ++next;
-        if (curTime > (entry->expireTime))
-        {
-            ///- Either cancel the auction if there was no bidder
-            if (entry->bidder == 0)
-            {
-                ScriptRegistry<AuctionHouseScript>::ForEach([&](AuctionHouseScript* script)
-                {
-                    script->OnAuctionExpire(this, entry);
-                });
-                sAuctionMgr.SendAuctionExpiredMail(entry);
-            }
-            ///- Or perform the transaction
-            else
-            {
-                ScriptRegistry<AuctionHouseScript>::ForEach([&](AuctionHouseScript* script)
-                {
-                    script->OnAuctionSuccessful(this, entry);
-                });
+void AuctionHouseMgr::SendAuctionOutbiddedMail(AuctionEntry *auction)
+{
+    ObjectGuid oldBidder_guid = ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
+    Player *oldBidder = sObjectMgr.GetPlayer(oldBidder_guid);
 
-                PlayerTransactionData data;
-                data.type = "Bid";
-                data.parts[0].lowGuid = entry->owner;
-                data.parts[0].itemsEntries[0] = entry->itemTemplate;
-                Item* item = sAuctionMgr.GetAItem(entry->itemGuidLow);
-                data.parts[0].itemsCount[0] = item ? item->GetCount() : 0;
-                data.parts[0].itemsGuid[0] = entry->itemGuidLow;
-                data.parts[1].lowGuid = entry->bidder;
-                data.parts[1].money = entry->bid;
+    uint32 oldBidder_accId = 0;
+    if (!oldBidder)
+        oldBidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(oldBidder_guid);
 
-                //we should send an "item sold" message if the seller is online
-                //we send the item to the winner
-                //we send the money to the seller
-                sAuctionMgr.SendAuctionSuccessfulMail(entry);
-                sAuctionMgr.SendAuctionWonMail(entry);
-            }
+    bool isHardcore = false;
 
-            ///- In any case clear the auction
-            entry->DeleteFromDB();
-            sAuctionMgr.RemoveAItem(entry->itemGuidLow);
-            // Invalidates the ref to itr, cannot call delete on itr->second
-            // after removal
-            RemoveAuction(entry);
+    if (oldBidder)
+        isHardcore = oldBidder->IsHardcore();
+    else
+        isHardcore = IsPlayerHardcore(auction->bidder);
 
-            delete entry;
-            entry = nullptr;
-        }
+    if (isHardcore)
+        return; // let bid silently expire, don't mail money to now-HC chars.
+
+    // old bidder exist
+    if (oldBidder || oldBidder_accId)
+    {
+        std::ostringstream msgAuctionOutbiddedSubject;
+        msgAuctionOutbiddedSubject << auction->itemTemplate << ":0:" << AUCTION_OUTBIDDED;
+
+        if (oldBidder)
+            oldBidder->GetSession()->SendAuctionBidderNotification(auction, false);
+
+        MailDraft(msgAuctionOutbiddedSubject.str())
+        .SetMoney(auction->bid)
+        .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
     }
 }
 

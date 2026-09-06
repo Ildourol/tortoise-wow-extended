@@ -1,170 +1,95 @@
 #pragma once
-
-#include <atomic>
-#include <mutex>
-#include <vector>
-#include <deque>
-#include "Category.h"
-#include "ItemBag.h"
-#include "playerbot/PlayerbotAIBase.h"
 #include "AuctionHouse/AuctionHouseMgr.h"
-#include "ObjectGuid.h"
-#include "WorldSession.h"
-
-
-#define MAX_AUCTIONS 3
-#define AHBOT_WON_EXPIRE 0
-#define AHBOT_WON_PLAYER 1
-#define AHBOT_WON_SELF 2
-#define AHBOT_WON_BID 3
-#define AHBOT_WON_DELAY 4
-#define AHBOT_SELL_DELAY 5
-#define AHBOT_SENDMAIL 6
-
+#include "Common.h"
+#include "MarketPolicy.h"
+#include <array>
+#include <map>
+#include <set>
+#include <vector>
+class ChatHandler;
+class ItemPrototype;
+class LootStore;
 namespace ahbot
 {
-    class AhBot
+// One CMaNGOS-policy supplier/buyer on the joined world owner. No detached
+// worker, live pointer across slices, or second legacy auction engine.
+class AhBot
+{
+  public:
+    static AhBot& instance()
     {
-    public:
-        struct ItemOverride
-        {
-            uint32 value = 0;
-            uint32 addChance = 0;
-            uint32 minAmount = 0;
-            uint32 maxAmount = 0;
-        };
+        static AhBot bot;
+        return bot;
+    }
+    static bool HandleAhBotCommand(ChatHandler*, char const*);
+    void Init();
+    void Update();
+    bool HandleCommand(ChatHandler*, std::string);
+    static uint32 auctionIds[3];
 
-        AhBot() : nextAICheckTime(0), nextHouseIndex(0), updating(false), rebuildPassesRemaining(0) {}
-        virtual ~AhBot();
-        static AhBot& instance()
-        {
-            static AhBot instance;
-            return instance;
-        }
-
-    public:
-        static bool HandleAhBotCommand(ChatHandler* handler, char const* args);
-        ObjectGuid GetAHBplayerGUID();
-        void Init();
-        void Update();
-        void ForceUpdate(); // worker body; StartUpdate reserves ownership first
-        bool HandleCommand(ChatHandler* handler, std::string command);
-        void Won(AuctionEntry* entry) { AddToHistory(entry); }
-        void Expired(AuctionEntry* entry) {}
-
-        double GetCategoryMultiplier(std::string category)
-        {
-            return categoryMultipliers[category] ? categoryMultipliers[category] : 1;
-        }
-
-        int32 GetSellPrice(const ItemPrototype* proto);
-        int32 GetBuyPrice(const ItemPrototype* proto);
-        double GetRarityPriceMultiplier(const ItemPrototype* proto);
-        bool IsUsedBySkill(const ItemPrototype* proto, uint32 skillId);
-        bool GetItemOverride(uint32 itemId, ItemOverride& data) const;
-        bool IsItemBanned(uint32 itemId) const;
-
-    private:
-        bool StartUpdate();
-        bool ProcessPendingRebuild(); // world thread, before normal scheduling
-        bool QueueRebuild(bool includePlayerBids);
-        int Answer(int auction, Category* category, ItemBag* inAuctionItems);
-        int AddAuctions(int auction, Category* category, ItemBag* inAuctionItems);
-        int AddAuction(int auction, Category* category, const ItemPrototype* proto);
-        uint32 Rebuild(bool includePlayerBids, uint32& protectedPlayerBids);
-        void PrintStatus(ChatHandler* handler, bool detailed);
-        void LoadItemOverrides();
-        bool HandleItemCommand(ChatHandler* handler, std::string const& arguments);
-        bool IsBotOwner(uint32 guid, uint32 accountId);
-        bool IsBotCharacter(uint32 guid);
-        void AddToHistory(AuctionEntry* entry, uint32 won = 0);
-        void CleanupHistory();
-        uint32 GetAvailableMoney(uint32 auctionHouse);
-        void CheckCategoryMultipliers();
-        void updateMarketPrice(uint32 itemId, double price, uint32 auctionHouse);
-        bool IsBotAuction(uint32 bidder);
-        uint32 GetRandomBidder(uint32 auctionHouse);
-        void LoadRandomBots();
-        uint32 GetAnswerCount(uint32 itemId, uint32 auctionHouse, uint32 withinTime);
-        // These work off AuctionSnapshot rather than live AuctionEntry pointers:
-        // the bot runs on its own thread and the world thread deletes entries
-        // underneath it. See the comment on AuctionSnapshot in AuctionHouseMgr.h.
-        std::vector<AuctionSnapshot> LoadAuctions(const std::vector<AuctionSnapshot>& auctionEntryMap, Category*& category,
-                int& auction);
-        void FindMinPrice(const std::vector<AuctionSnapshot>& auctionEntryMap, const AuctionSnapshot& entry, Item*& item, uint32* minBid,
-                uint32* minBuyout);
-        uint32 GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Category*& category, double priceLevel);
-        uint32 GetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type);
-        void SetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value);
-        uint32 GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& category);
-        void CheckSendMail(uint32 bidder, uint32 price, const AuctionSnapshot& entry);
-        bool TryEquipItem(uint32 bidder, uint32 itemGuidLow, ItemPrototype const* proto);
-        void Dump();
-        void CleanupPropositions();
-        void DeleteMail(std::list<uint32> buffer);
-
-    public:
-        // Work the bot thread decides on but must not carry out itself.
-        // Completing a purchase sends mail, pushes a packet down the seller's
-        // session and, when the seller happens to be online, reaches into their
-        // live Player object - all of that belongs to the world thread.
-        // AhBot::Update() already runs there (World::UpdatePlayerbotsTick), so
-        // the bot thread only records the decision and RunQueuedWork() carries
-        // it out.
-        struct PendingPurchase
-        {
-            uint32 auctionId;
-            uint32 bidder;
-            uint32 bidAmount;
-            uint32 unitPrice;       // for the buyout heuristic
-            uint32 minBuyout;       // cheapest comparable listing, 0 if none
-            int    houseIndex;      // index into auctionIds[]
-        };
-
-        struct PendingProposition
-        {
-            uint32 auctionId;
-            uint32 owner;
-            uint32 itemGuidLow;
-            uint32 bidder;
-            uint32 price;
-            uint32 houseId;
-            time_t expireTime;
-        };
-
-        void RunQueuedWork();                                   // world thread only
-        void ExecutePurchase(const PendingPurchase& p);         // world thread only
-        void ExecuteProposition(const PendingProposition& p);   // world thread only
-
-        static uint32 auctionIds[MAX_AUCTIONS];
-        static uint32 auctioneers[MAX_AUCTIONS];
-        static std::map<uint32, uint32> factions;
-
-    private:
-        AvailableItemsBag availableItems;
-        time_t nextAICheckTime;
-        uint32 nextHouseIndex;
-        std::map<std::string, double> categoryMultipliers;
-        std::map<std::string, uint32> categoryMaxAuctionCount;
-        std::map<std::string, uint32> categoryMaxItemAuctionCount;
-        std::map<std::string, uint64> categoryMultiplierExpireTimes;
-        std::map<uint32, std::vector<uint32>> bidders;
-        std::set<uint32> allBidders;
-        std::map<uint32, ItemOverride> itemOverrides;
-        std::atomic<bool> updating;
-        // CMaNGOS rebuild refills every market immediately. Turtle's AH pass
-        // is much heavier, so perform the equivalent refill as consecutive
-        // background passes instead of freezing the world thread.
-        std::atomic<uint32> rebuildPassesRemaining;
-        // One coalesced request: 0 none, 1 preserve player bids, 2 explicit all.
-        // Never retain a ChatHandler/session while waiting for the worker.
-        std::atomic<uint32> pendingRebuild{0};
-        std::mutex queuedWorkMutex;
-        std::deque<PendingPurchase> queuedPurchases;
-        std::deque<PendingProposition> queuedPropositions;
-        bool preferProposition = false; // world-thread owned; fair between queues
+  private:
+    struct Override
+    {
+        uint32 value = 0, chance = 0, min = 0, max = 0;
     };
+    struct Source
+    {
+        LootStore const* store = nullptr;
+        std::array<int32, 4> range{};
+        std::vector<uint32> ids;
+    };
+    struct Owner
+    {
+        uint32 guid, account;
+    };
+    struct Settings
+    {
+        bool enabled = false, vendorValue = true, dynamicLevel = false, ignoreGm = false;
+        uint32 sell = 10, buy = 10, variance = 10, bidMin = 75, bidMax = 90;
+        uint32 timeMin = 2, timeMax = 24, buyValue = 90, requiredLevel = 60;
+        uint32 levelRefresh = 600, sliceUs = 2000, sliceOperations = 32;
+        std::array<std::array<uint32, 17>, 7> values{};
+    } settings;
+    enum class Phase
+    {
+        Idle,
+        Gather,
+        Overrides,
+        Post,
+        Buy,
+        Expire
+    } phase = Phase::Idle;
+    bool Load();
+    void RefreshLevel();
+    void Step();
+    void GatherOne();
+    void PostOne();
+    void ScanOne(bool expire);
+    void FinishPass();
+    bool IsBotOwner(uint32 guid, uint32 account) const;
+    uint32 Price(ItemPrototype const*) const;
+    uint32 Varied(uint32) const;
+    bool Eligible(ItemPrototype const*, bool forced) const;
+    bool Publish(uint32 item, uint32 count, uint32 price);
+    void Buy(AuctionSnapshot const&);
+    bool ItemCommand(ChatHandler*, std::string const&);
+    void Status(ChatHandler*, bool detailed);
+    std::vector<Source> sources;
+    std::vector<Owner> owners;
+    std::set<uint32> vendorItems;
+    std::map<uint32, Override> overrides;
+    std::map<uint32, uint64> stock;
+    std::vector<AuctionSnapshot> page;
+    size_t pageIndex = 0, sourceIndex = 0;
+    int32 picksRemaining = -1;
+    uint32 rollsRemaining = 0, selectedTemplate = 0, overrideCursor = 0;
+    uint32 currentHouse = 0, action = 5, scanHouse = 0, scanCursor = 0;
+    uint32 maxRequiredLevel = 60, maxItemLevel = 255;
+    uint32 rebuildRemaining = 0, rebuildTotal = 0, pendingRebuild = 0;
+    bool includeBids = false;
+    uint64 listed = 0, bought = 0, expired = 0, protectedBids = 0, failed = 0;
+    uint64 lootRolls = 0, lastSliceUs = 0, maxSliceUs = 0;
+    time_t nextCheck = 0, nextLevelCheck = 0;
 };
-
-#define auctionbot MaNGOS::Singleton<ahbot::AhBot>::Instance()
-
+} // namespace ahbot
+#define auctionbot ahbot::AhBot::instance()

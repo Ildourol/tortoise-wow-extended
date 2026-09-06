@@ -144,3 +144,6 @@ if(NOT CONF_INSTALL_DIR)
   set(CONF_INSTALL_DIR ${CONF_DIR})
 endif()
 install(FILES ${CMAKE_BINARY_DIR}/aiplayerbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})
+configure_file(${PB_ROOT}/src/ahbot/ahbot.conf.dist.in
+               ${CMAKE_BINARY_DIR}/ahbot.conf.dist @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/ahbot.conf.dist DESTINATION ${CONF_INSTALL_DIR})

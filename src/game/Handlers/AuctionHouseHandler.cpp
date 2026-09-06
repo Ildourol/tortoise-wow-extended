@@ -174,38 +174,9 @@ void WorldSession::SendAuctionRemovedNotification(AuctionEntry* auction)
 
 
 // this function sends mail to old bidder
-void WorldSession::SendAuctionOutbiddedMail(AuctionEntry *auction)
+void WorldSession::SendAuctionOutbiddedMail(AuctionEntry* auction)
 {
-    ObjectGuid oldBidder_guid = ObjectGuid(HIGHGUID_PLAYER, auction->bidder);
-    Player *oldBidder = sObjectMgr.GetPlayer(oldBidder_guid);
-
-    uint32 oldBidder_accId = 0;
-    if (!oldBidder)
-        oldBidder_accId = sObjectMgr.GetPlayerAccountIdByGUID(oldBidder_guid);
-
-    bool isHardcore = false;
-
-    if (oldBidder)
-        isHardcore = oldBidder->IsHardcore();
-    else
-        isHardcore = IsPlayerHardcore(auction->bidder);
-
-    if (isHardcore)
-        return; // let bid silently expire, don't mail money to now-HC chars.
-
-    // old bidder exist
-    if (oldBidder || oldBidder_accId)
-    {
-        std::ostringstream msgAuctionOutbiddedSubject;
-        msgAuctionOutbiddedSubject << auction->itemTemplate << ":0:" << AUCTION_OUTBIDDED;
-
-        if (oldBidder)
-            oldBidder->GetSession()->SendAuctionBidderNotification(auction, false);
-
-        MailDraft(msgAuctionOutbiddedSubject.str())
-        .SetMoney(auction->bid)
-        .SendMailTo(MailReceiver(oldBidder, oldBidder_guid), auction, MAIL_CHECK_MASK_COPIED);
-    }
+    sAuctionMgr.SendAuctionOutbiddedMail(auction);
 }
 
 // this function sends mail, when auction is cancelled to old bidder

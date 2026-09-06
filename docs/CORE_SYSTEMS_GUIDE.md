@@ -40,43 +40,65 @@ or database-persistence test.
 | Persistence | [Database sources](../src/shared/Database), native entity save methods | SQL worker execution and application of results are different ownership stages. Priority queues can reorder work across priorities; callbacks and object references must survive cancellation/shutdown safely. |
 | Maintenance | [RandomPlayerbotMgr.cpp](../modules/mod-playerbots/src/playerbot/RandomPlayerbotMgr.cpp), auction module | Population counts include pending work; resumable plans need identity/generation checks. A cooperative budget cannot interrupt a single expensive operation. Preserve native final teleport/auction operations. |
 
-Auction administration follows the CMaNGOS command contract at administrator
-security: `.ahbot reload`, `.ahbot rebuild [all]`, `.ahbot status [all]`, and
-`.ahbot item`. Turtle listings are owned by random bot characters, not owner
-GUID 0, so rebuild identifies ownership through the configured bot accounts.
-It preserves real-player bids unless `all` is supplied and refills with three
-background house passes after the native auction expiry sweep; do not replace
-this with CMaNGOS's synchronous refill on the world thread. Item overrides are
-stored in character DB `ahbot_items`; reload reconstructs the available-item
-bag and clears the previous category/bidder caches without duplicating entries.
-The host entry point is `ChatHandler::HandleAhBotCommand` in `PlayerbotAI.cpp`;
-it must forward to `ahbot::AhBot::HandleAhBotCommand`. An old dummy returned
-false for every request even with the full AHBot service compiled and linked.
-`AhBotChatDispatchTest` exercises both production forwarding functions with
-recorded arguments, caller identity, null input and both service return values.
-It verifies dispatch, not live auction rebuild or persistence behavior.
-AHBot rebuild refill must bypass ordinary sell-delay admission while preserving
-item eligibility and category/per-item caps. Retire exhausted candidates and
-count only successfully created listings. `AhBotRefillTest` executes production
-selection against deterministic services for normal pacing, rebuild capacity,
-exhausted pools and failures. Generated AuctionEntry objects must initialize
-`ownerAccount` before native auction publication; rebuild/status and account
-indexes depend on that field. Neither regression proves the final live auction
-count: overlapping categories, eligible items and per-item limits constrain it.
+### CMaNGOS-policy AHBot (feature/cmangos-ahbot, September 6)
 
-September 6 AHBot command lifecycle correction: rebuild requests made during
-an active check must be retained, not rejected. `QueueRebuild` coalesces one
-pending request (explicit `all` may upgrade it); `ProcessPendingRebuild` runs
-it on the world owner after the worker is idle, before the normal interval gate.
-`StartUpdate` reserves `updating` before thread launch, including the interval
-between scheduling and execution. Never retain a ChatHandler/session for later
-use. Repeated commands during the three-house refill do not restart expiry.
-Refill suppresses buying, as CMaNGOS does, and clears old queued purchase/mail
-propositions before expiry. Ordinary updates retain their sell delays. Reload
-must not cancel an accepted rebuild. `AhBotRebuildLifecycleTest` executes native
-command, scheduler and worker bodies against mock storage; `AhBotRefillTest`
-also covers 6,000 successful listings in a category with per-item limits.
-These tests do not establish production stock volume or database persistence.
+The single public service remains `AhBot`, called by `PlayerbotWorldScript`
+after map/session owners join; `ChatHandler::HandleAhBotCommand` forwards to it.
+The former detached category seller/buyer, item bag, pricing strategies, direct
+bot equipment writes, and speculative mail offers have been removed, not left
+running beside the replacement. Historical category/refill tests are superseded
+by `AhBotMarketTest` and `AuctionSettlementTest`; chat dispatch remains covered.
+
+The CMaNGOS Classic/TBC/WotLK reference model supplies creature-rank, disenchant,
+fishing, chest, skinning and profession stock. It uses `AuctionHouseBot.*`
+configuration, quality/class valuation, vendor prices, level limits, random
+properties, stack splitting, item overrides, and a 20-second normal check.
+Rebuild simulates mean auction duration * 90 sell-only checks (1,170 for 2–24h),
+not a fixed desired count. A shared house receives the same three logical
+CMaNGOS supply opportunities; expiry/status deduplicate physical houses.
+Native data/content differences mean a matching config does not promise an
+identical auction count.
+
+Turtle adaptations that must not be lost:
+- Resolve creature `loot_id`, not NPC entry; preserve per-template weighting.
+  Chest sources require respawning chest gameobjects. Profession items come
+  from loaded native create-item spell effects; vendor templates are included.
+- Use a fresh native `Loot` per repeat. Reusing Turtle's container across repeats
+  silently truncates stock at its loot-slot limit. Keep native roll/reference/
+  group/rate processing; no parallel custom loot generator.
+- Keep native character/account ownership using verified random-bot characters,
+  never a human configured as synthetic bidder. Do not use CMaNGOS owner 0,
+  the no-op `AuctionEntry::UpdateBid`, or the integer house-lookup shim.
+- `AuctionHouseObject::ExpireAuction` is the extracted native expiry/sale body:
+  script hooks, winner/owner mail, DB deletion, item and auction index removal.
+  Normal expiry and incremental rebuild call this same method. Native outbid
+  refund mail is now owned by `AuctionHouseMgr`; the session delegates to it.
+- Buyer rechecks a paged snapshot against the live auction under its lock,
+  protects same-account ownership, respects IP locks and native hardcore mail
+  restrictions, and refunds an existing bidder before a bid/buyout. Ordinary
+  bids persist without prematurely ending the auction.
+- Administrative `rebuild [all]` coalesces requests and protects existing bids
+  by default; repeated requests during expiry/refill cannot restart it.
+  Reload/item edits are refused while accepted work is active.
+- Stock work is resumable on the world owner, bounded by existing `WorkSlice`
+  (default 32 attempts / 2ms); expiry and buying page at most 32 entries.
+  A native operation can exceed a cooperative budget; status reports actual
+  last/max slice cost. Source/config reads happen at initialization/reload,
+  not once per listing. Reload uses candidate data and retains old settings
+  when parsing or source reads fail.
+- Checked 64-bit arithmetic prevents price/stack overflow into signed money.
+  This port honors `Buy.Value`; the sampled Classic implementation reads that
+  option but does not actually multiply buyer valuation by it.
+- The replacement does not consume old `AhBot.GUID` or category caps. Use the
+  matching `ahbot.conf.dist.in`. Existing `ahbot_items` overrides remain valid;
+  amounts can exceed a stack and are split legally.
+
+Read-only schema checks: 5,238 distinct creature loot IDs, 732 respawning chest
+loot IDs, 2,363 vendor item IDs. These are source availability checks, not a live
+market test. Regression doubles exercise production scheduler/gather/post/buy/
+commands and native expiry/refund/paging; they do not validate DB durability,
+actual drop distributions, client auction interaction, or 6k-bot latency.
+Those remain explicit deployment acceptance checks. See the diagnostic inventory.
 
 There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
 

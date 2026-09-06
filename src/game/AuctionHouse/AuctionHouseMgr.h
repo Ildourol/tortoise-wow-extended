@@ -176,6 +176,9 @@ class AuctionHouseObject
         AuctionEntryMapBounds GetAuctionsBounds_locked() { return { AuctionsMap.begin(), AuctionsMap.end() }; }
 
         std::vector<AuctionSnapshot> GetAuctionsSnapshot() const;
+        std::vector<AuctionSnapshot> GetAuctionsSnapshotPage(uint32 afterId, uint32 limit) const;
+        // World owner only. Shared native expiry/sale lifecycle; deletes entry.
+        void ExpireAuction(AuctionEntry* entry);
 
         uint32 GetCount() { Guard g(m_auctionsLock); return AuctionsMap.size(); }
 
@@ -237,6 +240,7 @@ class AuctionHouseMgr
         void SendAuctionWonMail( AuctionEntry * auction );
         void SendAuctionSuccessfulMail( AuctionEntry * auction );
         void SendAuctionExpiredMail( AuctionEntry * auction );
+        void SendAuctionOutbiddedMail(AuctionEntry* auction);
         static uint32 GetAuctionDeposit(AuctionHouseEntry const* entry, uint32 time, Item *pItem);
 
         static uint32 GetAuctionHouseId(uint32 factionTemplateId);
