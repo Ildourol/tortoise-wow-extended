@@ -37,6 +37,13 @@ double PricingStrategy::CalculatePrice(std::ostringstream *explain, ...)
 
 uint32 PricingStrategy::GetSellPrice(ItemPrototype const* proto, uint32 auctionHouse, bool ignoreMarket, std::ostringstream *explain)
 {
+    AhBot::ItemOverride overrideData;
+    if (auctionbot.GetItemOverride(proto->ItemId, overrideData))
+    {
+        if (explain) *explain << "item override";
+        return overrideData.value;
+    }
+
     double marketPrice = GetMarketPrice(proto->ItemId, auctionHouse);
 
     if (!ignoreMarket && marketPrice > 0)
@@ -88,6 +95,13 @@ double PricingStrategy::GetMarketPrice(uint32 itemId, uint32 auctionHouse)
 
 uint32 PricingStrategy::GetBuyPrice(ItemPrototype const* proto, uint32 auctionHouse, std::ostringstream *explain)
 {
+    AhBot::ItemOverride overrideData;
+    if (auctionbot.GetItemOverride(proto->ItemId, overrideData))
+    {
+        if (explain) *explain << "item override";
+        return overrideData.value;
+    }
+
     uint32 untilTime = time(0) - 3600 * 12;
     double price = CalculatePrice(explain,
             "buy",

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config/Config.h"
+#include <memory>
 
 class AhBotConfig
 {
@@ -14,6 +15,10 @@ public:
 
 public:
     bool Initialize();
+    // Reloading is separate from startup initialization: disabling AhBot is a
+    // valid live configuration, while Initialize() still returns false when
+    // the bot should not be started.
+    bool Reload();
 
     bool enabled;
     uint64 guid;
@@ -57,38 +62,40 @@ public:
 
     std::string GetStringDefault(const char* name, const char* def)
     {
-        return config.GetStringDefault(name, def);
+        return config ? config->GetStringDefault(name, def) : def;
     }
 
     bool GetBoolDefault(const char* name, const bool def = false)
     {
-        return config.GetBoolDefault(name, def);
+        return config ? config->GetBoolDefault(name, def) : def;
     }
 
     int32 GetIntDefault(const char* name, const int32 def)
     {
-        return config.GetIntDefault(name, def);
+        return config ? config->GetIntDefault(name, def) : def;
     }
 
     float GetFloatDefault(const char* name, const float def)
     {
-        return config.GetFloatDefault(name, def);
+        return config ? config->GetFloatDefault(name, def) : def;
     }
 
 private:
+    bool Load();
+
     float GetCategoryParameter(std::map<std::string, float>& cache, std::string type, std::string category, float defaultValue)
     {
         if (cache.find(category) == cache.end())
         {
             std::ostringstream out; out << "AhBot."<< type << "." << category;
-            cache[category] = config.GetFloatDefault(out.str().c_str(), defaultValue);
+            cache[category] = config ? config->GetFloatDefault(out.str().c_str(), defaultValue) : defaultValue;
         }
 
         return cache[category];
     }
 
 private:
-    Config config;
+    std::unique_ptr<Config> config;
     std::map<std::string, float> sellPriceMultipliers;
     std::map<std::string, float> buyPriceMultipliers;
     std::map<std::string, float> itemPriceMultipliers;

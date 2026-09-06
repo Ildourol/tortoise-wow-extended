@@ -26,7 +26,15 @@ namespace ahbot
     class AhBot
     {
     public:
-        AhBot() : nextAICheckTime(0), nextHouseIndex(0), updating(false) {}
+        struct ItemOverride
+        {
+            uint32 value = 0;
+            uint32 addChance = 0;
+            uint32 minAmount = 0;
+            uint32 maxAmount = 0;
+        };
+
+        AhBot() : nextAICheckTime(0), nextHouseIndex(0), updating(false), rebuildPassesRemaining(0) {}
         virtual ~AhBot();
         static AhBot& instance()
         {
@@ -40,7 +48,7 @@ namespace ahbot
         void Init();
         void Update();
         void ForceUpdate();
-        void HandleCommand(std::string command);
+        bool HandleCommand(ChatHandler* handler, std::string command);
         void Won(AuctionEntry* entry) { AddToHistory(entry); }
         void Expired(AuctionEntry* entry) {}
 
@@ -53,13 +61,19 @@ namespace ahbot
         int32 GetBuyPrice(const ItemPrototype* proto);
         double GetRarityPriceMultiplier(const ItemPrototype* proto);
         bool IsUsedBySkill(const ItemPrototype* proto, uint32 skillId);
+        bool GetItemOverride(uint32 itemId, ItemOverride& data) const;
+        bool IsItemBanned(uint32 itemId) const;
 
     private:
         int Answer(int auction, Category* category, ItemBag* inAuctionItems);
         int AddAuctions(int auction, Category* category, ItemBag* inAuctionItems);
         int AddAuction(int auction, Category* category, const ItemPrototype* proto);
-        void Expire(int auction);
-        void PrintStats(int auction);
+        uint32 Rebuild(bool includePlayerBids, uint32& protectedPlayerBids);
+        void PrintStatus(ChatHandler* handler, bool detailed);
+        void LoadItemOverrides();
+        bool HandleItemCommand(ChatHandler* handler, std::string const& arguments);
+        bool IsBotOwner(uint32 guid, uint32 accountId);
+        bool IsBotCharacter(uint32 guid);
         void AddToHistory(AuctionEntry* entry, uint32 won = 0);
         void CleanupHistory();
         uint32 GetAvailableMoney(uint32 auctionHouse);
@@ -133,7 +147,12 @@ namespace ahbot
         std::map<std::string, uint64> categoryMultiplierExpireTimes;
         std::map<uint32, std::vector<uint32>> bidders;
         std::set<uint32> allBidders;
+        std::map<uint32, ItemOverride> itemOverrides;
         std::atomic<bool> updating;
+        // CMaNGOS rebuild refills every market immediately. Turtle's AH pass
+        // is much heavier, so perform the equivalent refill as consecutive
+        // background passes instead of freezing the world thread.
+        std::atomic<uint32> rebuildPassesRemaining;
         std::mutex queuedWorkMutex;
         std::deque<PendingPurchase> queuedPurchases;
         std::deque<PendingProposition> queuedPropositions;

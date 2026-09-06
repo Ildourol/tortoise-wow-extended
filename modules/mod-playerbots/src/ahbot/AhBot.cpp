@@ -20,6 +20,10 @@
 #include "playerbot/playerbot.h"
 #include "Mail/Mail.h"
 #include "Util.h"
+#include <cctype>
+#include <cstdlib>
+#include <limits>
+#include <set>
 
 #ifdef CMANGOS
 #include <boost/thread/thread.hpp>
@@ -29,8 +33,7 @@ using namespace ahbot;
 
 bool AhBot::HandleAhBotCommand(ChatHandler* handler, char const* args)
 {
-    auctionbot.HandleCommand(args);
-    return true;
+    return auctionbot.HandleCommand(handler, args ? args : "");
 }
 
 uint32 AhBot::auctionIds[MAX_AUCTIONS] = {1,6,7};
@@ -62,6 +65,7 @@ void AhBot::Init()
     factions[6] = 2;
     factions[7] = 3;
 
+    LoadItemOverrides();
     availableItems.Init();
 
     sLog.outString("[AhBot] Initialization complete. Incremental house checks every %u seconds.",
@@ -127,7 +131,8 @@ void AhBot::Update()
         return;
     }
 
-    uint32 const sliceInterval = std::max<uint32>(1, sAhBotConfig.updateInterval / MAX_AUCTIONS);
+    bool const rebuilding = rebuildPassesRemaining.load() > 0;
+    uint32 const sliceInterval = rebuilding ? 1 : std::max<uint32>(1, sAhBotConfig.updateInterval / MAX_AUCTIONS);
     sLog.outString("[AhBot] Scheduling incremental auction-house check (next in %u seconds)", sliceInterval);
     nextAICheckTime = time(0) + sliceInterval;
     activateAhbotThread();
@@ -192,6 +197,10 @@ void AhBot::ForceUpdate()
 	CleanupHistory();
 
     sLog.outString("[AhBot] === Incremental check complete: %d answered, %d added ===", answered, added);
+    uint32 remaining = rebuildPassesRemaining.load();
+    while (remaining > 0 && !rebuildPassesRemaining.compare_exchange_weak(remaining, remaining - 1))
+    {
+    }
     updating = false;
 }
 
@@ -660,6 +669,11 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
         if (!proto)
             continue;
 
+        ItemOverride overrideData;
+        if (GetItemOverride(itemId, overrideData) && overrideData.addChance &&
+            urand(1, 100) > overrideData.addChance)
+            continue;
+
         int32 maxAllowedItems = category->GetMaxAllowedItemAuctionCount(proto);
         if (maxAllowedItems && inAuctionItems->GetCount(category, proto->ItemId) >= maxAllowedItems)
         {
@@ -717,6 +731,9 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     price = category->GetPricingStrategy()->GetSellPrice(proto, auctionIds[auction]);
 
     uint32 stackCount = urand(1, category->GetStackCount(proto));
+    ItemOverride overrideData;
+    if (GetItemOverride(proto->ItemId, overrideData) && overrideData.minAmount)
+        stackCount = urand(overrideData.minAmount, overrideData.maxAmount);
     if (!price || !stackCount)
         return 0;
 
@@ -781,54 +798,153 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     return 1;
 }
 
-void AhBot::HandleCommand(std::string command)
+bool AhBot::HandleCommand(ChatHandler* handler, std::string command)
 {
-    if (!sAhBotConfig.enabled)
-        return;
+    command.erase(0, command.find_first_not_of(" \t\r\n"));
+    size_t const last = command.find_last_not_of(" \t\r\n");
+    if (last == std::string::npos)
+        command.clear();
+    else
+        command.erase(last + 1);
 
-    if (command == "expire")
+    std::istringstream input(command);
+    std::string action;
+    std::string option;
+    std::string extra;
+    input >> action >> option >> extra;
+    std::transform(action.begin(), action.end(), action.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+    std::transform(option.begin(), option.end(), option.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+
+    if (action == "reload")
     {
-        for (int i = 0; i < MAX_AUCTIONS; i++)
-            Expire(i);
-        CharacterDatabase.PExecute("DELETE FROM ahbot_category");
-        CharacterDatabase.PExecute("UPDATE ahbot_history SET buytime = buytime - 3600 * 24;");
+        if (!option.empty())
+        {
+            handler->SendSysMessage("Usage: .ahbot reload");
+            return false;
+        }
+        if (updating.load())
+        {
+            handler->SendSysMessage("AHBot reload refused: an auction update is currently running. Try again after .ahbot status reports idle.");
+            return false;
+        }
+        if (!sAhBotConfig.Reload())
+        {
+            handler->SendSysMessage("AHBot reload failed: ahbot.conf could not be parsed. The previous runtime settings remain active.");
+            return false;
+        }
 
-        return;
+        rebuildPassesRemaining = 0;
+        LoadItemOverrides();
+        availableItems.Init(true);
+        categoryMultipliers.clear();
+        categoryMaxAuctionCount.clear();
+        categoryMaxItemAuctionCount.clear();
+        categoryMultiplierExpireTimes.clear();
+        bidders.clear();
+        allBidders.clear();
+        nextHouseIndex = 0;
+        nextAICheckTime = time(0);
+
+        handler->PSendSysMessage("AHBot configuration reloaded: %s, interval %us, sell delay %u-%us, max item/required level %u/%u.",
+            sAhBotConfig.enabled ? "enabled" : "disabled", sAhBotConfig.updateInterval,
+            sAhBotConfig.itemSellMinInterval, sAhBotConfig.itemSellMaxInterval,
+            sAhBotConfig.maxItemLevel, sAhBotConfig.maxRequiredLevel);
+        return true;
     }
 
-    if (command == "stats")
+    if (action == "rebuild" || action == "expire")
     {
-        for (int i = 0; i < MAX_AUCTIONS; i++)
-            PrintStats(i);
+        bool const includePlayerBids = option == "all";
+        if ((!option.empty() && !includePlayerBids) || !extra.empty())
+        {
+            handler->SendSysMessage("Usage: .ahbot rebuild [all]");
+            return false;
+        }
+        if (!sAhBotConfig.enabled)
+        {
+            handler->SendSysMessage("AHBot rebuild refused: AhBot is disabled. Change ahbot.conf and run .ahbot reload first.");
+            return false;
+        }
+        if (updating.load())
+        {
+            handler->SendSysMessage("AHBot rebuild refused: an auction update is currently running. Try again after .ahbot status reports idle.");
+            return false;
+        }
 
-        return;
+        uint32 protectedPlayerBids = 0;
+        uint32 const expired = Rebuild(includePlayerBids, protectedPlayerBids);
+        handler->PSendSysMessage("AHBot rebuild queued: %u bot auction(s) marked to expire; %u auction(s) with real-player bids preserved.",
+            expired, protectedPlayerBids);
+        handler->SendSysMessage("The native auction update will remove them within about one minute; AHBot refill begins immediately afterward using the current configuration.");
+        return true;
     }
 
-    if (command == "update")
+    if (action == "status" || action == "stats")
     {
+        if ((!option.empty() && option != "all") || !extra.empty())
+        {
+            handler->SendSysMessage("Usage: .ahbot status [all]");
+            return false;
+        }
+        PrintStatus(handler, option == "all");
+        return true;
+    }
+
+    if (action == "update")
+    {
+        if (!sAhBotConfig.enabled)
+        {
+            handler->SendSysMessage("AHBot is disabled.");
+            return false;
+        }
+        if (updating.load())
+        {
+            handler->SendSysMessage("AHBot update already running.");
+            return false;
+        }
+        if (rebuildPassesRemaining.load())
+        {
+            handler->SendSysMessage("AHBot update not needed: a rebuild refill is already queued.");
+            return false;
+        }
         activateAhbotThread();
-        return;
+        handler->SendSysMessage("AHBot update requested.");
+        return true;
     }
 
-    if (command == "dump")
+    if (action == "dump")
     {
         Dump();
-        return;
+        handler->SendSysMessage("AHBot item-price dump written to the world-server log.");
+        return true;
     }
 
-    uint32 itemId = atoi(command.c_str());
+    // CMaNGOS spells this `.ahbot item ...`. Keep the old Turtle `.ahbot <id>`
+    // query spelling as a compatibility alias.
+    if (action == "item")
+    {
+        size_t const separator = command.find_first_of(" \t");
+        return HandleItemCommand(handler, separator == std::string::npos ? "" : command.substr(separator + 1));
+    }
+
+    uint32 itemId = atoi(action.c_str());
     if (!itemId)
     {
-        sLog.outString("ahbot stats - show short summary");
-        sLog.outString("ahbot expire - expire all auctions");
-        sLog.outString("ahbot update - update all auctions");
-        sLog.outString("ahbot <itemId> - show item price");
-        return;
+        handler->SendSysMessage("AHBot commands:");
+        handler->SendSysMessage(".ahbot reload - reload ahbot.conf safely");
+        handler->SendSysMessage(".ahbot rebuild [all] - expire bot auctions and refill; 'all' also expires those with player bids");
+        handler->SendSysMessage(".ahbot status [all] - show auction counts and runtime state");
+        handler->SendSysMessage(".ahbot update - request one incremental market pass");
+        handler->SendSysMessage(".ahbot item <itemId> [value [chance [min [max]]]] [reset] - inspect or override an item");
+        return false;
     }
 
     ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
     if (!proto)
-        return;
+    {
+        handler->PSendSysMessage("AHBot: item %u does not exist.", itemId);
+        return false;
+    }
 
     for (int i=0; i<CategoryList::instance.size(); i++)
     {
@@ -863,53 +979,302 @@ void AhBot::HandleCommand(std::string command)
                     << "\n";
             }
             sLog.outString("%s",out.str().c_str());
+            handler->PSendSysMessage("%s", out.str().c_str());
         }
     }
+    return true;
 }
 
-void AhBot::Expire(int auction)
+void AhBot::LoadItemOverrides()
 {
-    if (!sAhBotConfig.enabled)
-        return;
-
-    AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
-    if(!ahEntry)
-        return;
-
-    AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
-
-    // This one writes expireTime, so it needs the live entries rather than a
-    // snapshot. Each iteration is a cheap set lookup, so just hold the lock
-    // across the whole loop.
-    int count = 0;
+    itemOverrides.clear();
+    std::unique_ptr<QueryResult> result(CharacterDatabase.Query(
+        "SELECT item, value, add_chance, min_amount, max_amount FROM ahbot_items"));
+    if (!result)
     {
+        sLog.outString("[AhBot] No item overrides loaded (ahbot_items is empty or unavailable)");
+        return;
+    }
+
+    do
+    {
+        Field* fields = result->Fetch();
+        ItemOverride data;
+        data.value = fields[1].GetUInt32();
+        data.addChance = std::min<uint32>(100, fields[2].GetUInt32());
+        data.minAmount = fields[3].GetUInt32();
+        data.maxAmount = fields[4].GetUInt32();
+        itemOverrides[fields[0].GetUInt32()] = data;
+    }
+    while (result->NextRow());
+
+    sLog.outString("[AhBot] Loaded %u item override(s)", (uint32)itemOverrides.size());
+}
+
+bool AhBot::GetItemOverride(uint32 itemId, ItemOverride& data) const
+{
+    std::map<uint32, ItemOverride>::const_iterator itr = itemOverrides.find(itemId);
+    if (itr == itemOverrides.end())
+        return false;
+    data = itr->second;
+    return true;
+}
+
+bool AhBot::IsItemBanned(uint32 itemId) const
+{
+    ItemOverride data;
+    return GetItemOverride(itemId, data) && data.value == 0;
+}
+
+bool AhBot::HandleItemCommand(ChatHandler* handler, std::string const& arguments)
+{
+    std::istringstream input(arguments);
+    std::string itemToken;
+    std::string valueToken;
+    std::string chanceToken;
+    std::string minToken;
+    std::string maxToken;
+    std::string extra;
+    input >> itemToken >> valueToken >> chanceToken >> minToken >> maxToken >> extra;
+
+    size_t const link = itemToken.find("Hitem:");
+    char const* number = link == std::string::npos ? itemToken.c_str() : itemToken.c_str() + link + 6;
+    uint32 const itemId = (uint32)std::strtoul(number, nullptr, 10);
+    ItemPrototype const* proto = itemId ? sObjectMgr.GetItemPrototype(itemId) : nullptr;
+    if (!proto)
+    {
+        handler->SendSysMessage("Usage: .ahbot item <itemId> [value [chance [min [max]]]] [reset]");
+        return false;
+    }
+
+    auto parseUInt = [](std::string const& token, uint32& value) -> bool
+    {
+        if (token.empty() || token.find_first_not_of("0123456789") != std::string::npos)
+            return false;
+        unsigned long long const parsed = std::strtoull(token.c_str(), nullptr, 10);
+        if (parsed > std::numeric_limits<uint32>::max())
+            return false;
+        value = (uint32)parsed;
+        return true;
+    };
+
+    std::string loweredValue = valueToken;
+    std::transform(loweredValue.begin(), loweredValue.end(), loweredValue.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+    if (loweredValue == "reset")
+    {
+        if (!chanceToken.empty() || !minToken.empty() || !maxToken.empty() || !extra.empty())
+        {
+            handler->SendSysMessage("Usage: .ahbot item <itemId> reset");
+            return false;
+        }
+        if (updating.load())
+        {
+            handler->SendSysMessage("AHBot item reset refused while an auction update is running.");
+            return false;
+        }
+        CharacterDatabase.PExecute("DELETE FROM ahbot_items WHERE item = '%u'", itemId);
+        itemOverrides.erase(itemId);
+        availableItems.Init(true);
+        handler->PSendSysMessage("AHBot override reset for %s (%u).", proto->Name1, itemId);
+        return true;
+    }
+
+    if (!valueToken.empty())
+    {
+        if (!extra.empty())
+        {
+            handler->SendSysMessage("Usage: .ahbot item <itemId> [value [chance [min [max]]]] [reset]");
+            return false;
+        }
+
+        uint32 value = 0;
+        uint32 chance = 0;
+        uint32 minAmount = 0;
+        uint32 maxAmount = 0;
+        if (!parseUInt(valueToken, value) ||
+            (!chanceToken.empty() && !parseUInt(chanceToken, chance)) ||
+            (!minToken.empty() && !parseUInt(minToken, minAmount)) ||
+            (!maxToken.empty() && !parseUInt(maxToken, maxAmount)))
+        {
+            handler->SendSysMessage("AHBot item values must be non-negative whole numbers.");
+            return false;
+        }
+        if (updating.load())
+        {
+            handler->SendSysMessage("AHBot item update refused while an auction update is running.");
+            return false;
+        }
+
+        ItemOverride data;
+        data.value = value;
+        data.addChance = chanceToken.empty() ? 0 : std::min<uint32>(100, chance);
+        uint32 const maxStack = std::max<uint32>(1, proto->Stackable);
+        data.minAmount = minToken.empty() ? 1 : std::max<uint32>(1, minAmount);
+        data.maxAmount = maxToken.empty() ? maxStack : std::max<uint32>(1, maxAmount);
+        data.minAmount = std::min(data.minAmount, maxStack);
+        data.maxAmount = std::min(data.maxAmount, maxStack);
+        if (data.maxAmount < data.minAmount)
+            std::swap(data.minAmount, data.maxAmount);
+
+        CharacterDatabase.PExecute(
+            "REPLACE INTO ahbot_items (item, value, add_chance, min_amount, max_amount) VALUES ('%u','%u','%u','%u','%u')",
+            itemId, data.value, data.addChance, data.minAmount, data.maxAmount);
+        itemOverrides[itemId] = data;
+        availableItems.Init(true);
+        handler->PSendSysMessage("AHBot override saved for %s (%u): value %u, chance %u%%, stack %u-%u.",
+            proto->Name1, itemId, data.value, data.addChance, data.minAmount, data.maxAmount);
+        if (!data.value)
+            handler->SendSysMessage("Value 0 bans this item from AHBot buying and new listings.");
+        return true;
+    }
+
+    ItemOverride data;
+    if (GetItemOverride(itemId, data))
+        handler->PSendSysMessage("AHBot item %s (%u): override value %u, chance %u%%, stack %u-%u.",
+            proto->Name1, itemId, data.value, data.addChance, data.minAmount, data.maxAmount);
+    else
+        handler->PSendSysMessage("AHBot item %s (%u): no override; native Turtle pricing and category rules apply.", proto->Name1, itemId);
+
+    // Preserve Turtle's useful per-category and market-price diagnostics.
+    return HandleCommand(handler, itemToken);
+}
+
+bool AhBot::IsBotOwner(uint32 guid, uint32 accountId)
+{
+    return guid == (uint32)sAhBotConfig.guid || (accountId && sPlayerbotAIConfig.IsInRandomAccountList(accountId));
+}
+
+bool AhBot::IsBotCharacter(uint32 guid)
+{
+    if (!guid)
+        return false;
+    if (guid == (uint32)sAhBotConfig.guid || allBidders.find(guid) != allBidders.end())
+        return true;
+
+    uint32 const accountId = sObjectMgr.GetPlayerAccountIdByGUID(ObjectGuid(HIGHGUID_PLAYER, guid));
+    return accountId && sPlayerbotAIConfig.IsInRandomAccountList(accountId);
+}
+
+uint32 AhBot::Rebuild(bool includePlayerBids, uint32& protectedPlayerBids)
+{
+    uint32 expired = 0;
+    protectedPlayerBids = 0;
+    std::set<AuctionHouseObject*> visited;
+    time_t const now = sWorld.GetGameTime();
+
+    for (int auction = 0; auction < MAX_AUCTIONS; ++auction)
+    {
+        AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
+        if (!ahEntry)
+            continue;
+        AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
+        if (!auctionHouse || !visited.insert(auctionHouse).second)
+            continue;
+
         AuctionHouseObject::Guard g(auctionHouse->GetLock());
         AuctionHouseObject::AuctionEntryMapBounds bounds = auctionHouse->GetAuctionsBounds_locked();
         for (AuctionHouseObject::AuctionEntryMap::iterator itr = bounds.first; itr != bounds.second; ++itr)
         {
-            if (IsBotAuction(itr->second->owner))
+            AuctionEntry* entry = itr->second;
+            if (!entry || !IsBotOwner(entry->owner, entry->ownerAccount))
+                continue;
+
+            bool const hasPlayerBid = entry->bidder && !IsBotCharacter(entry->bidder);
+            if (hasPlayerBid && !includePlayerBids)
             {
-                itr->second->expireTime = sWorld.GetGameTime();
-                count++;
+                ++protectedPlayerBids;
+                continue;
             }
+
+            entry->expireTime = now;
+            ++expired;
         }
     }
 
-    sLog.outString("%d auctions marked as expired in auction %d", count, auctionIds[auction]);
+    CharacterDatabase.PExecute("DELETE FROM ahbot_category");
+    CharacterDatabase.PExecute("UPDATE ahbot_history SET buytime = buytime - 86400 WHERE won = '%u'", AHBOT_SELL_DELAY);
+    categoryMultipliers.clear();
+    categoryMaxAuctionCount.clear();
+    categoryMaxItemAuctionCount.clear();
+    categoryMultiplierExpireTimes.clear();
+    nextHouseIndex = 0;
+    rebuildPassesRemaining = MAX_AUCTIONS;
+    // AuctionHouseMgr removes expired entries once per minute. Waiting a little
+    // over that interval prevents the refill pass from seeing the old stock.
+    nextAICheckTime = time(0) + 65;
+    sLog.outString("[AhBot] Rebuild queued: %u bot auctions expired, %u player-bid auctions preserved", expired, protectedPlayerBids);
+    return expired;
 }
 
-void AhBot::PrintStats(int auction)
+void AhBot::PrintStatus(ChatHandler* handler, bool detailed)
 {
-    if (!sAhBotConfig.enabled)
-        return;
+    uint32 queuedPurchasesCount = 0;
+    uint32 queuedPropositionsCount = 0;
+    {
+        std::lock_guard<std::mutex> guard(queuedWorkMutex);
+        queuedPurchasesCount = (uint32)queuedPurchases.size();
+        queuedPropositionsCount = (uint32)queuedPropositions.size();
+    }
 
-    AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
-    if(!ahEntry)
-        return;
+    time_t const now = time(0);
+    uint32 const nextSeconds = nextAICheckTime > now ? (uint32)(nextAICheckTime - now) : 0;
+    handler->PSendSysMessage("AHBot: %s; worker %s; next check in %us; rebuild passes %u; queued purchases/propositions %u/%u.",
+        sAhBotConfig.enabled ? "enabled" : "disabled", updating.load() ? "running" : "idle",
+        nextSeconds, rebuildPassesRemaining.load(), queuedPurchasesCount, queuedPropositionsCount);
 
-    AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
+    std::set<AuctionHouseObject*> visited;
+    uint32 total = 0;
+    uint32 botOwned = 0;
+    uint32 playerOwned = 0;
+    uint32 protectedPlayerBids = 0;
 
-    sLog.outString("%u auctions available on auction house %d", auctionHouse->GetCount(), auctionIds[auction]);
+    for (int auction = 0; auction < MAX_AUCTIONS; ++auction)
+    {
+        AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(auctionIds[auction]);
+        if (!ahEntry)
+            continue;
+        AuctionHouseObject* auctionHouse = sAuctionMgr.GetAuctionsMap(ahEntry);
+        if (!auctionHouse || !visited.insert(auctionHouse).second)
+            continue;
+
+        std::vector<AuctionSnapshot> const entries = auctionHouse->GetAuctionsSnapshot();
+        uint32 marketBotOwned = 0;
+        uint32 marketPlayerOwned = 0;
+        uint32 marketPlayerBids = 0;
+        for (std::vector<AuctionSnapshot>::const_iterator itr = entries.begin(); itr != entries.end(); ++itr)
+        {
+            if (IsBotOwner(itr->owner, itr->ownerAccount))
+            {
+                ++marketBotOwned;
+                if (itr->bidder && !IsBotCharacter(itr->bidder))
+                    ++marketPlayerBids;
+            }
+            else
+                ++marketPlayerOwned;
+        }
+
+        total += (uint32)entries.size();
+        botOwned += marketBotOwned;
+        playerOwned += marketPlayerOwned;
+        protectedPlayerBids += marketPlayerBids;
+        handler->PSendSysMessage("AH market containing house %u: %u total, %u bot, %u player, %u bot listings with player bids.",
+            auctionIds[auction], (uint32)entries.size(), marketBotOwned, marketPlayerOwned, marketPlayerBids);
+    }
+
+    handler->PSendSysMessage("AHBot total across %u distinct market(s): %u auctions (%u bot / %u player); %u protected player bid(s).",
+        (uint32)visited.size(), total, botOwned, playerOwned, protectedPlayerBids);
+
+    if (detailed)
+    {
+        handler->PSendSysMessage("Config: GUID %u, full interval %us, buy delay %u-%us, sell delay %u-%us, price multiplier %.2f.",
+            (uint32)sAhBotConfig.guid, sAhBotConfig.updateInterval,
+            sAhBotConfig.itemBuyMinInterval, sAhBotConfig.itemBuyMaxInterval,
+            sAhBotConfig.itemSellMinInterval, sAhBotConfig.itemSellMaxInterval,
+            sAhBotConfig.priceMultiplier);
+        handler->PSendSysMessage("Limits: max item level %u, max required level %u, history %u day(s), bidder characters cached %u.",
+            sAhBotConfig.maxItemLevel, sAhBotConfig.maxRequiredLevel, sAhBotConfig.historyDays,
+            updating.load() ? 0u : (uint32)allBidders.size());
+    }
 }
 
 void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)

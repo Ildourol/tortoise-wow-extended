@@ -40,6 +40,16 @@ or database-persistence test.
 | Persistence | [Database sources](../src/shared/Database), native entity save methods | SQL worker execution and application of results are different ownership stages. Priority queues can reorder work across priorities; callbacks and object references must survive cancellation/shutdown safely. |
 | Maintenance | [RandomPlayerbotMgr.cpp](../modules/mod-playerbots/src/playerbot/RandomPlayerbotMgr.cpp), auction module | Population counts include pending work; resumable plans need identity/generation checks. A cooperative budget cannot interrupt a single expensive operation. Preserve native final teleport/auction operations. |
 
+Auction administration follows the CMaNGOS command contract at administrator
+security: `.ahbot reload`, `.ahbot rebuild [all]`, `.ahbot status [all]`, and
+`.ahbot item`. Turtle listings are owned by random bot characters, not owner
+GUID 0, so rebuild identifies ownership through the configured bot accounts.
+It preserves real-player bids unless `all` is supplied and refills with three
+background house passes after the native auction expiry sweep; do not replace
+this with CMaNGOS's synchronous refill on the world thread. Item overrides are
+stored in character DB `ahbot_items`; reload reconstructs the available-item
+bag and clears the previous category/bidder caches without duplicating entries.
+
 There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
 
 ## Creature, boss and trash AI: actual selection

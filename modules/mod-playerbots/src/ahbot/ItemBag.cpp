@@ -5,6 +5,7 @@
 #include "ConsumableCategory.h"
 #include "TradeCategory.h"
 #include "AhBotConfig.h"
+#include "ahbot/AhBot.h"
 #include "Database/DBCStructure.h"
 #include "Log.h"
 #include "Database/QueryResult.h"
@@ -91,6 +92,11 @@ void ItemBag::Init(bool silent)
     // test skip ahbot loading at start
     // return;
 
+    // Init is also used by `.ahbot reload`; do not append the same item pool a
+    // second time when level or ignore filters change.
+    for (std::map<Category*, std::vector<uint32> >::iterator itr = content.begin(); itr != content.end(); ++itr)
+        itr->second.clear();
+
     if (silent)
     {
         Load();
@@ -148,6 +154,9 @@ bool ItemBag::Add(ItemPrototype const* proto)
         return false;
 
     if (sAhBotConfig.ignoreItemIds.find(proto->ItemId) != sAhBotConfig.ignoreItemIds.end())
+        return false;
+
+    if (auctionbot.IsItemBanned(proto->ItemId))
         return false;
 
     if (strstri(proto->Name1, "qa") || strstri(proto->Name1, "test") || strstri(proto->Name1, "deprecated") || strstri(proto->Name1, "(old)"))

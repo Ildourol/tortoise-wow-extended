@@ -1011,7 +1011,10 @@ ChatCommand * ChatHandler::getCommandTable()
         // a server operator who wants tighter control can raise it.
         { "bot",            SEC_PLAYER,           false, &ChatHandler::HandlePlayerbotCommand,           "", nullptr },
         { "rndbot",         SEC_PLAYER,          true,  &ChatHandler::HandleRandomPlayerbotCommand,     "", nullptr },
-        { "ahbot",          SEC_MODERATOR,       true,  &ChatHandler::HandleAhBotCommand,               "", nullptr },
+        // Match the CMaNGOS AHBot command family: these operations can reload
+        // server configuration or rebuild the whole market, so they remain
+        // administrator-only.
+        { "ahbot",          SEC_ADMINISTRATOR,   true,  &ChatHandler::HandleAhBotCommand,               "", nullptr },
         { "perfmon",        SEC_MODERATOR,       true,  &ChatHandler::HandlePerfMonCommand,             "", nullptr },
         { nullptr,          0,                   false, nullptr,                                        "", nullptr }
     };
