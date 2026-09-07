@@ -194,6 +194,19 @@ Additions will be added as the core code reaches feature completion
 - **[Playerbots][20]** *(this fork)* - Integrated from [r-o-sh's branch](https://github.com/r-o-sh/tortoise-wow/tree/playerbots-integration-gh). Not an experiment: ~1000 of them run permanently and the fork is built around them. Upstream still lists this as planned.
 - **[Eluna][19]** *(this branch)* - Lua scripting through a pinned submodule. The custom Turtle WoW MaNGOS core uses Eluna's VMaNGOS compatibility backend without becoming a VMaNGOS core. Enable it at build time with `BUILD_ELUNA` and at runtime with `Eluna.Enabled`; see `docs/ELUNA.md`.
 
+## Module System
+
+Optional features can be added as modules under the `modules/` folder.
+A module is discovered when it has a `src/` directory, and can include its own C++ scripts, config templates, and database migrations.
+
+Modules can be built statically, dynamically, or disabled with the `MODULES` CMake option.
+Each discovered module also gets its own `MODULE_<NAME>` cache option for overriding the global setting.  
+Most modules can be ported from AzerothCore with minimal effort.  
+
+Modules can be given the topic [`tortoise-module`](https://github.com/topics/tortoise-module) for visibility.  
+
+See `modules/README.md` for module layout, build options, config loading, SQL migrations, and authoring notes.
+
 ## Operating Systems
 
 * **[Windows][15]**, 32 bit and 64 bit. Windows Server 2008 (or newer) or Windows 8 (or newer) is recommended.

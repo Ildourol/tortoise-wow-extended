@@ -377,6 +377,8 @@ enum eScriptCommand
     SCRIPT_COMMAND_START_SCRIPT_ON_ZONE     = 92,           // source = Map
                                                             // datalong = generic_script_id
                                                             // datalong2 = zone_id
+    SCRIPT_COMMAND_TAKE_MONEY               = 93,           // source = Player (from provided source or target)
+                                                            // datalong = copper amount
 
     SCRIPT_COMMAND_MAX,
 
@@ -1105,6 +1107,11 @@ struct ScriptInfo
             uint32 zoneId;                                  // datalong2
         } startScriptOnZone;
 
+        struct                                              // SCRIPT_COMMAND_TAKE_MONEY (93)
+        {
+            uint32 amount;                                  // datalong
+        } takeMoney;
+
         struct
         {
             uint32 data[9];
@@ -1393,6 +1400,7 @@ struct SpellScript
     virtual void OnSuccessfulStart(Spell* /*spell*/) const {}
     virtual void OnSuccessfulFinish(Spell* /*spell*/) const {}
     virtual void OnFinish(Spell* /*spell*/, bool /*ok*/) const {}
+    virtual void OnComboPointsSpent(Spell* /*spell*/, uint8 /*comboPoints*/) const {}
     virtual SpellCastResult OnCheckCast(Spell* /*spell*/, bool /*strict*/) const { return SPELL_CAST_OK; }
     virtual bool OnCanCastNonCombatSpellInCombat(Spell* /*spell*/) const { return false; }
     virtual std::optional<uint32> OnCalculatePowerCost(SpellEntry const* /*spellInfo*/, Unit* /*caster*/, Spell* /*spell*/, Item* /*castItem*/) const { return std::nullopt; }
