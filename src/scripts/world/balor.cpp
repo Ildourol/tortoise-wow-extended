@@ -21,7 +21,6 @@ enum BalorExplosives
     GOSSIP_EXPLOSIVES_OPTION               = GOSSIP_ACTION_INFO_DEF + 1
 };
 
-static char const* const EXPLOSIVES_GOSSIP_TEXT = "<This seems to be a fitting place for Rufus' explosives.>";
 static char const* const EXPLOSIVES_GOSSIP_OPTION = "<Place the explosives.>";
 
 struct ExplosivesObjective
@@ -72,90 +71,32 @@ static bool HasIncompleteExplosivesObjective(Player const* pPlayer, ExplosivesOb
     return questStatus->m_creatureOrGOcount[objectiveIndex] < quest->ReqCreatureOrGOCount[objectiveIndex];
 }
 
-static void SendExplosivesNpcText(Player* pPlayer)
-{
-    WorldPacket data(SMSG_NPC_TEXT_UPDATE, 512);
-    data << uint32(GOSSIP_EXPLOSIVES_TEXT);
-
-    data << float(1.0f);
-    data << EXPLOSIVES_GOSSIP_TEXT;
-    data << EXPLOSIVES_GOSSIP_TEXT;
-    data << uint32(0);
-    data << uint32(0);
-    data << uint32(0);
-    data << uint32(0);
-    data << uint32(0);
-    data << uint32(0);
-    data << uint32(0);
-
-    for (uint32 i = 1; i < 8; ++i)
-    {
-        data << float(0.0f);
-        data << "Greetings $N";
-        data << "Greetings $N";
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-        data << uint32(0);
-    }
-
-    pPlayer->GetSession()->SendPacket(&data);
-}
-
 static void SendExplosivesGossip(Player* pPlayer, GameObject* pGo)
 {
-    SendExplosivesNpcText(pPlayer);
     pPlayer->PlayerTalkClass->ClearMenus();
     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, EXPLOSIVES_GOSSIP_OPTION, GOSSIP_SENDER_MAIN, GOSSIP_EXPLOSIVES_OPTION);
     pPlayer->SEND_GOSSIP_MENU(GOSSIP_EXPLOSIVES_TEXT, pGo->GetObjectGuid());
 }
 
-struct go_balor_explosivesAI : public GameObjectAI
-{
-    explicit go_balor_explosivesAI(GameObject* pGo) : GameObjectAI(pGo) {}
-
-    bool OnUse(Unit* pUser) override
-    {
-        Player* pPlayer = pUser ? pUser->ToPlayer() : nullptr;
-        if (!pPlayer)
-            return false;
-
-        ExplosivesObjective const* objective = GetExplosivesObjective(me);
-        if (!HasIncompleteExplosivesObjective(pPlayer, objective))
-            return true;
-
-        SendExplosivesGossip(pPlayer, me);
-        return true;
-    }
-};
-
-class balor_gameobject_script : public AllGameObjectScript
+// Bind only the explosives templates through the native database script ID.
+// GameObject::Use retains immunity/mount checks before OnGossipHello, and the
+// native gossip text handler reads the accompanying broadcast_text/npc_text.
+class go_balor_explosives : public GameObjectScript
 {
 public:
-    balor_gameobject_script() : AllGameObjectScript("balor_gameobject_script") {}
+    go_balor_explosives() : GameObjectScript("go_balor_explosives") {}
 
-    GameObjectAI* GetGameObjectAI(GameObject* pGo) const override
-    {
-        if (GetExplosivesObjective(pGo))
-            return new go_balor_explosivesAI(pGo);
-
-        return nullptr;
-    }
-
-    bool CanGameObjectGossipHello(Player* pPlayer, GameObject* pGo) override
+    bool OnGossipHello(Player* pPlayer, GameObject* pGo) override
     {
         ExplosivesObjective const* objective = GetExplosivesObjective(pGo);
-        if (!HasIncompleteExplosivesObjective(pPlayer, objective))
+        if (!objective)
             return false;
-
-        SendExplosivesGossip(pPlayer, pGo);
+        if (HasIncompleteExplosivesObjective(pPlayer, objective))
+            SendExplosivesGossip(pPlayer, pGo);
         return true;
     }
 
-    bool CanGameObjectGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 uiAction, char const* /*code*/) override
+    bool OnGossipSelect(Player* pPlayer, GameObject* pGo, uint32 uiSender, uint32 uiAction) override
     {
         if (uiSender != GOSSIP_SENDER_MAIN || uiAction != GOSSIP_EXPLOSIVES_OPTION)
             return false;
@@ -174,5 +115,5 @@ public:
 
 void AddSC_balor()
 {
-    new balor_gameobject_script();
+    new go_balor_explosives();
 }
