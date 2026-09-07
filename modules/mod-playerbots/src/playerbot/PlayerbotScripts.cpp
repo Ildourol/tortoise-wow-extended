@@ -53,14 +53,13 @@ class PlayerbotWorldScript : public WorldScript
             if (!sPlayerbotAIConfig.enabled)
                 return;
             sRandomPlayerbotMgr.UpdateAI(diff);
-            // ManTech session progression is independent of maintenance's
-            // timer. All packet handlers run here after map owners have joined.
-            sRandomPlayerbotMgr.UpdateSessions(diff);
             sRandomPlayerbotMgr.UpdateTeleportPlans();
-            for (auto const& entry : sWorld.GetAllSessions())
-                if (Player* player = entry.second->GetPlayer())
-                    if (PlayerbotMgr* mgr = GetBotMgr(player))
-                        mgr->UpdateSessions(diff);
+            // Tick UpdateSessions() on ALL holders. sRandomPlayerbotMgr and every
+            // per-master PlayerbotMgr are PlayerbotHolders in the registry; a
+            // GetAllSessions() sweep misses free-floating driver managers (the DC
+            // test driver's WorldSession is not in World::m_sessions), so its party
+            // bots' worldport ACK stalled until the run timed out. This drives them.
+            PlayerbotHolder::UpdateAllHolderSessions(diff);
             DetailedWork::Scope auctionWork(DetailedWork::Auctions);
             ExecutionWatch::Scope auctionWatch(ExecutionWatch::BotAuctions);
             auctionbot.Update();

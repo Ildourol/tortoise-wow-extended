@@ -64,7 +64,7 @@ static bool _scIsBotSession(WorldSession const* sess)
     Player const* p = sess->GetPlayer();
     if (p && Script_IsAIControlled(p)) return true;
     // Fall-back: free-floating bot sessions have remote address "" or "disconnected/bot".
-    return sess->GetRemoteAddress().empty() || sess->GetRemoteAddress() == "disconnected/bot";
+    return sess->GetRemoteAddress().empty() || sess->GetRemoteAddress() == "disconnected/bot" || sess->GetRemoteAddress() == "<BOT>";
 }
 
 void WorldSession::HandleMoveWorldportAckOpcode(WorldPacket& /*recvData*/)

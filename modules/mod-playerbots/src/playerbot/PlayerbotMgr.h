@@ -43,6 +43,10 @@ public:
 
     virtual void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
     void UpdateSessions(uint32 elapsed);
+    // Tick UpdateSessions() on EVERY registered holder (sRandomPlayerbotMgr plus
+    // every per-master PlayerbotMgr, including free-floating DC driver managers
+    // whose WorldSession is not in World::m_sessions).
+    static void UpdateAllHolderSessions(uint32 elapsed);
 
     void ForEachPlayerbot(std::function<void(Player*)> fct) const;
 

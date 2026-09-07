@@ -141,6 +141,14 @@ namespace
     // parks measure up to ~20yd from the origin. The failure class this guards
     // against is 50yd+, so room-local is the right cut.
     constexpr float DC_DOOR_USE_RANGE = 25.0f;
+    // Once the walk-in has REACHED the doorway (atDoor), the click may reach a
+    // little further: on wide gates the GO origin sits outside 25 yd of the
+    // path-side parking spot. Blackrock Depths 2026-09-06: two runs held at the
+    // East Garrison Door (170570) at 25.9 and 28.3 yd, "entitled to open ...
+    // but > 25yd -> holding, not clicking" 69 times, then auto-paused and died.
+    // GameObject::Use() has no range check of its own; a player standing in
+    // that doorway opens the same gate.
+    constexpr float DC_DOOR_USE_RANGE_AT_DOOR = 35.0f;
 
     // Observation-gap re-arm for the Blocked-state watchdog (DcApproachState::
     // doorStall*). A stall older than this with no fresh observation is treated
@@ -2679,7 +2687,8 @@ bool DungeonClearDoorBlockedAction::Execute(Event& event)
             // it (mis-flag, or the walk-in hasn't closed the gap yet), hold
             // position and report instead of toggling a GO no player could
             // reach — Use() has no range check of its own.
-            if (!timedOut && !bot->IsWithinDistInMap(door, DC_DOOR_USE_RANGE))
+            if (!timedOut &&
+                !bot->IsWithinDistInMap(door, atDoor ? DC_DOOR_USE_RANGE_AT_DOOR : DC_DOOR_USE_RANGE))
             {
                 // Coordinates and roles in the line: on 2026-09-03 this reported
                 // 220.9yd for a door the value cannot even select past 100yd,

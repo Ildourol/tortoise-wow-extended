@@ -324,6 +324,21 @@ void PlayerbotHolder::NotePlayerDestroyed(Player const* player)
     }
 }
 
+void PlayerbotHolder::UpdateAllHolderSessions(uint32 elapsed)
+{
+    // Snapshot the registry under the lock, then run UpdateSessions() without it:
+    // UpdateSessions does heavy work (packet handling, teleport acks) that can
+    // register or destroy holders, which would deadlock on HolderRegistryLock or
+    // invalidate the iterator if done while holding it.
+    std::vector<PlayerbotHolder*> holders;
+    {
+        std::lock_guard<std::mutex> lock(HolderRegistryLock());
+        holders.assign(HolderRegistry().begin(), HolderRegistry().end());
+    }
+    for (PlayerbotHolder* holder : holders)
+        holder->UpdateSessions(elapsed);
+}
+
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     {
@@ -466,11 +481,21 @@ void PlayerbotHolder::UpdateSessions(uint32 elapsed)
                    (int)bot->IsBeingTeleportedNear());
         }
 
-        if (GetBotAI(bot) && bot->IsBeingTeleported())
+        if (bot->IsBeingTeleported())
         {
             DetailedWork::Scope work(DetailedWork::TeleportAck, bot->GetGUIDLow());
             ExecutionWatch::Scope watch(ExecutionWatch::BotTeleportAck, 0, 0, bot->GetGUIDLow());
-            GetBotAI(bot)->HandleTeleportAck();
+            if (GetBotAI(bot))
+                GetBotAI(bot)->HandleTeleportAck();
+            else if (bot->IsBeingTeleportedFar())
+            {
+                // AI-registry-less bots (DC party bots live in this mgr registry
+                // but not the AI registry) still need their synthetic worldport
+                // ACK driven, or the cross-map port into a dungeon instance never
+                // completes and the bot rots in far-teleport limbo until it goes
+                // ghost -> "tank did not arrive at the dungeon entrance".
+                bot->GetSession()->HandleMoveWorldportAckOpcode();
+            }
         }
         else if (bot->IsInWorld())
         {

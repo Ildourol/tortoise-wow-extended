@@ -371,7 +371,15 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
     // Champion Razjal the Quick 62498 - gossip_menu_id 0 in this world DB, the
     // 1.18 update assumed menu 62498; 2026-09-05). A client would show an empty
     // window; the bot goes straight to the handler the option would have reached.
-    if (menu.MenuItemCount() == 0)
+    // Two ways `option` is meant: a DB menu INDEX (option < item count), or a
+    // script select ACTION when it is not a valid index. A script-only NPC has
+    // no DB rows so its menu is either empty (Zul Farrak Razjal, gossip_menu_id
+    // 0) or holds one script-added item whose real action is not its index
+    // (Blackrock Depths Doom'rel: the challenge item carries GOSSIP_ACTION_INFO_DEF
+    // + 1 = 1001, well above the item count of 1). In both cases a real client
+    // would click the item and the core would hand its ACTION to the select
+    // handler; the bot calls that handler directly with `option` as the action.
+    if (static_cast<uint32>(option) >= menu.MenuItemCount())
     {
         static BoundedBotThrottle s_emptySaidAt;
         uint32 const nowE = getMSTime();
@@ -381,16 +389,15 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
             s_emptySaidAt.Allow(bot->GetObjectGuid().GetRawValue(), nowE, 10000))
         {
             LOG_INFO("playerbots.dungeonclear",
-                     "[dungeon-clear] {} gossip: empty menu on {} (entry {}, gossip_menu_id {}, npcflags {}, {:.1f}yd) -> script select {}",
-                     bot->GetName(), npc->GetName(), npc->GetEntry(), npc->GetDefaultGossipMenuId(),
-                     npc->GetUInt32Value(UNIT_NPC_FLAGS), bot->GetDistance(npc), handled ? "HANDLED" : "not handled");
+                     "[dungeon-clear] {} gossip: script select on {} (entry {}, menu items {}, action {}, "
+                     "gossip_menu_id {}, npcflags {}, {:.1f}yd) -> {}",
+                     bot->GetName(), npc->GetName(), npc->GetEntry(), menu.MenuItemCount(),
+                     static_cast<uint32>(option), npc->GetDefaultGossipMenuId(),
+                     npc->GetUInt32Value(UNIT_NPC_FLAGS), bot->GetDistance(npc),
+                     handled ? "HANDLED" : "not handled");
         }
-        if (handled)
-            return true;
+        return handled;  // not handled -> false, caller retries next tick
     }
-    if (menu.MenuItemCount() == 0 ||
-        static_cast<uint32>(option) >= menu.MenuItemCount())
-        return false;  // menu/option not ready yet — caller retries
 
     // Send the NPC's OWN guid: HandleGossipSelectOptionOpcode rejects the select
     // unless the packet guid equals the open menu's sender GUID, and a real bot's
