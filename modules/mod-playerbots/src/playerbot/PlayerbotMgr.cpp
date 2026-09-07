@@ -283,10 +283,15 @@ namespace
         static std::mutex instance;
         return instance;
     }
-    std::set<PlayerbotHolder*>& HolderRegistry()
+    std::map<PlayerbotHolder*, uint64>& HolderRegistry()
     {
-        static std::set<PlayerbotHolder*> instance;
+        static std::map<PlayerbotHolder*, uint64> instance;
         return instance;
+    }
+    uint64& HolderGeneration()
+    {
+        static uint64 generation = 0;
+        return generation;
     }
 }
 
@@ -314,8 +319,9 @@ void PlayerbotHolder::NotePlayerDestroyed(Player const* player)
                        player->GetName(), guid);
 
     std::lock_guard<std::mutex> lock(HolderRegistryLock());
-    for (PlayerbotHolder* holder : HolderRegistry())
+    for (auto const& entry : HolderRegistry())
     {
+        PlayerbotHolder* holder = entry.first;
         auto const it = holder->playerBots.find(guid);
         // Only when it is THIS Player. A slot already refilled by a new login
         // on the same guid must not be cleared.
@@ -326,24 +332,32 @@ void PlayerbotHolder::NotePlayerDestroyed(Player const* player)
 
 void PlayerbotHolder::UpdateAllHolderSessions(uint32 elapsed)
 {
-    // Snapshot the registry under the lock, then run UpdateSessions() without it:
-    // UpdateSessions does heavy work (packet handling, teleport acks) that can
-    // register or destroy holders, which would deadlock on HolderRegistryLock or
-    // invalidate the iterator if done while holding it.
-    std::vector<PlayerbotHolder*> holders;
+    // Called on the world owner after map jobs join. Handlers can destroy a
+    // later holder or construct another at its address, so a raw-pointer
+    // snapshot alone is insufficient. New holders wait until the next pass.
+    std::vector<std::pair<PlayerbotHolder*, uint64>> holders;
     {
         std::lock_guard<std::mutex> lock(HolderRegistryLock());
         holders.assign(HolderRegistry().begin(), HolderRegistry().end());
     }
-    for (PlayerbotHolder* holder : holders)
-        holder->UpdateSessions(elapsed);
+    for (auto const& entry : holders)
+    {
+        {
+            std::lock_guard<std::mutex> lock(HolderRegistryLock());
+            auto const current = HolderRegistry().find(entry.first);
+            if (current == HolderRegistry().end() || current->second != entry.second)
+                continue;
+        }
+        // Never hold the registry mutex across native packet/teleport callbacks.
+        entry.first->UpdateSessions(elapsed);
+    }
 }
 
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     {
         std::lock_guard<std::mutex> lock(HolderRegistryLock());
-        HolderRegistry().insert(this);
+        HolderRegistry().emplace(this, ++HolderGeneration());
     }
     m_holderHandlers["list"] = &PlayerbotHolder::HandleList;
     m_holderHandlers["help"] = &PlayerbotHolder::HandleHelp;
@@ -458,6 +472,10 @@ void PlayerbotHolder::UpdateSessions(uint32 elapsed)
     ExecutionWatch::Scope sessionsWatch(ExecutionWatch::BotSessions);
     auto updateOne = [&](Player* bot)
     {
+        WorldSession* const initialSession = bot->GetSession();
+        if (!initialSession || initialSession->GetPlayer() != bot)
+            return;
+        uint32 const initialGuid = bot->GetGUIDLow();
         // Per-iteration diagnostic snapshot. We only emit it for "interesting"
         // states (mid-teleport, ghost, logout-pending) to keep log volume sane —
         // a healthy in-world bot looks identical every tick. If a bot is stuck
@@ -487,14 +505,31 @@ void PlayerbotHolder::UpdateSessions(uint32 elapsed)
             ExecutionWatch::Scope watch(ExecutionWatch::BotTeleportAck, 0, 0, bot->GetGUIDLow());
             if (GetBotAI(bot))
                 GetBotAI(bot)->HandleTeleportAck();
-            else if (bot->IsBeingTeleportedFar())
+            else if (!initialSession->GetSocket() && bot->IsBeingTeleportedFar())
             {
                 // AI-registry-less bots (DC party bots live in this mgr registry
                 // but not the AI registry) still need their synthetic worldport
                 // ACK driven, or the cross-map port into a dungeon instance never
                 // completes and the bot rots in far-teleport limbo until it goes
                 // ghost -> "tank did not arrive at the dungeon entrance".
-                bot->GetSession()->HandleMoveWorldportAckOpcode();
+                initialSession->HandleMoveWorldportAckOpcode();
+            }
+            else if (!initialSession->GetSocket() && bot->IsBeingTeleportedNear())
+            {
+                WorldPacket ack(MSG_MOVE_TELEPORT_ACK, 8 + 4 + 4);
+                ack << bot->GetObjectGuid();
+                ack << bot->GetLastCounterForMovementChangeType(TELEPORT);
+                ack << uint32(time(nullptr));
+                initialSession->HandleMoveTeleportAckOpcode(ack);
+            }
+            // Invalid destinations and native script hooks can detach the
+            // player. Revalidate ownership before the remaining logout checks.
+            if (GetPlayerBot(initialGuid) != bot || initialSession->GetPlayer() != bot)
+            {
+                if (!initialSession->GetPlayer() && !initialSession->GetSocket() &&
+                    sWorld.FindSession(initialSession->GetAccountId()) != initialSession)
+                    delete initialSession;
+                return;
             }
         }
         else if (bot->IsInWorld())
