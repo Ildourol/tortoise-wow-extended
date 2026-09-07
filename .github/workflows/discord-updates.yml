@@ -1,0 +1,101 @@
+name: Discord updates
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - mantech-turtle
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, closed]
+    branches:
+      - mantech-turtle
+  issues:
+    types: [opened, reopened, closed]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post update to Discord
+        uses: actions/github-script@v7
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          script: |
+            const repo = context.repo.owner + "/" + context.repo.repo;
+            const event = context.eventName;
+            const action = context.payload.action;
+            let title;
+            let description;
+            let url = "https://github.com/" + repo;
+            let color = 0x5865F2;
+
+            if (event === "workflow_dispatch") {
+              title = "GitHub updates connected";
+              description = "**" + repo + "** is now connected to this Discord channel.";
+              color = 0x57F287;
+            } else if (event === "push") {
+              const branch = context.ref.replace("refs/heads/", "");
+              const commits = (context.payload.commits || []).slice(0, 5);
+              const lines = commits.map(commit =>
+                "[\`" + commit.id.slice(0, 7) + "\`](" + commit.url + ") " +
+                commit.message.split("\n")[0].slice(0, 160)
+              );
+              const extra = (context.payload.commits || []).length - commits.length;
+              if (extra > 0) lines.push("_and " + extra + " more commit(s)_");
+              title = "Push to " + branch;
+              description = lines.length
+                ? lines.join("\n")
+                : "Branch updated by **" + context.actor + "**.";
+              url = context.payload.compare || url;
+              color = 0x3498DB;
+            } else if (event === "pull_request_target") {
+              const pr = context.payload.pull_request;
+              title = "Pull request " + action + ": #" + pr.number;
+              description = "**" + pr.title.slice(0, 240) + "**\n" +
+                pr.user.login + " • " + pr.head.ref + " → " + pr.base.ref;
+              url = pr.html_url;
+              color = action === "closed" && pr.merged ? 0x9B59B6 :
+                      action === "closed" ? 0xED4245 : 0x57F287;
+            } else if (event === "issues") {
+              const issue = context.payload.issue;
+              title = "Issue " + action + ": #" + issue.number;
+              description = "**" + issue.title.slice(0, 240) + "**\nOpened by " + issue.user.login;
+              url = issue.html_url;
+              color = action === "closed" ? 0xED4245 : 0xFEE75C;
+            } else if (event === "release") {
+              const release = context.payload.release;
+              title = "Release published: " + (release.name || release.tag_name);
+              description = (release.body || "A new release is available.").slice(0, 3500);
+              url = release.html_url;
+              color = 0x57F287;
+            } else {
+              return;
+            }
+
+            const response = await fetch(process.env.DISCORD_WEBHOOK_URL + "?wait=true", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                username: "ManTech GitHub",
+                allowed_mentions: { parse: [] },
+                embeds: [{
+                  title,
+                  description: description.slice(0, 4096),
+                  url,
+                  color,
+                  author: { name: context.actor },
+                  footer: { text: repo },
+                  timestamp: new Date().toISOString()
+                }]
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error("Discord webhook failed: " + response.status + " " + await response.text());
+            }
