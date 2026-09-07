@@ -364,6 +364,8 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
     bot->GetSession()->HandleGossipHelloOpcode(hello);
 
     GossipMenu& menu = bot->PlayerTalkClass->GetGossipMenu();
+    if (option < 0)
+        return false;
     // Tortoise port: this menu hands out items by index with no by-id lookup;
     // presence IS the index check.
     // No menu at all: the NPC has no gossip_menu_id / no gossip_menu_option rows,
@@ -371,15 +373,7 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
     // Champion Razjal the Quick 62498 - gossip_menu_id 0 in this world DB, the
     // 1.18 update assumed menu 62498; 2026-09-05). A client would show an empty
     // window; the bot goes straight to the handler the option would have reached.
-    // Two ways `option` is meant: a DB menu INDEX (option < item count), or a
-    // script select ACTION when it is not a valid index. A script-only NPC has
-    // no DB rows so its menu is either empty (Zul Farrak Razjal, gossip_menu_id
-    // 0) or holds one script-added item whose real action is not its index
-    // (Blackrock Depths Doom'rel: the challenge item carries GOSSIP_ACTION_INFO_DEF
-    // + 1 = 1001, well above the item count of 1). In both cases a real client
-    // would click the item and the core would hand its ACTION to the select
-    // handler; the bot calls that handler directly with `option` as the action.
-    if (static_cast<uint32>(option) >= menu.MenuItemCount())
+    if (menu.Empty())
     {
         static BoundedBotThrottle s_emptySaidAt;
         uint32 const nowE = getMSTime();
@@ -399,13 +393,26 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
         return handled;  // not handled -> false, caller retries next tick
     }
 
-    // Send the NPC's OWN guid: HandleGossipSelectOptionOpcode rejects the select
-    // unless the packet guid equals the open menu's sender GUID, and a real bot's
-    // master isn't targeting this NPC. See the Gossip step note below.
-    auto sendSelect = [&](uint32 menuId, uint32 opt)
+    // Event data may use a script action (e.g. Doom'rel's 1001) instead
+    // of a client menu index. Resolve it among the options actually offered
+    // by the native hello handler, then send the ordinary select opcode.
+    if (static_cast<uint32>(option) >= menu.MenuItemCount())
+    {
+        uint32 index = 0;
+        while (index < menu.MenuItemCount() &&
+               menu.MenuItemAction(index) != static_cast<uint32>(option))
+            ++index;
+        if (index == menu.MenuItemCount())
+            return false;
+        option = static_cast<int32>(index);
+    }
+
+    // Turtle's 1.12 opcode reads GUID then option index (no menu ID field).
+    // The native handler resolves eligibility, sender and action from that index.
+    auto sendSelect = [&](uint32 opt)
     {
         WorldPacket select;
-        select << npc->GetObjectGuid() << menuId << opt;
+        select << npc->GetObjectGuid() << opt;
         select << std::string();  // no coded box
         bot->GetSession()->HandleGossipSelectOptionOpcode(select);
     };
@@ -414,7 +421,7 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
     // in place (opening a submenu), so `menu.GetMenuId()` would already read the
     // submenu's id afterward.
     uint32 lastMenuId = menu.GetMenuId();
-    sendSelect(lastMenuId, static_cast<uint32>(option));
+    sendSelect(static_cast<uint32>(option));
 
     // DRILL DOWN through submenus: some scripted NPCs put the option that fires
     // their action behind one or more nested gossip menus (Old Hillsbrad's Thrall,
@@ -433,7 +440,7 @@ bool DungeonEventExecutor::SelectGossip(Player* bot, Creature* npc, int32 option
         if (sub.GetMenuId() == lastMenuId)
             break;  // no new submenu opened -> nothing more to drill
         lastMenuId = sub.GetMenuId();
-        sendSelect(sub.GetMenuId(), 0);
+        sendSelect(0);
     }
     return true;
 }

@@ -227,9 +227,8 @@ void RegisterBlackrockDepthsEvents(std::vector<DungeonEvent>& out)
         EventBuilder(230, 3, "Tomb of the Seven")
             .Anchored(/*orderIndex*/ 16)
             .Wait(BRD_TOMB_GATHER_MS)
-            // Option is passed to the core gossip handler as the ACTION (see
-            // DungeonEventExecutor::SelectGossip empty-menu fallback -> OnGossipSelect
-            // sender 0, action = option). GossipSelect_boss_doomrel only starts the
+            // Resolve this ACTION among the offered options and send its index
+            // through Turtle's native select opcode. GossipSelect_boss_doomrel starts the
             // Tomb on GOSSIP_ACTION_INFO_DEF (1000) + 1 = 1001 ("I challenge you!");
             // option 0 hit the switch default and did nothing, so the seven stayed
             // friendly and the hold below never saw IN_PROGRESS (25 stalls at step 1,
