@@ -657,21 +657,6 @@ struct spell_item_opportunistic_strike : public SpellScript
     }
 };
 
-struct spell_item_wild_regeneration : public AuraScript
-{
-    std::optional<SpellAuraProcResult> OnProc(Unit* /*owner*/, Unit* /*victim*/, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* /*procSpell*/, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
-    {
-        Unit* target = aura ? aura->GetTarget() : nullptr;
-        if (!target || !damage)
-            return SPELL_AURA_PROC_FAILED;
-
-        if (!target->HealthBelowPct(35) && !target->HealthBelowPctDamaged(35, damage))
-            return SPELL_AURA_PROC_FAILED;
-
-        return std::nullopt;
-    }
-};
-
 struct spell_item_impending_doom : public AuraScript
 {
     std::optional<SpellAuraProcResult> OnProc(Unit* owner, Unit* /*victim*/, uint32 damage, int32 /*originalAmount*/, Aura* aura, SpellEntry const* procSpell, uint32 /*procFlag*/, uint32 /*procEx*/, uint32 /*cooldown*/) override
@@ -1538,7 +1523,6 @@ void AddSC_item_spell_scripts()
     RegisterAuraScript("spell_item_unrelenting_strikes", &GetAuraScript<spell_item_unrelenting_strikes>);
     RegisterSpellScript("spell_item_purging_flames", &GetSpellScript<spell_item_purging_flames>);
     RegisterSpellScript("spell_item_opportunistic_strike", &GetSpellScript<spell_item_opportunistic_strike>);
-    RegisterAuraScript("spell_item_wild_regeneration", &GetAuraScript<spell_item_wild_regeneration>);
     RegisterAuraScript("spell_item_impending_doom", &GetAuraScript<spell_item_impending_doom>);
     RegisterSpellScript("spell_item_elunes_candle", &GetSpellScript<spell_item_elunes_candle>);
     RegisterSpellScript("spell_item_first_aid", &GetSpellScript<spell_item_first_aid>);
