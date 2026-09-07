@@ -220,6 +220,14 @@ class AuctionHouseMgr
         ~AuctionHouseMgr();
 
         typedef std::unordered_map<uint32, Item*> ItemMap;
+        typedef std::recursive_mutex ItemsMutex;
+        typedef std::lock_guard<ItemsMutex> ItemGuard;
+
+        // Auction searches hold this guard while consuming Item pointers. A
+        // lookup-only lock cannot protect a raw Item after GetAItem returns.
+        // Lock order when both auction and item state are needed remains
+        // AuctionHouseObject::m_auctionsLock, then this mutex.
+        ItemsMutex& GetItemsLock() const { return m_itemsLock; }
 
         AuctionHouseObject* GetAuctionsMap(AuctionHouseEntry const* house);
         // cmangos's AuctionHouseType-keyed lookup.
@@ -227,7 +235,7 @@ class AuctionHouseMgr
 
         Item* GetAItem(uint32 id)
         {
-            std::lock_guard<std::mutex> g(m_itemsLock);
+            ItemGuard g(m_itemsLock);
             ItemMap::const_iterator itr = mAitems.find(id);
             if (itr != mAitems.end())
             {
@@ -264,7 +272,7 @@ class AuctionHouseMgr
         std::unordered_map<uint32, AuctionHouseObject*> m_mAuctionHouses;
         std::vector<std::unique_ptr<AuctionHouseObject>> m_vRealAuctionHouses;
 
-        mutable std::mutex  m_itemsLock;
+        mutable ItemsMutex  m_itemsLock;
         ItemMap             mAitems;
 };
 

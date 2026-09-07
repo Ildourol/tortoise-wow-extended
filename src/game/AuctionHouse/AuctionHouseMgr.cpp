@@ -587,7 +587,7 @@ void AuctionHouseMgr::LoadAuctions()
 
 void AuctionHouseMgr::AddAItem(Item* it)
 {
-    std::lock_guard<std::mutex> g(m_itemsLock);
+    ItemGuard g(m_itemsLock);
     MANGOS_ASSERT(it);
     MANGOS_ASSERT(mAitems.find(it->GetGUIDLow()) == mAitems.end());
     mAitems[it->GetGUIDLow()] = it;
@@ -595,7 +595,7 @@ void AuctionHouseMgr::AddAItem(Item* it)
 
 bool AuctionHouseMgr::RemoveAItem(uint32 id)
 {
-    std::lock_guard<std::mutex> g(m_itemsLock);
+    ItemGuard g(m_itemsLock);
     ItemMap::iterator i = mAitems.find(id);
     if (i == mAitems.end())
         return false;
@@ -901,6 +901,12 @@ void AuctionHouseObject::BuildListAuctionItems(WorldPacket& data, Player* player
 
         {
             ItemPrototype const *proto = item->GetProto();
+            if (!proto)
+            {
+                sLog.outError("Auction %u has item GUID %u with an invalid template; skipped in client search.",
+                              auctionEntry->Id, auctionEntry->itemGuidLow);
+                continue;
+            }
 
             if (query.auctionMainCategory != 0xffffffff && proto->Class != query.auctionMainCategory)
                 continue;

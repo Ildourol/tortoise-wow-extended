@@ -8,6 +8,19 @@ was performed. User shutdown confirmation is required before deployment.
 
 ## Local corrections
 
+**September 6 auction-query crash follow-up.** Production dump
+`crash_20260906_182454.dmp` recorded a read access violation at `0x4` in
+`AuctionHouseClientQueryTask`; the matching PDB and image base resolve RVA
+`0x355A54` to the item-prototype filter in `BuildListAuctionItems`. The auction
+entry lock protected the map but `GetAItem` released its separate mutex before
+the returned raw pointer was consumed, allowing a map-owned removal to end the
+item lifetime during packet construction. Client queries now hold the existing
+auction lock and item-index lock, in the documented order, for the complete
+read snapshot. The item mutex is recursive for native `BuildAuctionInfo`
+re-entry. A missing prototype is also rejected and logged. This needs a live
+auction browse/buyout/rebuild concurrency test; compilation and the structural
+contract test do not reproduce the production timing window.
+
 1. **A2 — Deferred bot AI timing.** Map admission now snapshots the native
    elapsed clock without consuming it. Not-due work consumes its sample after
    the module advances its delay; admitted, valid work consumes on dispatch.

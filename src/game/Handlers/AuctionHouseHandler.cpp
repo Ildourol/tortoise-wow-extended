@@ -662,6 +662,13 @@ public:
             if (!player || !player->IsInWorld())
                 return;
 
+            // Auction entries and their raw Item pointers form one read
+            // snapshot. Keep both native indexes locked until the packet is
+            // fully built; otherwise a map-owned buyout/expiry can erase and
+            // destroy an Item immediately after GetAItem returns.
+            AuctionHouseObject::Guard auctionGuard(auctionHouse->GetLock());
+            AuctionHouseMgr::ItemGuard itemGuard(sAuctionMgr.GetItemsLock());
+
             WorldPacket data(0, 12);
             uint32 count = 0;
             uint32 totalcount = 0;

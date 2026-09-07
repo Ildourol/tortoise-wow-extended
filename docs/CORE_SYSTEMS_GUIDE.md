@@ -80,6 +80,12 @@ Turtle adaptations that must not be lost:
 - Administrative `rebuild [all]` coalesces requests and protects existing bids
   by default; repeated requests during expiry/refill cannot restart it.
   Reload/item edits are refused while accepted work is active.
+- Client auction searches consume native `AuctionEntry` and `Item` indexes as
+  one read snapshot. Hold the auction-house lock before the auction-item lock
+  until packet construction finishes; `GetAItem`'s lookup-only lock does not
+  extend a raw `Item*` lifetime. The item mutex is recursive because native
+  `BuildAuctionInfo` re-enters `GetAItem` while that snapshot is held. Invalid
+  item templates are logged and skipped instead of being dereferenced.
 - Stock work is resumable on the world owner, bounded by existing `WorkSlice`
   (default 32 attempts / 2ms); expiry and buying page at most 32 entries.
   A native operation can exceed a cooperative budget; status reports actual
