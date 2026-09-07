@@ -27,6 +27,32 @@ function(extract_native_fragment source start end output)
 endfunction()
 set(CORE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(TRAVEL_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/playerbot")
+extract_native_fragment("${CORE_ROOT}/src/mangosd/MaNGOSsoap.cpp"
+    "namespace\n{" "////////////////////////////////////////////////////////////////////////////////" NativeSoapCommands.inc)
+extract_native_fragment("${TRAVEL_ROOT}/PlayerbotMgr.cpp"
+    "namespace\n{\n    std::mutex& HolderRegistryLock()" "void PlayerbotHolder::NotePlayerDestroyed" NativeHolderRegistry.inc)
+extract_native_fragment("${TRAVEL_ROOT}/PlayerbotMgr.cpp"
+    "void PlayerbotHolder::UpdateAllHolderSessions(" "PlayerbotHolder::PlayerbotHolder()" NativeHolderDispatch.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/ItemPrototype.h"
+    "enum BagFamily" "enum ItemSubclassWeapon" NativeBagEnums.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/ItemPrototype.h"
+    "enum ItemSubclassQuiver" "#define MAX_ITEM_SUBCLASS_QUIVER" NativeQuiverEnums.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/Item.cpp"
+    "bool ItemCanGoIntoBag(" "Item::Item()" NativeBagStorage.inc)
+extract_native_fragment("${CORE_ROOT}/src/scripts/world/balor.cpp"
+    "enum BalorExplosives" "void AddSC_balor()" NativeBalorGossip.inc)
+extract_native_fragment("${CORE_ROOT}/modules/mod-dungeon-clear/src/Ai/Dungeon/DungeonClear/Util/DungeonEventExecutor.cpp"
+    "bool DungeonEventExecutor::SelectGossip(" "StepResult DungeonEventExecutor::RunStep(" NativeDungeonGossip.inc)
+foreach(test SoapCommandLifecycleTest BotHolderDispatchTest TurtleBagStorageTest BalorGossipTest DungeonGossipSelectionTest)
+    add_executable(${test} ${test}.cpp)
+    target_compile_features(${test} PRIVATE cxx_std_17)
+    target_include_directories(${test} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    if(MSVC)
+        target_compile_options(${test} PRIVATE /EHsc)
+    endif()
+    add_test(NAME ${test} COMMAND ${test})
+    set_tests_properties(${test} PROPERTIES TIMEOUT 20)
+endforeach()
 extract_native_fragment("${TRAVEL_ROOT}/PlayerbotAI.cpp"
     "bool ChatHandler::HandleAhBotCommand(char* args)" "float PlayerbotAI::GetRange" NativeAhBotChatDispatch.inc)
 extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"

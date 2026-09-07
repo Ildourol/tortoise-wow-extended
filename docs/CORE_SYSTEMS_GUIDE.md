@@ -19,6 +19,28 @@ Useful searches: `rg -n 'SymbolName' src modules tests`, literal `script_name` i
 
 ## Execution and ownership map
 
+September 7 upstream integration: `PlayerbotHolder::UpdateAllHolderSessions`
+is the sole world-owner synthetic session pump after map work joins. Snapshot
+entries carry a holder generation; callbacks can remove or replace a later
+holder without dispatching a stale lifetime. Registry locks must not span
+native packet/teleport handlers. AI-less, socketless bots use native near/far
+teleport ACK handlers, then revalidate player/session ownership before continuing.
+
+Optional SOAP runs only with `SOAP.Enabled = 1`. Authentication uses the game
+account and commands retain its security level on the native world command
+queue. Shared callback state survives a request returning during shutdown.
+`Master` explicitly joins SOAP before closing databases because its final
+`quick_exit` does not unwind local objects. The matching gSOAP runtime builds
+from source on Windows and Linux; no prebuilt Linux archive is linked.
+
+Balor explosives use database-bound `go_balor_explosives` and native
+`broadcast_text`/`npc_text` delivery. Quest status, objective entry/count and
+the upstream spawn identity are checked before repeatable gossip can grant
+credit. DungeonClear action IDs must resolve to an offered gossip option;
+Turtle's select packet contains GUID then option index, without a menu-ID
+field. The pre-existing empty-menu compatibility fallback remains separate
+and diagnostic-gated; this integration does not certify or expand it.
+
 Bot startup provisioning (`RandomPlayerbotFactory::CreateRandomBots`) must keep
 account-creation futures separate from character-save futures. `get()` consumes
 a future; waiting on it again throws `std::future_error`. Drain and clear both

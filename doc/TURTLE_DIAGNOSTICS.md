@@ -899,3 +899,19 @@ time/position toward Ironforge. This verifies actual departures, progress and
 two completed flight legs, not merely an activation return code. It does not
 certify every route, all bot destinations or full-population crowd distribution.
 Checks were read-only against production; the bounded trace remains unchanged.
+
+## September 7 upstream integration controls
+
+SOAP configuration lives beside `Console.Enable`: `SOAP.Enabled = 0`,
+`SOAP.IP = 127.0.0.1`, `SOAP.Port = 7878`. Settings are read at startup.
+Disabled SOAP creates no listener or worker. Enabled SOAP logs bind success
+or failure, requires an administrator game account, retains its command
+permissions, and joins before database shutdown. No per-tick SOAP tracing was
+added. The live config received these three disabled defaults with a backup;
+other settings, including bot activity and auction settings, were preserved.
+
+DungeonClear's existing bounded empty-menu diagnostic remains under
+`TurtleDiagnostics::enabled`; resolving a supplied action in a nonempty menu
+uses the native select packet and adds no shared throttle or per-tick logging.
+The production build keeps DungeonClear disabled. Unit tests exercise its
+gossip selection function; they are not live dungeon acceptance tests.
