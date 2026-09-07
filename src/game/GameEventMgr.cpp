@@ -1003,6 +1003,13 @@ GameEventMgr::GameEventMgr()
     m_IsSilithusEventCompleted = false;
 }
 
+GameEventMgr::~GameEventMgr()
+{
+    for (WorldEvent* event : mGameEventHardcodedList)
+        delete event;
+    mGameEventHardcodedList.clear();
+}
+
 bool GameEventMgr::IsActiveHoliday(HolidayIds id)
 {
     if (id == HOLIDAY_NONE)
