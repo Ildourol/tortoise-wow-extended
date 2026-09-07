@@ -4543,12 +4543,19 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
         // AB assault banners are BUTTONs and can be non-READY/in-use. Native
         // capture completion validates the node, match status and ownership.
         // Other battlegrounds retain their existing interaction-state gate.
-        if (!sServerFacade.isSpawned(go) ||
-            (bgType != BATTLEGROUND_AB && (go->IsInUse() || go->GetGoState() != GO_STATE_READY)))
+        bool const abBanner = (bgType == BATTLEGROUND_AB);
+        if (!sServerFacade.isSpawned(go))
         {
-            abSay("skipped: not spawned / in use / not READY");
+            abSay("skipped: not spawned");
             continue;
         }
+        if (!abBanner && (go->IsInUse() || go->GetGoState() != GO_STATE_READY))
+        {
+            abSay("skipped: in use / not READY");
+            continue;
+        }
+        if (abBanner && (go->IsInUse() || go->GetGoState() != GO_STATE_READY))
+            abSay("assault banner in use / not READY -> attempting capture anyway");
 
         // Test the cheap side first: CanInteract logs a core error when the bot
         // is out of range, so with the operands the other way round every
@@ -4597,6 +4604,25 @@ bool BGTactics::atFlag(std::vector<BattleBotPath*> const& vPaths, std::vector<ui
             //bot->Say(out.str(), LANG_UNIVERSAL);
             //SetDuration(10000);
 
+            // Cast throttle. With banners finally in the list (entry fix), a bot
+            // stands on a node and re-casts SPELL_CAPTURE_BANNER every tick -
+            // measured 2026-09-06 at ~18 casts/second per bot, 80k in 25 min. The
+            // core assault is near-instant and a re-cast on a banner the node has
+            // already flipped to your own team is rejected by EventPlayerClickedOnFlag
+            // anyway; the spam just glues the bot to the node instead of moving to the
+            // next (the "clustering and looping" the tester saw). Skip this banner for
+            // a few seconds after a cast so the objective/movement logic drives on.
+            {
+                static std::unordered_map<uint32, uint32> s_abCastAt;
+                uint32 const nowAbCast = WorldTimer::getMSTime();
+                uint32& lastAbCast = s_abCastAt[bot->GetGUIDLow()];
+                if (lastAbCast && WorldTimer::getMSTimeDiff(lastAbCast, nowAbCast) < 4000)
+                {
+                    abSay("recent cast -> throttled, moving on");
+                    continue;
+                }
+                lastAbCast = nowAbCast;
+            }
             // cast banner spell
             ai->StopMoving();
 
