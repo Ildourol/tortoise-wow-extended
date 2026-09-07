@@ -9,6 +9,7 @@
 #include <chrono>
 #include <string>
 #include <thread>
+#include <memory>
 
 SOAPThread::SOAPThread(const std::string& host, int port)
     : m_host(host), m_port(port), m_workerThread(&SOAPThread::Work, this)
@@ -17,8 +18,7 @@ SOAPThread::SOAPThread(const std::string& host, int port)
 
 SOAPThread::~SOAPThread()
 {
-    // World::IsStopped() is true by shutdown time; the accept loop exits within
-    // AcceptTimeout, then we join.
+    m_stopRequested.store(true, std::memory_order_release);
     if (m_workerThread.joinable())
         m_workerThread.join();
 }
@@ -27,6 +27,7 @@ void SOAPThread::Work()
 {
     struct soap soap;
     soap_init(&soap);
+    soap.user = this;
     soap_set_imode(&soap, SOAP_C_UTFSTRING);
     soap_set_omode(&soap, SOAP_C_UTFSTRING);
 
@@ -43,14 +44,17 @@ void SOAPThread::Work()
 
     sLog.outString("SOAP: remote command interface bound to http://%s:%d", m_host.c_str(), m_port);
 
-    while (!World::IsStopped())
+    while (!IsStopping())
     {
         if (soap_accept(&soap) == SOAP_INVALID_SOCKET)
             continue;                                       // accept timeout - poll IsStopped() again
 
         struct soap* connection = soap_copy(&soap);
         if (!connection)
+        {
+            soap_closesock(&soap);
             continue;
+        }
 
         soap_serve(connection);
 
@@ -78,14 +82,14 @@ namespace
 
     void SoapPrint(std::any arg, const char* text)
     {
-        auto* const state = std::any_cast<SoapCommandState*>(arg);
+        auto const state = std::any_cast<std::shared_ptr<SoapCommandState>>(arg);
         if (state && text)
             state->output += text;
     }
 
     void SoapCommandFinished(std::any arg, bool success)
     {
-        auto* const state = std::any_cast<SoapCommandState*>(arg);
+        auto const state = std::any_cast<std::shared_ptr<SoapCommandState>>(arg);
         if (state)
         {
             state->success = success;
@@ -110,23 +114,33 @@ int ns1__executeCommand(struct soap* soap, char* command, char** result)
     if (!sAccountMgr.CheckPassword(accountId, soap->passwd))
         return 401;
 
-    if (sAccountMgr.GetSecurity(accountId) < SOAPThread::MinLevel)
+    AccountTypes const security = sAccountMgr.GetSecurity(accountId);
+    if (security < SOAPThread::MinLevel)
         return 403;
 
     if (!command || !*command)
         return soap_sender_fault(soap, "Command must not be empty", "The supplied command was an empty string");
 
-    SoapCommandState state;
+    auto* const worker = static_cast<SOAPThread*>(soap->user);
+    if (World::IsStopped() || (worker && worker->IsStopping()))
+        return soap_receiver_fault(soap, "Server is stopping", nullptr);
+    auto state = std::make_shared<SoapCommandState>();
 
     // Commands execute on the world thread; block until it signals completion.
-    sWorld.QueueCliCommand(new CliCommandHolder(accountId, SEC_CONSOLE, &state, command, &SoapPrint, &SoapCommandFinished));
+    sWorld.QueueCliCommand(new CliCommandHolder(accountId, security, state, command, &SoapPrint, &SoapCommandFinished));
 
-    while (!state.finished.load(std::memory_order_acquire))
+    while (!state->finished.load(std::memory_order_acquire))
+    {
+        // A queued command may be discarded during World::InternalShutdown.
+        // Its shared callback state must outlive this request if it still runs.
+        if (World::IsStopped() || (worker && worker->IsStopping()))
+            return soap_receiver_fault(soap, "Server stopped before command completion", nullptr);
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
 
-    char* const out = soap_strdup(soap, state.output.c_str());
+    char* const out = soap_strdup(soap, state->output.c_str());
 
-    if (!state.success)
+    if (!state->success)
         return soap_sender_fault(soap, out, out);
 
     *result = out;

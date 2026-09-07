@@ -29,5 +29,8 @@ include_directories(
 add_library(gsoap STATIC
   ${gsoap_SRCS}
 )
+if(WIN32)
+  target_link_libraries(gsoap PUBLIC ws2_32)
+endif()
 
 SET_TARGET_PROPERTIES (gsoap PROPERTIES FOLDER "3rd Party")

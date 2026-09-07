@@ -698,6 +698,9 @@ int Master::Run()
     // when the main thread closes the singletons get unloaded
     // since worldrunnable uses them, it will crash if unloaded after master
     world_thread.join();
+    // Master exits with quick_exit, so local destructors are not guaranteed.
+    // Join SOAP while authentication databases and queued-command owners exist.
+    soapThread.reset();
     if (progress_thread.joinable())
         progress_thread.join();
 

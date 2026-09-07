@@ -144,9 +144,9 @@ target_link_libraries(${EXECUTABLE_NAME}
     libdeflate
 )
 
-# SOAP remote-command interface: vendored gsoap C++ runtime (2.8.135).
+# Build the matching runtime from source on every supported platform.
 target_link_libraries(${EXECUTABLE_NAME}
-    ${CMAKE_SOURCE_DIR}/dep/lib/gsoap/libgsoap++.a
+    gsoap
 )
 
 # Boost lib search path for playerbots' transitive boost references.

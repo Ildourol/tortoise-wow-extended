@@ -24,6 +24,7 @@
 
 #include <string>
 #include <thread>
+#include <atomic>
 
 class SOAPThread
 {
@@ -35,6 +36,7 @@ class SOAPThread
         const std::string m_host;
         const int m_port;
 
+        std::atomic<bool> m_stopRequested{false};
         std::thread m_workerThread;
 
         void Work();
@@ -44,6 +46,7 @@ class SOAPThread
 
         SOAPThread(const std::string& host, int port);
         ~SOAPThread();
+        bool IsStopping() const { return m_stopRequested.load(std::memory_order_acquire) || World::IsStopped(); }
 };
 
 #endif
