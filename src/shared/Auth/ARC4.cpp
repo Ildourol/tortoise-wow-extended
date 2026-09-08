@@ -18,43 +18,85 @@
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
 #include <openssl/provider.h>
+#ifdef WIN32
+#include <windows.h>
 #endif
 
-ARC4::ARC4(uint8 len) : m_ctx()
+static void EnsureOpenSSLProviders()
+{
+    static bool initialized = false;
+    if (!initialized)
+    {
+#ifdef WIN32
+        if (!getenv("OPENSSL_MODULES"))
+        {
+            char exePath[MAX_PATH];
+            if (GetModuleFileNameA(NULL, exePath, MAX_PATH))
+            {
+                char* lastSlash = strrchr(exePath, '\\');
+                if (lastSlash)
+                {
+                    *lastSlash = '\0';
+                    _putenv_s("OPENSSL_MODULES", exePath);
+                }
+            }
+        }
+#endif
+        OSSL_PROVIDER_load(NULL, "legacy");
+        OSSL_PROVIDER_load(NULL, "default");
+        initialized = true;
+    }
+}
+#endif
+
+ARC4::ARC4(uint8 len) : m_ctx(nullptr)
 {
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    OSSL_PROVIDER_load(NULL, "legacy");
+    EnsureOpenSSLProviders();
 #endif
 
     m_ctx = EVP_CIPHER_CTX_new();
-    EVP_EncryptInit_ex(m_ctx, EVP_rc4(), nullptr, nullptr, nullptr);
-    EVP_CIPHER_CTX_set_key_length(m_ctx, len);
+    const EVP_CIPHER* cipher = EVP_rc4();
+    if (cipher && m_ctx)
+    {
+        EVP_EncryptInit_ex(m_ctx, cipher, nullptr, nullptr, nullptr);
+        EVP_CIPHER_CTX_set_key_length(m_ctx, len);
+    }
 }
 
-ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx()
+ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx(nullptr)
 {
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
-    OSSL_PROVIDER_load(NULL, "legacy");
+    EnsureOpenSSLProviders();
 #endif
     m_ctx = EVP_CIPHER_CTX_new();
-    EVP_EncryptInit_ex(m_ctx, EVP_rc4(), nullptr, nullptr, nullptr);
-    EVP_CIPHER_CTX_set_key_length(m_ctx, len);
-    EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
+    const EVP_CIPHER* cipher = EVP_rc4();
+    if (cipher && m_ctx)
+    {
+        EVP_EncryptInit_ex(m_ctx, cipher, nullptr, nullptr, nullptr);
+        EVP_CIPHER_CTX_set_key_length(m_ctx, len);
+        EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
+    }
 }
 
 ARC4::~ARC4()
 {
-    EVP_CIPHER_CTX_free(m_ctx);
+    if (m_ctx)
+        EVP_CIPHER_CTX_free(m_ctx);
 }
 
 void ARC4::Init(uint8 *seed)
 {
-    EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
+    if (m_ctx && EVP_CIPHER_CTX_cipher(m_ctx))
+        EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
 }
 
 void ARC4::UpdateData(int len, uint8 *data)
 {
-    int outlen = 0;
-    EVP_EncryptUpdate(m_ctx, data, &outlen, data, len);
-    EVP_EncryptFinal_ex(m_ctx, data, &outlen);
+    if (m_ctx && EVP_CIPHER_CTX_cipher(m_ctx))
+    {
+        int outlen = 0;
+        EVP_EncryptUpdate(m_ctx, data, &outlen, data, len);
+        EVP_EncryptFinal_ex(m_ctx, data, &outlen);
+    }
 }
