@@ -19,6 +19,9 @@
 
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
 #include <openssl/provider.h>
+#ifdef WIN32
+#include <windows.h>
+#endif
 #endif
 
 namespace
@@ -33,11 +36,27 @@ namespace
 #if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
         static bool const legacyReported = []()
         {
+#ifdef WIN32
+            if (!getenv("OPENSSL_MODULES"))
+            {
+                char exePath[MAX_PATH];
+                if (GetModuleFileNameA(NULL, exePath, MAX_PATH))
+                {
+                    char* lastSlash = strrchr(exePath, '\\');
+                    if (lastSlash)
+                    {
+                        *lastSlash = '\0';
+                        _putenv_s("OPENSSL_MODULES", exePath);
+                    }
+                }
+            }
+#endif
             if (!OSSL_PROVIDER_load(nullptr, "legacy"))
                 sLog.outError("OpenSSL 3 is in use but its legacy provider could not be loaded. "
                               "RC4 lives there, so session encryption cannot be set up and no client "
                               "will get past the login. Point OPENSSL_MODULES at the directory holding "
                               "legacy.dll (legacy.so on unix), or link against OpenSSL 1.1.");
+            OSSL_PROVIDER_load(nullptr, "default");
             return true;
         }();
         (void)legacyReported;
@@ -68,13 +87,13 @@ namespace
     }
 }
 
-ARC4::ARC4(uint8 len) : m_ctx()
+ARC4::ARC4(uint8 len) : m_ctx(nullptr)
 {
     m_ctx = EVP_CIPHER_CTX_new();
     SetUpContext(m_ctx, len);
 }
 
-ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx()
+ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx(nullptr)
 {
     m_ctx = EVP_CIPHER_CTX_new();
     SetUpContext(m_ctx, len);
@@ -83,17 +102,22 @@ ARC4::ARC4(uint8 *seed, uint8 len) : m_ctx()
 
 ARC4::~ARC4()
 {
-    EVP_CIPHER_CTX_free(m_ctx);
+    if (m_ctx)
+        EVP_CIPHER_CTX_free(m_ctx);
 }
 
 void ARC4::Init(uint8 *seed)
 {
-    EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
+    if (m_ctx && EVP_CIPHER_CTX_cipher(m_ctx))
+        EVP_EncryptInit_ex(m_ctx, nullptr, nullptr, seed, nullptr);
 }
 
 void ARC4::UpdateData(int len, uint8 *data)
 {
-    int outlen = 0;
-    EVP_EncryptUpdate(m_ctx, data, &outlen, data, len);
-    EVP_EncryptFinal_ex(m_ctx, data, &outlen);
+    if (m_ctx && EVP_CIPHER_CTX_cipher(m_ctx))
+    {
+        int outlen = 0;
+        EVP_EncryptUpdate(m_ctx, data, &outlen, data, len);
+        EVP_EncryptFinal_ex(m_ctx, data, &outlen);
+    }
 }

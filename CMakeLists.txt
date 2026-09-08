@@ -338,20 +338,14 @@ if(WIN32)
   set(MYSQL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/windows/include/mysql)
   set(MYSQL_LIBRARY ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libmySQL.lib)
   set(MYSQL_DEBUG_LIBRARY ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_debug/libmySQL.lib)
-  # The bundled OpenSSL is 1.1.1, headers and import libraries together, and it
-  # works as long as nothing else puts OpenSSL headers on the search path. That
-  # stops being true the moment ACE or Boost come from vcpkg: its shared include
-  # root carries OpenSSL 3.x, which shadows the bundled headers because
-  # ACE_INCLUDE_DIR is listed before dep/include-windows in src/game and
-  # src/shared. Compiling against 3.x while still linking 1.1.1 leaves exactly
-  # OSSL_PROVIDER_load and SSL_get1_peer_certificate unresolved - both of them
-  # guarded by version in the code, so they are only referenced when the headers
-  # say 3.x.
-  #
-  # Hence: let the builder point at their own OpenSSL. The code itself is happy
-  # with either version. Passing nothing keeps the bundled copy, as before.
   if(NOT OPENSSL_INCLUDE_DIR)
-    set(OPENSSL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/windows/include/openssl)
+    if(EXISTS "C:/vcpkg/installed/x64-windows/lib/libssl.lib")
+      set(OPENSSL_INCLUDE_DIR "C:/vcpkg/installed/x64-windows/include")
+      set(OPENSSL_LIBRARIES "C:/vcpkg/installed/x64-windows/lib/libssl.lib" "C:/vcpkg/installed/x64-windows/lib/libcrypto.lib")
+      set(OPENSSL_DEBUG_LIBRARIES "C:/vcpkg/installed/x64-windows/debug/lib/libssl.lib" "C:/vcpkg/installed/x64-windows/debug/lib/libcrypto.lib")
+    else()
+      set(OPENSSL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/windows/include/openssl)
+    endif()
   endif()
   if(NOT OPENSSL_LIBRARIES)
     set(OPENSSL_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libssl.lib ${CMAKE_SOURCE_DIR}/dep/windows/lib/${DEP_ARCH}_release/libcrypto.lib)
