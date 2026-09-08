@@ -27,6 +27,18 @@ function(extract_native_fragment source start end output)
 endfunction()
 set(CORE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(TRAVEL_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/playerbot")
+extract_native_fragment("${CORE_ROOT}/src/game/Handlers/AuctionHouseHandler.cpp"
+    "void WorldSession::SendAuctionOwnerNotification(" "void WorldSession::SendAuctionRemovedNotification(" NativeAuctionOwnerNotification.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/AuctionHouse/AuctionHouseMgr.cpp"
+    "void AuctionHouseMgr::SendAuctionSuccessfulMail(" "AuctionHouseObject* AuctionHouseMgr::MakeNewAuctionHouseObject()" NativeAuctionOwnerMail.inc)
+add_executable(AuctionOwnerNotificationTest AuctionOwnerNotificationTest.cpp)
+target_compile_features(AuctionOwnerNotificationTest PRIVATE cxx_std_17)
+target_include_directories(AuctionOwnerNotificationTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+if(MSVC)
+    target_compile_options(AuctionOwnerNotificationTest PRIVATE /EHsc)
+endif()
+add_test(NAME AuctionOwnerNotificationTest COMMAND AuctionOwnerNotificationTest)
+set_tests_properties(AuctionOwnerNotificationTest PROPERTIES TIMEOUT 20)
 extract_native_fragment("${CORE_ROOT}/src/mangosd/MaNGOSsoap.cpp"
     "namespace\n{" "////////////////////////////////////////////////////////////////////////////////" NativeSoapCommands.inc)
 extract_native_fragment("${TRAVEL_ROOT}/PlayerbotMgr.cpp"

@@ -915,3 +915,15 @@ DungeonClear's existing bounded empty-menu diagnostic remains under
 uses the native select packet and adds no shared throttle or per-tick logging.
 The production build keeps DungeonClear disabled. Unit tests exercise its
 gossip selection function; they are not live dungeon acceptance tests.
+
+### Auction owner notification guard (upstream 6a2ddc82)
+
+The notification function returns immediately for a socketless session.
+Its client packet, notification-specific log and packet-send hooks are skipped;
+the caller's settlement/mail logic and logging remain. There is no new config
+key, SQL migration, diagnostic loop or background work. Current bots have no
+handler for this opcode. The upstream report describes live verification, but
+the supplied crash text has no faulting instruction or matching binary snapshot;
+keep the underlying memory-fault diagnosis open. Focused native-fragment tests
+cover notification payloads and continuing mail operations, not production
+network/database durability or a replay of that crash.

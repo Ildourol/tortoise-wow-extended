@@ -40,21 +40,6 @@
     ]
   },
   {
-    "name": "go_book_celebras",
-    "file": "src/scripts/dungeons/maraudon/boss_celebras_the_cursed.cpp",
-    "line": 341,
-    "cmake_listed": true,
-    "file_loader_call_found": true,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "death_reset",
-      "instance_state",
-      "doors",
-      "threat"
-    ]
-  },
-  {
     "name": "spell_uldaman_awaken_vault_warder",
     "file": "src/scripts/dungeons/uldaman/uldaman.cpp",
     "line": 333,
@@ -84,19 +69,6 @@
       "instance_state",
       "timers",
       "threat"
-    ]
-  },
-  {
-    "name": "spell_hateforge_dispel_counterpart",
-    "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
-    "line": 269,
-    "cmake_listed": true,
-    "file_loader_call_found": true,
-    "dependency_signals": [
-      "ai_update",
-      "spells",
-      "death_reset",
-      "timers"
     ]
   },
   {
@@ -143,6 +115,19 @@
       "spells",
       "death_reset",
       "instance_state"
+    ]
+  },
+  {
+    "name": "spell_hateforge_dispel_counterpart",
+    "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
+    "line": 269,
+    "cmake_listed": true,
+    "file_loader_call_found": true,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "death_reset",
+      "timers"
     ]
   },
   {
@@ -200,6 +185,29 @@
       "spells",
       "death_reset",
       "threat"
+    ]
+  },
+  {
+    "name": "boss_headless_horseman",
+    "file": "src/scripts/dungeons/scarlet_monastery/boss_headless_horseman.cpp",
+    "line": 90,
+    "cmake_listed": true,
+    "file_loader_call_found": false,
+    "dependency_signals": [
+      "ai_update",
+      "death_reset"
+    ]
+  },
+  {
+    "name": "boss_azshir_the_sleepless",
+    "file": "src/scripts/dungeons/scarlet_monastery/boss_azshir_the_sleepless.cpp",
+    "line": 96,
+    "cmake_listed": true,
+    "file_loader_call_found": false,
+    "dependency_signals": [
+      "ai_update",
+      "spells",
+      "death_reset"
     ]
   },
   {
@@ -286,26 +294,18 @@
     ]
   },
   {
-    "name": "boss_headless_horseman",
-    "file": "src/scripts/dungeons/scarlet_monastery/boss_headless_horseman.cpp",
-    "line": 90,
+    "name": "go_book_celebras",
+    "file": "src/scripts/dungeons/maraudon/boss_celebras_the_cursed.cpp",
+    "line": 341,
     "cmake_listed": true,
-    "file_loader_call_found": false,
-    "dependency_signals": [
-      "ai_update",
-      "death_reset"
-    ]
-  },
-  {
-    "name": "boss_azshir_the_sleepless",
-    "file": "src/scripts/dungeons/scarlet_monastery/boss_azshir_the_sleepless.cpp",
-    "line": 96,
-    "cmake_listed": true,
-    "file_loader_call_found": false,
+    "file_loader_call_found": true,
     "dependency_signals": [
       "ai_update",
       "spells",
-      "death_reset"
+      "death_reset",
+      "instance_state",
+      "doors",
+      "threat"
     ]
   }
 ]

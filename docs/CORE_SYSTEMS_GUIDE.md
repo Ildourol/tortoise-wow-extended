@@ -95,6 +95,16 @@ Turtle adaptations that must not be lost:
   script hooks, winner/owner mail, DB deletion, item and auction index removal.
   Normal expiry and incremental rebuild call this same method. Native outbid
   refund mail is now owned by `AuctionHouseMgr`; the session delegates to it.
+- `SendAuctionOwnerNotification` skips socketless sessions before constructing
+  the client UI packet (upstream `6a2ddc82`). Expiry/success mail and native
+  settlement continue in the caller. Current playerbots register no handler
+  for `SMSG_AUCTION_OWNER_NOTIFICATION`; connected player packets retain their
+  existing format. The early return also omits this packet's logging and send
+  hooks for socketless sessions. Revisit that contract if adding a consumer.
+  This is a defensive mitigation, not proof of the original invalid pointer.
+  `AuctionOwnerNotificationTest` executes native notification and owner-mail
+  functions for socketless/connected owners, sale/unsold expiry/bid payloads,
+  offline-owner mail and missing-item handling with mock persistence/transport.
 - Buyer rechecks a paged snapshot against the live auction under its lock,
   protects same-account ownership, respects IP locks and native hardcore mail
   restrictions, and refunds an existing bidder before a bid/buyout. Ordinary
