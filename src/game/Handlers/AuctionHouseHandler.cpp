@@ -134,6 +134,13 @@ void WorldSession::SendAuctionBidderNotification(AuctionEntry* auction, bool won
 // this void causes on client to display: "Your auction sold"
 void WorldSession::SendAuctionOwnerNotification(AuctionEntry* auction, bool sold)
 {
+    // A bot owner (AHBot / playerbots) has no client and no socket. Building and
+    // sending this client-UI packet for a socketless session crashed the world
+    // thread when AHBot-owned auctions expired (ExpireAuction -> SendAuctionExpiredMail
+    // -> here). Real players still get notified; bots do not need it.
+    if (!GetSocket())
+        return;
+
     WorldPacket data(SMSG_AUCTION_OWNER_NOTIFICATION, (7 * 4));
     data << uint32(auction->Id);
     data << uint32(auction->bid);                           // if 0, client shows ERR_AUCTION_EXPIRED_S, else ERR_AUCTION_SOLD_S (works only when guid==0)
