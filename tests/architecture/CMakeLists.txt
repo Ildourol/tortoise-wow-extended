@@ -78,6 +78,20 @@ endif()
 add_test(NAME AhBotChatDispatchTest COMMAND AhBotChatDispatchTest)
 # Replace tests for the retired category engine with production CMaNGOS paths.
 set(AHBOT_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/ahbot")
+extract_native_fragment("${AHBOT_ROOT}/AhBot.cpp"
+    "bool AhBot::Publish(" "void AhBot::ScanOne(" NativeAuctionPublish.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/Item.cpp"
+    "void Item::SetItemRandomProperties(" "uint8 Item::GetBagSlot()" NativeAuctionItemQueue.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/Item.cpp"
+    "void Item::SetEnchantment(" "void Item::SetEnchantmentDuration(" NativeAuctionEnchantment.inc)
+add_executable(AuctionStockOwnershipTest AuctionStockOwnershipTest.cpp)
+target_compile_features(AuctionStockOwnershipTest PRIVATE cxx_std_17)
+target_include_directories(AuctionStockOwnershipTest PRIVATE "${CMAKE_CURRENT_BINARY_DIR}" "${AHBOT_ROOT}")
+if(MSVC)
+    target_compile_options(AuctionStockOwnershipTest PRIVATE /EHsc)
+endif()
+add_test(NAME AuctionStockOwnershipTest COMMAND AuctionStockOwnershipTest)
+set_tests_properties(AuctionStockOwnershipTest PROPERTIES TIMEOUT 30)
 extract_native_fragment("${AHBOT_ROOT}/AhBot.h"
     "namespace ahbot" "#define auctionbot" NativeMarketDeclarations.inc)
 extract_native_fragment("${AHBOT_ROOT}/AhBot.cpp"

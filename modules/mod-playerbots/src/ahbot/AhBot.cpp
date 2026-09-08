@@ -469,9 +469,12 @@ bool AhBot::Publish(uint32 itemId, uint32 count, uint32 unitValue)
     std::unique_ptr<Item> item(Item::CreateItem(itemId, count));
     if (!item)
         return false;
-    item->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, owner.guid));
+    // Random properties call SetState and can enqueue the item for an online
+    // owner's inventory save. Auction stock is not inventory: initialize it
+    // without an owner, then assign the persistent owner before saving it.
     if (int32 property = Item::GenerateItemRandomPropertyId(itemId))
         item->SetItemRandomProperties(property);
+    item->SetOwnerGuid(ObjectGuid(HIGHGUID_PLAYER, owner.guid));
     item->ClearUpdateMask(false);
     std::unique_ptr<AuctionEntry> auction(new AuctionEntry{});
     auction->Id = sObjectMgr.GenerateAuctionID();

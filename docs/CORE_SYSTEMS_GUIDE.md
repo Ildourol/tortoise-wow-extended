@@ -91,6 +91,18 @@ Turtle adaptations that must not be lost:
 - Keep native character/account ownership using verified random-bot characters,
   never a human configured as synthetic bidder. Do not use CMaNGOS owner 0,
   the no-op `AuctionEntry::UpdateBid`, or the integer house-lookup shim.
+- Initialize auction stock's random properties/enchantments while the new item
+  is ownerless, then assign its persistent bot owner before saving. Native
+  `SetItemRandomProperties` calls `SetState` and can enqueue an online owner's
+  item for inventory saving. `ClearUpdateMask` does not remove that queue entry;
+  `SaveToDB` resets its queue position without removing the queued pointer.
+  Inventory validation can then delete the auction item, leaving a stale auction
+  pointer. `AuctionStockOwnershipTest` executes native publication, property,
+  enchantment and item queue methods for online/offline owners, repeated saves,
+  valid/absent/unknown properties and admission/allocation failures. Ordinary
+  inventory enchantments must still enqueue normally. Persistence remains mocked.
+  The September 8 crash reached expiry-mail item access after the notification
+  guard; that guard alone does not fix this ownership violation.
 - `AuctionHouseObject::ExpireAuction` is the extracted native expiry/sale body:
   script hooks, winner/owner mail, DB deletion, item and auction index removal.
   Normal expiry and incremental rebuild call this same method. Native outbid

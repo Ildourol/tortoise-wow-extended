@@ -13345,7 +13345,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "5B6D8531EDCE3D8CF483AF4B8AA4A414AE542EF82E884EE2BD8DADE2464663A1"
+    "sha256": "71012134B22C9320B67D594051F0DC1033029B974D455D2A4E29CB57ACAE9101"
   },
   {
     "file": "modules/mod-playerbots/src/cmangos-compat-stubs/LFG/LFGQueue.h",
