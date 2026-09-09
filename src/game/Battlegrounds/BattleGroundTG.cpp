@@ -19,7 +19,9 @@ constexpr uint32 CarrySpell = 59005, PickupSpell = 59011;
 constexpr unsigned CenterObject = 12, DroppedObject = 13, HordeGateObject = 14, AllianceGateObject = 15;
 // Horde doorway GPS supplied in the map-821 playtest. Gate visual fit still
 // needs in-client verification; native closed-door collision handles passage.
+// Door plane remains at the measured threshold; offset only the model pivot.
 constexpr float HordeDoorX = 1819.945801f, HordeDoorY = 1542.085083f;
+constexpr float HordeGateX = 1820.489685f, HordeGateY = 1541.711961f;
 constexpr float HordeDoorZ = 1264.204346f, HordeDoorO = 3.357578f;
 // Exterior arch in Mediumtunnelshortpvp.wmo instance 4004: local
 // (0.075, 4.5, 1.08). Scale 1.65 covers the 5.1-yard opening below its crown.
@@ -41,9 +43,9 @@ BattleGroundTG::BattleGroundTG()
     m_BgObjects.resize(16);
     m_BgCreatures.resize(6);
     for (auto& id : m_StartMessageIds) id = 0;
-    m_StartDelayTimes[BG_STARTING_EVENT_FIRST] = BG_START_DELAY_1M;
-    m_StartDelayTimes[BG_STARTING_EVENT_SECOND] = BG_START_DELAY_30S;
-    m_StartDelayTimes[BG_STARTING_EVENT_THIRD] = BG_START_DELAY_15S;
+    m_StartDelayTimes[BG_STARTING_EVENT_FIRST] = BG_START_DELAY_2M;
+    m_StartDelayTimes[BG_STARTING_EVENT_SECOND] = BG_START_DELAY_1M;
+    m_StartDelayTimes[BG_STARTING_EVENT_THIRD] = BG_START_DELAY_30S;
     m_StartDelayTimes[BG_STARTING_EVENT_FOURTH] = BG_START_DELAY_NONE;
 }
 
@@ -132,7 +134,7 @@ bool BattleGroundTG::SetupBattleGround()
             GetInstanceID(), m_flagX, m_flagY, m_flagZ + 0.1f, m_flagScale, m_captureTickMs, m_rules.maxCaptureAdvantage, ThornGorge::CaptureRadius);
     // Imported WSG Orc door model; half scale is the initial hut fitting.
     // Its model minimum Z is -1.2013184, so align that base with the GPS floor.
-    if (!AddObject(HordeGateObject, 2020408, HordeDoorX, HordeDoorY,
+    if (!AddObject(HordeGateObject, 2020408, HordeGateX, HordeGateY,
         HordeDoorZ + 0.6006592f, HordeDoorO, 0, 0,
         std::sin(HordeDoorO / 2), std::cos(HordeDoorO / 2), 0.5f))
     { Trace("setup_failed", nullptr, HordeGateObject, "horde_gate", true); return false; }
@@ -156,8 +158,8 @@ void BattleGroundTG::StartingEventCloseDoors()
 {
     DoorClose(m_BgObjects[HordeGateObject]);
     DoorClose(m_BgObjects[AllianceGateObject]);
-    Trace("countdown", nullptr, 60, "seconds", true);
-    Announce("Match starts in 60 seconds. Capture bases by standing near their banners; deliver the central flag to a base you control. First to 1600 resources wins.");
+    Trace("countdown", nullptr, 120, "seconds", true);
+    Announce("Match starts in 120 seconds. Capture bases by standing near their banners; deliver the central flag to a base you control. First to 1600 resources wins.");
 }
 
 void BattleGroundTG::StartingEventOpenDoors()
@@ -235,7 +237,7 @@ void BattleGroundTG::UpdateObjectives()
                 RewardHonorToTeam(40, NativeTeam(Side(p)));
                 Trace("flag_delivered", p, node);
                 PlaySoundToAll(Side(p) == ThornGorge::Alliance ? 8173 : 8213);
-                Announce("Flag delivered! The flag returns to the center in 10 seconds.");
+                Announce("Flag delivered! The flag returns to the center in 23 seconds.");
             }
     }
     for (auto const& it : m_Players)
@@ -362,7 +364,7 @@ void BattleGroundTG::EventPlayerDroppedFlag(Player* player)
         m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs;
     }
     Trace("flag_dropped", player, 0, m_rules.flag == ThornGorge::Dropped ? "ground_flag_created" : "center_reset_scheduled");
-    Announce(m_rules.flag == ThornGorge::Dropped ? "Flag dropped; it returns to the center after 30 seconds." : "Flag returns to the center in 10 seconds.");
+    Announce(m_rules.flag == ThornGorge::Dropped ? "Flag dropped; it returns to the center after 30 seconds." : "Flag returns to the center in 23 seconds.");
     SendStates();
 }
 

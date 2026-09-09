@@ -7,8 +7,47 @@ local mapScale = 694 / 870
 local mapInset = (1 - mapScale) / 2
 local expanded = false
 
+-- Expanded geographic bounds expose space outside the original artwork.
+-- Fill only that margin; otherwise the native frame's unrelated backing
+-- textures show through as black blocks and fragments of an old map.
+local margins = {}
+local zoneLabel, continentLabel
+local function FitMargins(show)
+    if not show then
+        for i = 1, 4 do if margins[i] then margins[i]:Hide() end end
+        return
+    end
+    local w, h = WorldMapDetailFrame:GetWidth(), WorldMapDetailFrame:GetHeight()
+    local x, y = w * mapInset, h * mapInset
+    local rects = {{0,0,w,y},{0,-h+y,w,y},{0,-y,x,h-2*y},{w-x,-y,x,h-2*y}}
+    for i = 1, 4 do
+        if not margins[i] then
+            margins[i] = WorldMapDetailFrame:CreateTexture("ManTechThornMapMargin" .. i, "ARTWORK")
+            margins[i]:SetTexture("Interface\\QuestFrame\\QuestBG")
+            margins[i]:SetTexCoord(0, 1, 0, 1)
+        end
+        local t, box = margins[i], rects[i]
+        t:ClearAllPoints(); t:SetPoint("TOPLEFT", WorldMapDetailFrame, "TOPLEFT", box[1], box[2])
+        t:SetWidth(box[3]); t:SetHeight(box[4]); t:Show()
+    end
+end
+local function SetMapLabels(show)
+    if show then
+        if not zoneLabel and WorldMapZoneDropDownText then zoneLabel = WorldMapZoneDropDownText:GetText() or "" end
+        if not continentLabel and WorldMapContinentDropDownText then continentLabel = WorldMapContinentDropDownText:GetText() or "" end
+        if WorldMapZoneDropDownText then WorldMapZoneDropDownText:SetText("Thorn Gorge") end
+        if WorldMapContinentDropDownText then WorldMapContinentDropDownText:SetText("Battleground") end
+    else
+        if zoneLabel and WorldMapZoneDropDownText and WorldMapZoneDropDownText:GetText() == "Thorn Gorge" then WorldMapZoneDropDownText:SetText(zoneLabel) end
+        if continentLabel and WorldMapContinentDropDownText and WorldMapContinentDropDownText:GetText() == "Battleground" then WorldMapContinentDropDownText:SetText(continentLabel) end
+        zoneLabel, continentLabel = nil, nil
+    end
+end
+
 local function FitMap()
     local isThorn = GetMapInfo() == "ThornGorge"
+    FitMargins(isThorn)
+    SetMapLabels(isThorn)
     if isThorn then
         for i = 1, 12 do
             local tile = _G["WorldMapDetailTile" .. i]

@@ -23,7 +23,8 @@ constexpr unsigned MaxScore = 1600;
 constexpr unsigned CaptureRadius = 30;
 // Recovery must allow travel plus the native ten-second pickup cast.
 constexpr unsigned DroppedFlagReturnMs = 30000;
-constexpr unsigned FlagRespawnMs = 10000;
+// Match this core's WSG post-capture reset; dropped recovery is separate.
+constexpr unsigned FlagRespawnMs = 23000;
 enum Team : unsigned { Alliance, Horde, Neutral };
 enum Flag : unsigned { Center, Carried, Dropped, Respawning };
 

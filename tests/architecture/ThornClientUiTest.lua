@@ -12,6 +12,10 @@ local function region()
     function r:SetPoint(...) self.point={...} end
     function r:ClearAllPoints() self.point={} end
     function r:SetTexture(v) self.texture=v end
+    function r:Show() self.shown=true end
+    function r:Hide() self.shown=false end
+    function r:GetText() return self.text end
+    function r:CreateTexture(name) local t=region();_G[name]=t;return t end
     function r:GetTexCoord() return 0,1,0,1 end
     function r:SetTexCoord(...) self.uv={...} end
     function r:IsShown() return self.shown end
@@ -22,7 +26,9 @@ local function region()
     function r:CreateFontString() self.label=region();return self.label end
     return r
 end
-UIParent=region();WorldMapDetailFrame=region()
+UIParent=region();WorldMapDetailFrame=region();WorldMapDetailFrame.width=1002;WorldMapDetailFrame.height=668
+WorldMapZoneDropDownText=region();WorldMapZoneDropDownText.text="Elwynn Forest"
+WorldMapContinentDropDownText=region();WorldMapContinentDropDownText.text="Eastern Kingdoms"
 for i=1,12 do _G["WorldMapDetailTile"..i]=region() end
 WorldMapFlag1Texture=region();WorldMapOverlay1=region();NUM_WORLDMAP_OVERLAYS=1
 function CreateFrame(_,name) _G[name]=region();return _G[name] end
@@ -58,6 +64,11 @@ local function receive(payload,sender,prefix)
  event="CHAT_MSG_ADDON";arg1=prefix or "MT_TG1";arg2=payload;arg3="GUILD";arg4=sender or "Tester";f.OnEvent();f.OnUpdate()
 end
 for i=1,3 do WorldMapFrame_Update();assert(math.abs(WorldMapDetailTile1.width-256*694/870)<.001);assert(math.abs(WorldMapOverlay1.width-64*694/870)<.001) end
+assert(WorldMapZoneDropDownText.text=="Thorn Gorge")
+assert(WorldMapContinentDropDownText.text=="Battleground")
+local outerArea=0
+for i=1,4 do local t=_G["ManTechThornMapMargin"..i];assert(t.shown);outerArea=outerArea+t.width*t.height end
+assert(math.abs(outerArea+1002*668*(694/870)^2-1002*668)<.001)
 assert(math.abs(WorldMapDetailTile12.height-156*694/870)<.001)
 assert(math.abs(WorldMapDetailTile12.width-234*694/870)<.001)
 receive("1;101;3;1;1;0");WorldMapButton_OnUpdate(0)
@@ -78,6 +89,9 @@ assert(WorldMapFlag1Texture.texture=="native")
 BattlefieldMinimap_Update();BattlefieldMinimap_OnUpdate(0)
 assert(BattlefieldMinimap1.width==100 and BattlefieldMinimap1.point[2]=="parent")
 assert(BattlefieldMinimapFlag1Texture.texture=="native")
+assert(not ManTechThornMapMargin1.shown, "margin leaked to another map")
+assert(WorldMapZoneDropDownText.text=="Elwynn Forest", "zone label not restored")
+assert(WorldMapContinentDropDownText.text=="Eastern Kingdoms", "continent label not restored")
 map="ThornGorge";WorldMapFrame_Update();receive("1;102;3;2;2;30000");assert(string.find(f.label.text,"30s",1,true))
 event="ZONE_CHANGED_NEW_AREA";f.OnEvent();f.OnUpdate();assert(f.label.text=="")
 print("Production addon: both carrier colours, timer, stale/forged messages, repeat map updates and non-TG restoration passed")

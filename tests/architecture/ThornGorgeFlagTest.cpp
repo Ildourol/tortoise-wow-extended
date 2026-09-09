@@ -95,18 +95,18 @@ int main()
     Check(bg.drop.scale==2.5f,"dropped flag scale lost");
     bg.m_rules.Tick(2107);
     bg.EventPlayerClickedOnFlag(&other,&bg.drop);
-    bg.m_rules.Tick(10000);
+    bg.m_rules.Tick(ThornGorge::FlagRespawnMs);
     bg.CompleteFlagPickup(&other,&bg.drop);
     Check(bg.m_carrier==other.guid && other.aura,"dropped flag pickup");
     bg.addSucceeds=false;bg.EventPlayerDroppedFlag(&other);
     Check(bg.m_rules.flag==ThornGorge::Respawning && !bg.m_carrier && !other.aura,"spawn failure clears carrier and schedules reset");
-    Check(bg.m_rules.flagTimer==10000,"failed ground spawn retains ten-second center reset");
-    bg.m_rules.Tick(10000);bg.RestoreFlag();
+    Check(bg.m_rules.flagTimer==23000,"failed ground spawn retains WSG-length center reset");
+    bg.m_rules.Tick(ThornGorge::FlagRespawnMs);bg.RestoreFlag();
     Check(bg.sound==8232,"native WSG reset sound missing");
     Check(bg.center.spawned && !bg.m_BgObjects[13],"native reset restores center and removes dropped object");
     p.castSucceeds=false;bg.addSucceeds=true;bg.CompleteFlagPickup(&p,&bg.center);
     Check(!bg.m_carrier && bg.m_rules.flag==ThornGorge::Dropped,"carry aura failure never strands carrier state");
-    bg.m_rules.Tick(10000);bg.RestoreFlag();bg.status=4;
+    bg.m_rules.Tick(ThornGorge::FlagRespawnMs);bg.RestoreFlag();bg.status=4;
     bg.CompleteFlagPickup(&p,&bg.center);Check(!bg.m_carrier,"completed match rejects delayed pickup");
     std::cout<<"Native Thorn Gorge flag callbacks passed\n";
 }

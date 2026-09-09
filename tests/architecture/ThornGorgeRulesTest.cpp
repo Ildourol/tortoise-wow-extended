@@ -39,7 +39,7 @@ int main()
     Check(!f.Deliver(11, Horde, 0), "enemy base cannot receive delivery");
     Check(f.Deliver(11, Alliance, 0) && f.score[0] == 75, "delivery bonus");
     Check(!f.Deliver(11, Alliance, 0) && !f.PickUp(22), "no duplicate delivery or pickup during respawn");
-    f.Tick(9999); Check(f.flag == Respawning, "flag respawn is not early");
+    f.Tick(23000 - 1); Check(f.flag == Respawning, "WSG-length flag respawn is not early");
     f.Tick(1); Check(f.flag == Center, "flag respawns on time");
     Check(f.PickUp(22) && f.Drop(22), "death/disconnect drop");
     f.Tick(2107); // Real match: pickup started two seconds after drop.
