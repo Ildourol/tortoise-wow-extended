@@ -112,6 +112,7 @@ class PathInfo
         void CutPathWithDynamicLoS();
         float Length() const;
         void ExcludeSteepSlopes() { m_filter.setExcludeFlags(NAV_STEEP_SLOPES); }
+        bool ExcludesSteepSlopes() const { return (m_filter.getExcludeFlags() & NAV_STEEP_SLOPES) != 0; }
         static dtPolyRef FindWalkPoly(dtNavMeshQuery const* query, float const* pointYZX, dtQueryFilter const& filter, float* closestPointYZX, float zSearchDist = 10.0f);
         void SetTransport(Transport* t) { m_transport = t; }
         Transport* GetTransport() const { return m_transport; }

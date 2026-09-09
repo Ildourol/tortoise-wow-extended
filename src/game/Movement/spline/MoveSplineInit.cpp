@@ -55,6 +55,17 @@ UnitMoveType SelectSpeedType(uint32 moveFlags)
 
 void MoveSplineInit::Move(PathFinder const* pfinder)
 {
+    // Failure coordinates are diagnostic output, never a movement route.
+    // Preserve valid native swimming/flight paths and explicit direct MoveTo.
+    auto const type = pfinder->getPathType();
+    if (!(type & (PATHFIND_NORMAL | PATHFIND_INCOMPLETE)) || (type & PATHFIND_NOPATH) ||
+        (pfinder->ExcludesSteepSlopes() && !(type & (PATHFIND_FLYPATH | PATHFIND_UNDERWATER)) &&
+         (type & (PATHFIND_SHORTCUT | PATHFIND_NOT_USING_PATH))))
+    {
+        args.path.clear();
+        SetStop();
+        return;
+    }
     MovebyPath(pfinder->getPath());
     if (pfinder->GetTransport())
         SetTransport(pfinder->GetTransport()->GetGUIDLow());

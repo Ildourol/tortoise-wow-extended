@@ -607,8 +607,9 @@ void PathInfo::createFilter()
             includeFlags |= (NAV_WATER | NAV_MAGMA | NAV_SLIME);
     }
 
-    if (m_sourceUnit->GetTypeId() == TYPEID_PLAYER &&
-        sConfig.GetBoolDefault(("mmap.PlayerWalkable." + std::to_string(m_sourceUnit->GetMapId())).c_str(), false))
+    if (m_sourceUnit->GetTypeId() == TYPEID_PLAYER && !m_sourceUnit->CanFly() &&
+        !m_sourceUnit->HasUnitState(UNIT_STAT_IGNORE_PATHFINDING) &&
+        sConfig.GetBoolDefault("mmap.PlayerWalkable", true))
         excludeFlags |= NAV_STEEP_SLOPES;
 
     m_filter.setIncludeFlags(includeFlags);

@@ -752,7 +752,7 @@ bool MovementAction::WaitForTransport()
     return false;
 }
 
-TravelPath MovementAction::ResolveMovePath(const WorldPosition& startPosition, const WorldPosition& endPosition, Unit* mover, LastMovement& lastMove)    
+TravelPath MovementAction::ResolveMovePath(const WorldPosition& startPosition, const WorldPosition& endPosition, Unit* mover, LastMovement& lastMove, bool requirePath)
 {
     float totalDistance = startPosition.distance(endPosition);
     float maxDistChange = totalDistance * 0.1f;
@@ -790,8 +790,24 @@ TravelPath MovementAction::ResolveMovePath(const WorldPosition& startPosition, c
     if (!lastMove.lastPath.empty() && !outMovePath.empty() && lastMove.lastPath.getBack().distance(endPosition) <= outMovePath.getBack().distance(endPosition))
         outMovePath = lastMove.lastPath;
 
-    if (outMovePath.empty())
-        outMovePath.addPoint(endPosition);
+    if (outMovePath.empty() && requirePath)
+    {
+#ifdef MANGOSBOT_ZERO
+        if (bot->GetBattleGroundTypeId() == BATTLEGROUND_TG)
+        {
+            BattleGround* bg = bot->GetBattleGround();
+            if (bg && static_cast<BattleGroundTG*>(bg)->AdmitBotDiagnostic(bot))
+                Log::Instance().out(LOG_BG,
+                    "THORN_GORGE schema=1 map=821 event=bot_path inst=%u guid=%u result=no_route "
+                    "x=%.3f y=%.3f z=%.3f target_x=%.3f target_y=%.3f target_z=%.3f",
+                    bot->GetInstanceId(),bot->GetGUIDLow(),startPosition.getX(),startPosition.getY(),startPosition.getZ(),
+                    endPosition.getX(),endPosition.getY(),endPosition.getZ());
+        }
+#endif
+        return outMovePath;
+    }
+    // Explicit direct movement (flight/swim/script intent) retains its native contract.
+    if (outMovePath.empty()) outMovePath.addPoint(endPosition);
 
     return outMovePath;
 }
@@ -1190,12 +1206,24 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
     
     bool isWalking = false;
 
-    TravelPath movePath = ResolveMovePath(startPos, endPos, mover, lastMove);
+    bool generatePath = !noPath && !bot->IsFlying() && !bot->HasMovementFlag(MOVEFLAG_SWIMMING) && !bot->IsInWater() && !sServerFacade.IsUnderwater(bot);
+    TravelPath movePath = ResolveMovePath(startPos, endPos, mover, lastMove, generatePath);
 
     lastMove.setPath(movePath);
 
     if (movePath.empty())
     {
+        // Use the existing bounded ballistic traversal only after a required
+        // ground route fails; all destinations share this recovery path.
+        if (generatePath && detailedMove && mover == bot)
+        {
+            auto* jump = dynamic_cast<JumpAction*>(ai->GetAiObjectContext()->GetAction("jump"));
+            if (jump && jump->TryGroundTraversal(endPos))
+            {
+                lastMove.clearPathFailure();
+                return true;
+            }
+        }
         lastMove.failedPathMap = endPos.getMapId(); lastMove.failedPathInstance = bot->GetInstanceId();
         lastMove.failedPathCellX = destinationCellX; lastMove.failedPathCellY = destinationCellY;
         lastMove.failedPathCellZ = destinationCellZ; lastMove.failedPathGeneration = generation;
@@ -1310,8 +1338,6 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
             }
         }
     }
-
-    bool generatePath = !noPath && !bot->IsFlying() && !bot->HasMovementFlag(MOVEFLAG_SWIMMING) && !bot->IsInWater() && !sServerFacade.IsUnderwater(bot);
 
 #ifndef MANGOSBOT_ZERO
     if (bot->IsFreeFlying())
@@ -3556,13 +3582,12 @@ bool JumpAction::isUseful()
     return bot->IsInWorld() && ai->HasPlayerNearby() && !ai->IsJumping();
 }
 
-bool JumpAction::TryThornTraversal(const WorldPosition& objective)
+bool JumpAction::TryGroundTraversal(const WorldPosition& objective)
 {
-#ifdef MANGOSBOT_ZERO
     BattleGround* bg = bot->GetBattleGround();
-    if (!bg || bg->GetTypeId() != BATTLEGROUND_TG || bg->GetStatus() != STATUS_IN_PROGRESS ||
-        !bot->IsInWorld() || bot->IsDead() || !ai->CanMove() || ai->IsJumping() ||
-        bot->IsNonMeleeSpellCasted(false) || bot->GetTransport() ||
+    if ((bg && bg->GetStatus() != STATUS_IN_PROGRESS) || !bot->IsInWorld() || bot->IsDead() || !ai->CanMove() || ai->IsJumping() ||
+        bot->IsNonMeleeSpellCasted(false) || bot->GetTransport() || bot->IsFlying() ||
+        bot->IsInWater() || bot->IsFalling() || bot->HasMovementFlag(MOVEFLAG_SWIMMING) ||
         objective.getMapId() != bot->GetMapId()) return false;
     uint32 now = WorldTimer::getMSTime();
     if (m_lastTraversalAttempt && WorldTimer::getMSTimeDiff(m_lastTraversalAttempt,now) < 5000) return false;
@@ -3577,12 +3602,14 @@ bool JumpAction::TryThornTraversal(const WorldPosition& objective)
     unsigned samples=0;
     auto trace=[&](char const* result,WorldPosition const& landing)
     {
-        if (static_cast<BattleGroundTG*>(bg)->AdmitBotDiagnostic(bot))
+#ifdef MANGOSBOT_ZERO
+        if (bg && bg->GetTypeId() == BATTLEGROUND_TG && static_cast<BattleGroundTG*>(bg)->AdmitBotDiagnostic(bot))
             Log::Instance().out(LOG_BG,
                 "THORN_GORGE schema=1 map=821 event=bot_traversal inst=%u guid=%u result=%s samples=%u "
                 "x=%.3f y=%.3f z=%.3f landing_x=%.3f landing_y=%.3f landing_z=%.3f",
                 bot->GetInstanceId(),bot->GetGUIDLow(),result,samples,src.getX(),src.getY(),src.getZ(),
                 landing.getX(),landing.getY(),landing.getZ());
+#endif
     };
     for (float hSpeed : {bot->GetSpeed(MOVE_RUN),bot->GetSpeed(MOVE_WALK)})
     {
@@ -3608,7 +3635,6 @@ bool JumpAction::TryThornTraversal(const WorldPosition& objective)
         }
     }
     trace("no_safe_progress",src);
-#endif
     return false;
 }
 

@@ -52,7 +52,7 @@ namespace ai
         TravelPath ResolveMovePath(const WorldPosition& startPosition,
             const WorldPosition& endPosition,
             Unit* mover,
-            LastMovement& lastMove);
+            LastMovement& lastMove, bool requirePath);
 
         bool HandleSpecialMovement(TravelPath& path);
 
@@ -229,8 +229,8 @@ namespace ai
         JumpAction(PlayerbotAI* ai) : MovementAction(ai, "jump"), Qualified() {}
         bool Execute(Event& event) override;
         bool isUseful() override;
-        // A bounded native-physics traversal attempt after TG walking failed.
-        bool TryThornTraversal(const WorldPosition& objective);
+        // A bounded native-physics traversal attempt after required walking failed.
+        bool TryGroundTraversal(const WorldPosition& objective);
 
         static WorldPosition CalculateJumpParameters(const WorldPosition& src, Unit* jumper, float angle, float vSpeed, float hSpeed, float &timeToLand, float &distanceToLand, float &maxHeight, bool &goodLanding, std::vector<WorldPosition> &path, float maxJumpHeight = sPlayerbotAIConfig.jumpHeightLimit);
 

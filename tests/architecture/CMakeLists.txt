@@ -608,14 +608,32 @@ extract_native_fragment("${CORE_ROOT}/src/game/Maps/PathFinder.cpp"
 extract_native_fragment("${CORE_ROOT}/src/game/Maps/PathFinder.cpp"
     "dtPolyRef PathInfo::getPolyByLocation(" "void PathInfo::BuildPolyPath(" PlayerWalkableLookupNative.inc)
 extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/MovementActions.cpp"
-    "bool JumpAction::TryThornTraversal(" "bool JumpAction::Execute(" ThornTraversalNative.inc)
+    "bool JumpAction::TryGroundTraversal(" "bool JumpAction::Execute(" GroundTraversalNative.inc)
 extract_native_fragment("${TRAVEL_ROOT}/WorldPosition.cpp"
     "std::vector<WorldPosition> WorldPosition::getPathFromPath(" "bool WorldPosition::ClosestCorrectPoint(" MovementPathProgressNative.inc)
-foreach(test IN ITEMS BattlegroundObjectScaleTest ThornCarrierStrategyTest ThornObjectiveAssignmentTest ThornClientStateTest PlayerWalkableFilterTest ThornTraversalTest MovementPathProgressTest)
+foreach(test IN ITEMS BattlegroundObjectScaleTest ThornCarrierStrategyTest ThornObjectiveAssignmentTest ThornClientStateTest PlayerWalkableFilterTest GroundTraversalTest MovementPathProgressTest)
     add_executable(${test} ${test}.cpp)
     target_compile_features(${test} PRIVATE cxx_std_17)
     target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_include_directories(${test} PRIVATE ../../src/game/Battlegrounds)
+    if(MSVC)
+        target_compile_options(${test} PRIVATE /EHsc)
+    endif()
+    add_test(NAME ${test} COMMAND ${test})
+endforeach()
+
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/MovementActions.cpp"
+    "TravelPath MovementAction::ResolveMovePath(" "bool MovementAction::HandleSpecialMovement(" StrictResolverNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSplineInit.cpp"
+    "void MoveSplineInit::Move(PathFinder const*" "// A map can change workers" StrictSplineMoveNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSplineInit.h"
+    "    inline void MoveSplineInit::MoveTo(float" "    inline void MoveSplineInit::SetFacing(Vector3" StrictSplineToNative.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/CheckMountStateAction.cpp"
+    "    if (hasEnemy)" "    bool IsMounted" MountTargetDecisionNative.inc)
+foreach(test IN ITEMS StrictPathHandoffTest MountTargetDecisionTest)
+    add_executable(${test} ${test}.cpp)
+    target_compile_features(${test} PRIVATE cxx_std_17)
+    target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     if(MSVC)
         target_compile_options(${test} PRIVATE /EHsc)
     endif()

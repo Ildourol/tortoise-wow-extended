@@ -243,11 +243,12 @@ mmap.enabled = 1
 # Thorn Gorge's routes exhaust 2048; 16384 resolves all tested objective routes.
 mmap.QueryNodes.821 = 16384
 
-# Restrict native player path requests on this map to player-walkable slopes.
-# Bots use the same filter for objectives, combat and path shortcut checks.
-# Maps without a key retain their existing behavior. Missing nav data fails
-# the request; it does not authorize straight-line travel through obstacles.
-mmap.PlayerWalkable.821 = 1
+# Restrict ground-player path requests on every map to player-walkable slopes.
+# Objectives, combat, instances and open-world travel share this filter.
+# Native flight and explicit ignore-pathfinding states keep their capabilities.
+# Missing walking nav data fails; it never authorizes walking through obstacles.
+# Set 0 for the legacy slope filter (failed queries still remain failures).
+mmap.PlayerWalkable = 1
 
 # Collision.Models.Unload. Free model when no one uses it anymore.
 
