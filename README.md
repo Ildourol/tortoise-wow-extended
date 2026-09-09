@@ -1,6 +1,10 @@
 
 # Tortoise-WoW
 
+> **ManTech fork:** development continues on `mantech-turtle`.
+> Our upstream [Shyalya/tortoise-wow](https://github.com/Shyalya/tortoise-wow) has announced archival after 30 September 2026. That announcement applies to Shyalya's fork.
+> Its 16 branch tips and their history are preserved under `archive/shyalya/2026-09-09/*` in this repository.
+
 This is an unofficial, community driven, restoration of the 1.18.1 patch of Turtle-WoW, with some additions for solo play.  
 This project is not to be used for profit or to misrepresent itself, or anyone using it, as the original creators  
 This project targets version 1.18.1 build 7272

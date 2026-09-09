@@ -39,6 +39,8 @@ option(USE_STD_MALLOC "Use standard malloc instead of TBB" ON)
 option(TBB_DEBUG "Use TBB debug librairies" OFF)
 option(USE_ANTICHEAT "Use anticheat" ON)
 option(USE_DISCORD_BOT "Use Discord Bot" OFF)
+# Portable gSOAP is built from source; the listener still requires SOAP.Enabled=1.
+option(ENABLE_SOAP "Build the optional SOAP remote-command interface" ON)
 option(USE_SCRIPTS "Compile scripts" ON)
 option(BUILD_ELUNA "Build the Eluna Lua scripting engine" ON)
 option(BUILD_ELUNA_TESTS "Build the Eluna Lua runtime smoke test" ON)

@@ -36,7 +36,9 @@
 #include "ExecutionWatch.h"
 #include "WorldSocket.h"
 #include "WorldRunnable.h"
+#ifdef ENABLE_SOAP
 #include "MaNGOSsoap.h"
+#endif
 #include <memory>
 #include "World.h"
 #include "Log.h"
@@ -586,11 +588,13 @@ int Master::Run()
     ///- Launch WorldRunnable thread
     std::thread world_thread{WorldRunnable()};
 
+#ifdef ENABLE_SOAP
     ///- Start the SOAP remote command interface (off unless SOAP.Enabled = 1)
     std::unique_ptr<SOAPThread> soapThread;
     if (sConfig.GetBoolDefault("SOAP.Enabled", false))
         soapThread.reset(new SOAPThread(sConfig.GetStringDefault("SOAP.IP", "127.0.0.1"),
                                         sConfig.GetIntDefault("SOAP.Port", 7878)));
+#endif
     std::thread progress_thread;
     if (uint32 seconds = sConfig.GetIntDefault("Diagnostics.StallSeconds", 10))
     {
@@ -699,8 +703,10 @@ int Master::Run()
     // since worldrunnable uses them, it will crash if unloaded after master
     world_thread.join();
     // Master exits with quick_exit, so local destructors are not guaranteed.
+#ifdef ENABLE_SOAP
     // Join SOAP while authentication databases and queued-command owners exist.
     soapThread.reset();
+#endif
     if (progress_thread.joinable())
         progress_thread.join();
 

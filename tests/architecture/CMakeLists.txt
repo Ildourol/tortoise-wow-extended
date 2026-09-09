@@ -494,3 +494,15 @@ if(MSVC)
     target_compile_options(ThornBotDiagnosticsTest PRIVATE /EHsc)
 endif()
 add_test(NAME ThornBotDiagnosticsTest COMMAND ThornBotDiagnosticsTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/AccountMgr.cpp"
+    "bool AccountMgr::GetName(" "uint32 AccountMgr::GetCharactersCount(" AccountNameNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/AccountMgr.cpp"
+    "AccountOpResult AccountMgr::ChangePassword(" "uint32 AccountMgr::GetId(" AccountPasswordNative.inc)
+add_executable(AccountNameCacheTest AccountNameCacheTest.cpp)
+target_compile_features(AccountNameCacheTest PRIVATE cxx_std_17)
+target_include_directories(AccountNameCacheTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(AccountNameCacheTest PRIVATE /EHsc)
+endif()
+add_test(NAME AccountNameCacheTest COMMAND AccountNameCacheTest)

@@ -376,3 +376,13 @@ existed. This defect is corrected, but live attribution of the recorded Horde
 spawn stalls remains pending. Do not force teleport/revive or bypass path failures.
 ThornBotDiagnosticsTest executes native map classification, trace admission and
 formatting against deterministic services, including uninitialized splines.
+
+### September 9 upstream refresh
+
+See [integration decisions](SHYALYA_INTEGRATION_2026-09-09.md). AccountMgr::GetName
+must fall through to its native database lookup when a cache entry lacks a name;
+partial LastIP/e-mail/ban cache entries do not establish a username. Password
+changes retain normalization, length checks and verifier invalidation.
+ENABLE_SOAP controls compilation (portable, default ON); SOAP.Enabled controls
+listener startup (default OFF). Both startup and explicit shutdown join must be
+guarded in builds without SOAP. Our native module gossip order is retained.

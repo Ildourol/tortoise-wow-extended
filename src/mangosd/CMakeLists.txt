@@ -16,6 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 set(EXECUTABLE_NAME mangosd)
+
 set (EXECUTABLE_SRCS 
 	CliRunnable.h
 	DynamicModules.h
@@ -26,15 +27,20 @@ set (EXECUTABLE_SRCS
 	Main.cpp
 	Master.cpp
 	WorldRunnable.cpp
-	MaNGOSsoap.h
-	MaNGOSsoap.cpp
-	soap/soapStub.h
-	soap/soapH.h
-	soap/soapC.cpp
-	soap/soapServer.cpp
 
 )
 
+
+if(ENABLE_SOAP)
+  list(APPEND EXECUTABLE_SRCS
+    MaNGOSsoap.h
+    MaNGOSsoap.cpp
+    soap/soapStub.h
+    soap/soapH.h
+    soap/soapC.cpp
+    soap/soapServer.cpp
+  )
+endif()
 
 if(WIN32)
   list(APPEND EXECUTABLE_SRCS
@@ -144,10 +150,11 @@ target_link_libraries(${EXECUTABLE_NAME}
     libdeflate
 )
 
-# Build the matching runtime from source on every supported platform.
-target_link_libraries(${EXECUTABLE_NAME}
-    gsoap
-)
+# Use our matching runtime built from source on both Windows and Linux.
+if(ENABLE_SOAP)
+  target_compile_definitions(${EXECUTABLE_NAME} PRIVATE ENABLE_SOAP)
+  target_link_libraries(${EXECUTABLE_NAME} gsoap)
+endif()
 
 # Boost lib search path for playerbots' transitive boost references.
 # Boost's prebuilt Windows binaries live under lib64-msvc-<toolset> (or
