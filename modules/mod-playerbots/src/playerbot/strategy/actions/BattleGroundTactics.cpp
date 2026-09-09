@@ -7,6 +7,7 @@
 #include "Battlegrounds/BattleGround.h"
 #include "Battlegrounds/BattleGroundMgr.h"
 #include "BattleGroundTactics.h"
+#include "Battlegrounds/BattleGroundTG.h"
 #include "float.h"
 #ifdef MANGOSBOT_TWO
 #include "Entities/Vehicle.h"
@@ -2746,6 +2747,33 @@ bool BGTactics::Execute(Event& event)
     // Diagnosis and fix: Melhart9, Shyalya/tortoise-wow#1.
     if (bg->GetStatus() == STATUS_IN_PROGRESS && ai->HasStrategy("buff", BotState::BOT_STATE_NON_COMBAT))
         ai->ChangeStrategy("-buff", BotState::BOT_STATE_NON_COMBAT);
+
+    if (bg->GetTypeId() == BATTLEGROUND_TG)
+    {
+        // Query only from this bot's native map-owner AI update. Reuse movement
+        // and GO interaction; the battleground owns capture/flag validation.
+        auto* thorn = static_cast<BattleGroundTG*>(bg);
+        if (bg->GetStatus() != STATUS_IN_PROGRESS || bot->IsDead()) return false;
+        if (bot->IsNonMeleeSpellCasted(false)) return false;
+        if (getName() == "check flag")
+        {
+            GameObject* flag = bot->GetMap()->GetGameObject(thorn->GetAvailableFlag());
+            if (!flag || !flag->isSpawned() || !bot->IsWithinDistInMap(flag, 5.0f) ||
+                !bot->IsWithinLOSInMap(flag)) return false;
+            if (bot->IsMounted()) bot->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
+            bot->StopMoving();
+            flag->Use(bot);
+            return bot->IsNonMeleeSpellCasted(false);
+        }
+        if (getName() == "move to objective" || getName() == "select objective")
+        {
+            float x, y, z;
+            if (!thorn->GetObjective(bot, x, y, z)) return false;
+            if (bot->IsWithinDist3d(x, y, z, 3.0f)) return false;
+            return MoveTo(bot->GetMapId(), x, y, z);
+        }
+        return false;
+    }
 
     // Both stay null for any battleground type without a case below
     // (BATTLEGROUND_BR and BATTLEGROUND_SV reach 'default: break'), and the AV

@@ -927,3 +927,13 @@ the supplied crash text has no faulting instruction or matching binary snapshot;
 keep the underlying memory-fault diagnosis open. Focused native-fragment tests
 cover notification payloads and continuing mail operations, not production
 network/database durability or a replay of that crash.
+
+## Thorn Gorge prototype status (2026-09-08)
+
+`.bg thorn` inside a Thorn Gorge instance prints scores, node progress/ownership,
+flag state and elapsed time through the existing administrator BG command.
+It runs only on request. No global polling, DB writes or file logging is added.
+Feature control: Battleground.ThornGorge.Enabled (default 0; restart required).
+The opt-in match samples at most 30 members across four nodes once per second
+and publishes native HUD updates. Lifecycle announcements are match messages.
+See docs/THORN_GORGE_PROTOTYPE.md for activation, provisional values and removal.

@@ -1117,7 +1117,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
             }
 #endif
 #else
-            if (bgType <= BATTLEGROUND_AB) // do not add for not supported bg
+            if (bgType <= BATTLEGROUND_AB || bgType == BATTLEGROUND_TG) // supported Turtle objectives
             {
                 nonCombatEngine->addStrategy("battleground");
             }

@@ -1441,7 +1441,7 @@
       "timers",
       "async"
     ],
-    "sha256": "4AD16690B25037BBF6B7C8FB3EBC39D6F003E65F2044EFAD42D36FDC3F0B0DBD"
+    "sha256": "55E74A7AAC085199563EF562BD589ACA0691A1C63178E859B68E955D549AA55A"
   },
   {
     "file": "src/game/World.cpp",
@@ -1454,7 +1454,7 @@
       "timers",
       "async"
     ],
-    "sha256": "AA4F67BB4D22D7992CD1AF737A34049AE01A7A86BB3D7722315EAC6DF6DEA3AA"
+    "sha256": "BB900B7E58642081EE0729AF3ECEEFC77BBC9478A7363B269BDD9AEE550CAA6C"
   },
   {
     "file": "src/game/WhisperTargetLimits.cpp",
@@ -4208,7 +4208,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "1D6B8273C39B129A99FB57CDF06A9A98BD07BC24ECC76A5B9D36099770D73ADD"
+    "sha256": "2B485493629BB54C4AF6DF78DF34CFF3622924C230CD6C08761272FF998FA66A"
   },
   {
     "file": "src/game/Spells/SpellEffects.cpp",
@@ -4223,7 +4223,7 @@
       "doors",
       "threat"
     ],
-    "sha256": "7C334395755A19F0C91C77D57A8F3C0798B7AEAF6A4B0D8AC721E3D81ACB329C"
+    "sha256": "53480FA365F1DFD27E87B5DD6BA7DF2C59B88793F1F4C65E6EA6A43AE59B41E3"
   },
   {
     "file": "src/game/Spells/SpellDefines.h",
@@ -4480,7 +4480,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "26054C6212FE6BD49E9E4805A90E91F8DB46F18DE3A67B2CA3E923C9D85E21B9"
+    "sha256": "93160F538AAEA2C597EDDF92BED370F9686454E0E7973C61A273C575E51B972D"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundBR.h",
@@ -4554,7 +4554,7 @@
       "death_reset",
       "timers"
     ],
-    "sha256": "35696E2CE493813B0328CC7E2E424E3C7C988EFCC391A2F6053DBCBC47E77324"
+    "sha256": "EE87B62E7D90501A07392ECE8B49C3EDC318659B6613A253B2F088F77AB8AD49"
   },
   {
     "file": "src/game/Battlegrounds/BattleGround.cpp",
@@ -4567,7 +4567,7 @@
       "doors",
       "timers"
     ],
-    "sha256": "DB8D9713E72EC83BD7845DD3F412AA396E6C10655225373B9D54282054C4049D"
+    "sha256": "954F4CB63BDC1D5C26B33656196B7457B916F34F26CCEB177079296ADC58CFBF"
   },
   {
     "file": "src/scripts/dungeons/wailing_caverns/wailing_caverns.cpp",
@@ -4636,7 +4636,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "449E2D1B3599709AAB255B497B98F58831FA7C4FD0FBC46C1AEF16140B2B009C"
+    "sha256": "4D01A44B095B26441D5E6573C7EE218C5E91124C1FB1367737821859B260CA4A"
   },
   {
     "file": "src/game/AuctionHouse/AuctionHouseMgr.h",
@@ -5213,7 +5213,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "B169BF1CBD86A01E28814A5DF49D9EFA6B3EC7FB928B3A52D0F7799A6F4D12B3"
+    "sha256": "CDFFF5C490CBAE47CF7E529614EBDB6566EBBBC84AAB923B1FF61170A9AFEFD2"
   },
   {
     "file": "src/game/Handlers/CharacterHandler.cpp",
@@ -6896,7 +6896,7 @@
       "timers",
       "threat"
     ],
-    "sha256": "71761A9578E00B63EBB7EB3E52BF6969E957C5C3C55E13AE0E987225579DED07"
+    "sha256": "C92A46C0BA9DAECFDCF1894CE88A6B6D105CCB77B596A7294A8E6DF1F3F2637A"
   },
   {
     "file": "src/game/Objects/Pet.h",
@@ -13545,7 +13545,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "1D090DCA996F315CA52FBE52FE1C1F52A9A4C49323F4D8B51F571E80F27B6D2E"
+    "sha256": "7CC98EE3EDB6E74827A03FA7E6C9748DBCD642185A76B7FB53899C40520DD2EC"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/AiContextAugment.h",
@@ -20039,7 +20039,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "A3EE7B0D8C395BEA4597881589167128DF933302580A987927991812A8F6C326"
+    "sha256": "702034B0F56B67E8D77C22020193F7E41FC669B7A31BE30C1950D3183BE5C615"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/BattleGroundJoinAction.h",
@@ -20263,7 +20263,7 @@
     "dependency_signals": [
       "spells"
     ],
-    "sha256": "5B57781FA6FE62D5454BF3AF41D4E72FB6CEDA75316CEA78057EE8BC3BD3A529"
+    "sha256": "326E2B9984FB136D78B254775C341F2D4FD915404072FA050A5236FF7BDAB52F"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/CheckMailAction.h",
@@ -24581,5 +24581,34 @@
     "loader_calls": [],
     "dependency_signals": [],
     "sha256": "54C0B90B5BBD59810579F967CD9037E7DD45AF6695109AD673C12C66476F75DC"
+  },
+  {
+    "file": "src/game/Battlegrounds/BattleGroundTG.cpp",
+    "cmake_listed": true,
+    "addsc": [],
+    "loader_calls": [],
+    "dependency_signals": [
+      "spells",
+      "death_reset"
+    ],
+    "sha256": "6B61731F36D330EC4F284CAA881EB9565A8C1BC9A620DC8C33A430890877D6A7"
+  },
+  {
+    "file": "src/game/Battlegrounds/BattleGroundTG.h",
+    "cmake_listed": true,
+    "addsc": [],
+    "loader_calls": [],
+    "dependency_signals": [
+      "death_reset"
+    ],
+    "sha256": "CAD3A1C1CCFC0119276B4200C25BAA148EBF7E7A5971B3E6D139602F576442D6"
+  },
+  {
+    "file": "src/game/Battlegrounds/ThornGorgeRules.h",
+    "cmake_listed": true,
+    "addsc": [],
+    "loader_calls": [],
+    "dependency_signals": [],
+    "sha256": "E0CC4E7E569191298A8BA48144F5D69A0A196339024C6F033FE3A283CBC2AA7A"
   }
 ]

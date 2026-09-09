@@ -326,3 +326,18 @@ Knowing that a service touches `SPELL_EFFECT_LEARN_SPELL` is only the start. The
 - Existing architecture tests are under [tests/architecture](../tests/architecture). `ContentHookContract.cmake` checks source wiring by lexical/regex assertions; passing it does not establish exactly-once execution or all boss mechanics.
 - Diagnostic controls/removal belong in the existing [diagnostic inventory](../doc/TURTLE_DIAGNOSTICS.md), not scattered permanent logs. Disabled summary logging does not necessarily remove timers/atomics.
 - Record source revision and fresh evidence on every significant update. Repository documentation makes the knowledge reusable; it does not make an assistant infallible or remove the need to reopen current source.
+
+## Thorn Gorge prototype (2026-09-08)
+
+See [Thorn Gorge implementation and acceptance checks](THORN_GORGE_PROTOTYPE.md).
+Map 821 / type and queue 6 is opt-in. BattleGroundTG owns its proximity capture,
+flag and score state on the native battleground map update. Generic capture GOs
+currently dispatch events on use and do not supply timed player-count capture.
+Native queues, GO ownership, spell completion/aura hooks and resurrection are
+retained. Spell 59011 is an objective cast with fixed DBC time; completion must
+revalidate original GO identity and player eligibility. Client trigger packets
+must not advance time. BattleGround::Update can delete the instance and must be
+the final call in the derived update. Missing templates now yield no bracket
+instead of asserting in Player::GetBattleGroundBracketIdFromLevel.
+The extracted client HUD uses 3601/3602/3603 and 3621-3625, not TBC EotS IDs.
+Pure rules tests and real-asset route tests are not live gameplay certification.

@@ -10068,6 +10068,7 @@ void Player::SendInitWorldStates(uint32 zoneid) const
         case 2597:                                      // AV
         case 3277:                                      // WS
         case 3358:                                      // AB
+        case 5722:                                      // Thorn Gorge
         case 5023:                                      // SV
             if (BattleGround* bg = GetBattleGround())
                 bg->FillInitialWorldStates(data, count);
@@ -21723,7 +21724,8 @@ uint32 Player::GetMinLevelForBattleGroundBracketId(BattleGroundBracketId bracket
         bracketId = BG_BRACKET_ID_LAST;
 
     BattleGround *bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
-    ASSERT(bg);
+    if (!bg)
+        return BG_BRACKET_ID_NONE;
 
     if (bg->GetMinLevel())
         return bg->GetMinLevel() + 10 * bracketId;
@@ -21764,7 +21766,8 @@ BattleGroundBracketId Player::GetBattleGroundBracketIdFromLevel(BattleGroundType
 BattleGroundBracketId Player::GetBattleGroundBracketIdFromLevel(BattleGroundTypeId bgTypeId, uint32 playerLvl)
 {
     BattleGround *bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
-    ASSERT(bg);
+    if (!bg)
+        return BG_BRACKET_ID_NONE;
 
     if (playerLvl < bg->GetMinLevel())
         return BG_BRACKET_ID_NONE;

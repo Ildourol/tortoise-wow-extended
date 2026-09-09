@@ -1,0 +1,114 @@
+# Thorn Gorge prototype
+
+2026-09-08; developed from baseline `94c76b96` on `feature/thorn-gorge-prototype`.
+This is an adaptation for testing with provisional balance, not a claim to
+reproduce the official server's implementation.
+
+## Enable on a separate test realm
+
+1. Use isolated test world, character and login databases. Do not point a second
+   world process at the production character database. Keep its realm ID, ports
+   and login endpoint separate from production.
+2. With the test process stopped, apply `sql/custom/thorn_gorge_prototype.sql`
+   to its world database. It adds battleground 6, six battlemaster bindings and
+   two start orientations. It deliberately rejects existing rows; inspect any
+   conflict instead of replacing it. Some affected tables are MyISAM, so a
+   transaction alone cannot undo a partially applied script.
+3. Install the prototype `mangosd.exe` with its matching PDB and existing runtime
+   DLLs. Use extracted Turtle DBC/maps/vmaps/mmaps, including map 821.
+4. In the battleground section of the test `mangosd.conf`, add:
+
+   ```ini
+   Battleground.ThornGorge.Enabled = 1
+   Battleground.ThornGorge.FlagX = 2165.89
+   Battleground.ThornGorge.FlagY = 1564.21
+   ```
+
+5. Start the test realm. Join Thorn Gorge from the Turtle minimap queue or an
+   existing battlemaster (63203-63208). A client with imported map/UI is required.
+   The addon request is `JoinBattlegroundQueue("ThornGorge")`; a GM teleport to
+   an uninstanced map does not create an active match.
+6. Use level 31-60 characters, one per faction in the same bracket for initial
+   testing (31-40, 41-50, 51-60). Native bot queue fill can participate if enabled
+   in the test playerbot configuration. Turn `.gm off` to participate; GM mode
+   intentionally cannot capture objectives or carry the flag.
+7. Inside the match, administrators can run `.bg thorn` for scores, node
+   progress/ownership, flag state and elapsed time. `.bg status` remains the
+   existing global battleground status command.
+
+The feature defaults to disabled and requires a restart to enable. To disable,
+set `Battleground.ThornGorge.Enabled = 0` and restart the test process. Additional
+rows can remain while disabled. Building/packaging does not change production.
+
+## First-match checklist
+
+- Queue both factions, accept invites, verify starts and the 60-second countdown.
+  Crossing the 35-yard start boundary during countdown returns a player to their
+  start; physical gates are not placed in this prototype.
+- Capture a neutral banner, contest with equal numbers, then take it over.
+  Verify the progress bar, base counts and resource totals.
+- Pick up the flag, interrupt a pickup, and have two players try simultaneously.
+  Deliver to an owned base; enemy/neutral bases must not award points.
+- Die, disconnect, cancel the flag aura and leave while carrying it. Verify one
+  dropped flag, another player's pickup, and the 10-second automatic return.
+- Release at an owned graveyard, allow its base to be taken, and verify ghost
+  relocation and the native spirit-guide resurrection cycle.
+- Watch bots leave both starts, reach all objectives and deliver flags.
+  Navigation connectivity alone does not prove live movement works.
+- Finish a match (1600 points or 30-minute limit), check honor and scoreboard,
+  leave and queue a second match to exercise instance cleanup.
+
+## Rules and compatibility
+
+- Maximum 15 per team; SQL minimum is 1 for testing. Raise it to 5 for ordinary
+  matches. Balance values below are provisional.
+- Nodes use DBC locations 161-164, starts 165-166, graveyards 167-170. Capture
+  samples once per second within 30 yards and 12 vertical yards. Progress is
+  0-100, initially 50; each net player moves it two points, capped at five net
+  players. Ownership is awarded at endpoints and lost crossing 30/70 toward the
+  enemy. Mounted players can capture.
+- Resources tick every two seconds: 1/2/5/10 for 1/2/3/4 bases. Flag deliveries
+  award 75/85/100/500. Scores clamp at 1600. Simultaneous tied final ticks and
+  tied time limits finish without a winning faction.
+- Pickup uses native spell 59011 and its fixed DBC cast time, independent of
+  combat haste. Completion rechecks membership, object identity, distance, LOS,
+  life state and native object-use eligibility. Aura 59005 carries the flag;
+  native aura/death/leave callbacks clear it.
+- Native map-local objects, queues, team raids, honor, resurrection and teardown
+  are reused. No persistent objective spawns or character migrations are needed.
+  Capture-point GO templates have no timed proximity implementation in this
+  core; progression belongs to the battleground's map-owner update. Client
+  area-trigger packets cannot advance capture progress or grant deliveries.
+- Center/drop uses imported flagstand 2020421 so the generic flagdrop handler
+  cannot delete it during timed pickup. Standalone summon spell 59006 is not
+  also cast. Banners 2020400-2020402 reflect ownership. Center Z comes from native
+  terrain/collision, with a bounds check that cancels setup on invalid terrain.
+- Extracted `WorldStateUI.dbc` records 158-160 specify scores 3601/3602, maximum
+  3603, bases 3621/3622, progress display 3623, value 3624 and neutral width 3625.
+  Client presentation still needs an in-game check.
+- Bots use native movement and GameObject::Use; stable GUIDs spread them across
+  uncaptured bases, a subset seeks the flag, and carriers select an owned base.
+  They do not teleport or bypass flag validation to achieve objectives.
+- Honor: 40 per delivery to the team, 100 participation, 200 extra for winners.
+  Existing quests, vendors, marks and reputation are not redefined. The native
+  generic scoreboard remains; custom flag-capture columns and map ownership
+  icons are not yet implemented.
+
+## Verification
+
+- `ThornGorgeRulesTest`: contested capture, takeover, timer boundaries, repeated
+  and stale pickup/drop/delivery, end cleanup, ties, caps, batched ticks and
+  1,000 deterministic randomized matches. All 47 architecture tests passed.
+- `ThornGorgeFlagTest` compiles the actual native flag callbacks into a harness
+  and checks range/LOS changes, eligibility, foreign objects, competing pickup,
+  stale carriers, recursive aura removal, failed object/aura creation and reset.
+- The Release server binary compiled with playerbots enabled. The SQL script
+  was executed against uniquely named session-only temporary tables copied from
+  the current schema: 1 template, 6 bindings and 2 orientations; duplicate
+  application was rejected. No persistent production rows were changed.
+- `ThornGorgeAssetProbe <mmaps-directory>` loads real assets with this core's
+  Detour. All 27 map 821 tiles loaded, all seven objective/start positions had
+  nearby polygons, and all 42 directed routes completed. Center navigation Z
+  was approximately 1159.09. This does not establish live client/server behavior.
+- A real two-faction match, terrain and flag visuals, spirit-guide behavior,
+  and quest/reward design remain acceptance work before production.
