@@ -58,6 +58,7 @@ int main(){
         bg.type=type;viewer.bg=&bg;Engine engine;
         for(unsigned reset=0;reset<3;++reset){engine.strategies={"travel","rpg","follow"};ResetBgStrategies(&viewer,&engine);
             Check(engine.strategies.count("pvp")&&engine.strategies.count("battleground"),"reset lost PvP/objectives");
+            Check(bool(engine.strategies.count("thorn gorge")) == (type == BATTLEGROUND_TG),"TG strategy scope lost");
             Check(!engine.strategies.count("travel")&&!engine.strategies.count("rpg"),"world strategy leaked");}
     }
     viewer.bg=nullptr;Engine world;ResetBgStrategies(&viewer,&world);Check(world.strategies.empty(),"world PvP behavior changed");

@@ -46,6 +46,7 @@ private:
     unsigned m_captureCounts[4][2] = {};
     void Trace(char const* event, Player* player = nullptr, uint32 related = 0, char const* reason = "-", bool critical = false);
     void TraceSnapshot(char const* reason);
+    void TraceMovement(Player* player, uint32 sequence);
     char const* FlagRejection(Player* player, GameObject* object);
     ObjectGuid m_carrier;
     uint32 m_captureTickMs = 1200;
@@ -58,6 +59,7 @@ private:
     void SendNodeStates(unsigned node);
     void RewardVictoryQuests(Team winner);
     void SendStates();
+    void SendClientState(Player* player);
     void Announce(char const* text);
     bool Eligible(Player* player) const;
     ThornGorge::Team Side(Player* player) const;

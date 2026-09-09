@@ -39,6 +39,19 @@ namespace ai
         void InitNonCombatTriggers(std::list<TriggerNode*>& triggers) override;
     };
 
+#ifdef MANGOSBOT_ZERO
+    class ThornGorgeStrategy : public Strategy
+    {
+    public:
+        ThornGorgeStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+        int GetType() override { return STRATEGY_TYPE_GENERIC; }
+        std::string getName() override { return "thorn gorge"; }
+    private:
+        void InitNonCombatTriggers(std::list<TriggerNode*>& triggers) override;
+        void InitCombatTriggers(std::list<TriggerNode*>& triggers) override;
+    };
+#endif
+
     class WarsongStrategy : public Strategy
     {
     public:

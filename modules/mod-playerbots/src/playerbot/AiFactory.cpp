@@ -651,6 +651,10 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         }
 #endif
 
+#ifdef MANGOSBOT_ZERO
+        if (bgType == BATTLEGROUND_TG) combatEngine->addStrategy("thorn gorge");
+#endif
+
         if (bgType == BATTLEGROUND_WS)
         {
             combatEngine->addStrategy("warsong");
@@ -1123,6 +1127,10 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
             {
                 nonCombatEngine->addStrategy("battleground");
             }
+#endif
+
+#ifdef MANGOSBOT_ZERO
+            if (bgType == BATTLEGROUND_TG) nonCombatEngine->addStrategy("thorn gorge");
 #endif
 
             if (bgType == BATTLEGROUND_WS)

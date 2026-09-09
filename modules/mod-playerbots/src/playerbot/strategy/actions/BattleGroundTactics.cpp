@@ -2769,8 +2769,13 @@ bool BGTactics::Execute(Event& event)
         {
             float x, y, z;
             if (!thorn->GetObjective(bot, x, y, z)) return false;
+            // Keep the native objective value current for movement/jump consumers.
+            PositionMap& positions = context->GetValue<PositionMap&>("position")->Get();
+            positions["bg objective"].Set(x, y, z, bot->GetMapId());
             if (bot->IsWithinDist3d(x, y, z, 3.0f)) return false;
-            return MoveTo(bot->GetMapId(), x, y, z);
+            if (MoveTo(bot->GetMapId(), x, y, z)) return true;
+            auto* jump=dynamic_cast<JumpAction*>(context->GetAction("jump"));
+            return jump && jump->TryThornTraversal(WorldPosition(bot->GetMapId(),x,y,z));
         }
         return false;
     }

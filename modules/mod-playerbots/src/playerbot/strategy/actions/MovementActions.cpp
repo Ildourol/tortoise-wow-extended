@@ -19,6 +19,9 @@
 #include "Entities/Vehicle.h"
 #endif
 #include "playerbot/strategy/generic/CombatStrategy.h"
+#ifdef MANGOSBOT_ZERO
+#include "Battlegrounds/BattleGroundTG.h"
+#endif
 
 using namespace ai;
 
@@ -3551,6 +3554,62 @@ bool MoveToAction::Execute(Event& event)
 bool JumpAction::isUseful()
 {
     return bot->IsInWorld() && ai->HasPlayerNearby() && !ai->IsJumping();
+}
+
+bool JumpAction::TryThornTraversal(const WorldPosition& objective)
+{
+#ifdef MANGOSBOT_ZERO
+    BattleGround* bg = bot->GetBattleGround();
+    if (!bg || bg->GetTypeId() != BATTLEGROUND_TG || bg->GetStatus() != STATUS_IN_PROGRESS ||
+        !bot->IsInWorld() || bot->IsDead() || !ai->CanMove() || ai->IsJumping() ||
+        bot->IsNonMeleeSpellCasted(false) || bot->GetTransport() ||
+        objective.getMapId() != bot->GetMapId()) return false;
+    uint32 now = WorldTimer::getMSTime();
+    if (m_lastTraversalAttempt && WorldTimer::getMSTimeDiff(m_lastTraversalAttempt,now) < 5000) return false;
+    m_lastTraversalAttempt = now;
+    WorldPosition src(bot);
+    auto walking = objective.getPathStepFrom(src,bot,false);
+    // A usable walk is always preferred. Do not jump merely because another
+    // action delayed movement or a path-failure retry timer is still active.
+    if (walking.size() > 1 && src.distance(walking.back()) > 2.0f) return false;
+    float oldRemaining = objective.distance(src);
+    float vSpeed = std::min(sPlayerbotAIConfig.jumpVSpeed,7.96f);
+    unsigned samples=0;
+    auto trace=[&](char const* result,WorldPosition const& landing)
+    {
+        if (static_cast<BattleGroundTG*>(bg)->AdmitBotDiagnostic(bot))
+            Log::Instance().out(LOG_BG,
+                "THORN_GORGE schema=1 map=821 event=bot_traversal inst=%u guid=%u result=%s samples=%u "
+                "x=%.3f y=%.3f z=%.3f landing_x=%.3f landing_y=%.3f landing_z=%.3f",
+                bot->GetInstanceId(),bot->GetGUIDLow(),result,samples,src.getX(),src.getY(),src.getZ(),
+                landing.getX(),landing.getY(),landing.getZ());
+    };
+    for (float hSpeed : {bot->GetSpeed(MOVE_RUN),bot->GetSpeed(MOVE_WALK)})
+    {
+        for (unsigned direction=0; direction<8; ++direction)
+        {
+            float angle=src.getAngleTo(objective)+direction*M_PI_F/4.0f;
+            float time=0,distance=0,height=0;bool good=true;
+            std::vector<WorldPosition> arc;
+            ++samples;
+            WorldPosition landing=CalculateJumpParameters(src,bot,angle,vSpeed,hSpeed,time,distance,height,good,arc);
+            if (!landing || !good || arc.empty() || !CanLand(landing,bot) || src.distance(landing)<1.0f) continue;
+            // Validate a player-walkable landing without moving/snapping the bot.
+            WorldPosition walkable=landing;
+            if (!walkable.ClosestCorrectPoint(1.0f,2.0f,bot->GetInstanceId()) ||
+                walkable.distance(landing)>1.0f) continue;
+            auto next=objective.getPathStepFrom(landing,bot,false);
+            if (next.size()<2 || objective.distance(next.back())+3.0f>=oldRemaining) continue;
+            WorldPosition highest=src;
+            for(auto const& point:arc) if(point.getZ()>highest.getZ()) highest=point;
+            bool moved=DoJump(landing,highest,angle,vSpeed,hSpeed,time,distance,highest.getZ(),true,false,false,false);
+            trace(moved ? "jump" : "rejected",landing);
+            return moved;
+        }
+    }
+    trace("no_safe_progress",src);
+#endif
+    return false;
 }
 
 bool JumpAction::Execute(ai::Event &event)

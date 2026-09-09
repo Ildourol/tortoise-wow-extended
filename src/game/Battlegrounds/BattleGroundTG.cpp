@@ -6,6 +6,9 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "Chat.h"
+#include "MoveSpline.h"
+#include "SpellAuras.h"
+#include <sstream>
 #include "Config/Config.h"
 #include <cmath>
 #include <cstring>
@@ -13,7 +16,15 @@
 namespace
 {
 constexpr uint32 CarrySpell = 59005, PickupSpell = 59011;
-constexpr unsigned CenterObject = 12, DroppedObject = 13;
+constexpr unsigned CenterObject = 12, DroppedObject = 13, HordeGateObject = 14, AllianceGateObject = 15;
+// Horde doorway GPS supplied in the map-821 playtest. Gate visual fit still
+// needs in-client verification; native closed-door collision handles passage.
+constexpr float HordeDoorX = 1819.945801f, HordeDoorY = 1542.085083f;
+constexpr float HordeDoorZ = 1264.204346f, HordeDoorO = 3.357578f;
+// Exterior arch in Mediumtunnelshortpvp.wmo instance 4004: local
+// (0.075, 4.5, 1.08). Scale 1.65 covers the 5.1-yard opening below its crown.
+constexpr float AllianceDoorX = 2511.224335f, AllianceDoorY = 1599.020825f;
+constexpr float AllianceDoorZ = 1269.936689f, AllianceDoorO = -0.040724396f;
 constexpr uint32 NodeLocations[4] = {161, 162, 163, 164};
 constexpr uint32 GraveLocations[4] = {167, 168, 169, 170};
 constexpr uint32 StartLocations[2] = {165, 166};
@@ -27,7 +38,7 @@ Team NativeTeam(ThornGorge::Team team) { return team == ThornGorge::Alliance ? A
 
 BattleGroundTG::BattleGroundTG()
 {
-    m_BgObjects.resize(14);
+    m_BgObjects.resize(16);
     m_BgCreatures.resize(6);
     for (auto& id : m_StartMessageIds) id = 0;
     m_StartDelayTimes[BG_STARTING_EVENT_FIRST] = BG_START_DELAY_1M;
@@ -113,26 +124,46 @@ bool BattleGroundTG::SetupBattleGround()
         sLog.outError("Thorn Gorge: no valid center terrain at %.2f %.2f", m_flagX, m_flagY);
         return false;
     }
-    if (!AddObject(CenterObject, 2020421, m_flagX, m_flagY, m_flagZ + 0.1f, 0, 0, 0, 0, 1))
+    if (!AddObject(CenterObject, 2020421, m_flagX, m_flagY, m_flagZ + 0.1f, 0, 0, 0, 0, 1, m_flagScale))
     { Trace("setup_failed", nullptr, CenterObject, "center_flag_object", true); return false; }
-    if (GameObject* flag = GetBgMap()->GetGameObject(m_BgObjects[CenterObject]))
-        flag->SetObjectScale(m_flagScale);
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_NEVER);
     if (m_diagnostics.Event(true))
         sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=layout inst=%u flag_x=%.3f flag_y=%.3f flag_z=%.3f flag_scale=%.2f capture_tick_ms=%u capture_max_advantage=%u capture_radius=%u",
             GetInstanceID(), m_flagX, m_flagY, m_flagZ + 0.1f, m_flagScale, m_captureTickMs, m_rules.maxCaptureAdvantage, ThornGorge::CaptureRadius);
+    // Imported WSG Orc door model; half scale is the initial hut fitting.
+    // Its model minimum Z is -1.2013184, so align that base with the GPS floor.
+    if (!AddObject(HordeGateObject, 2020408, HordeDoorX, HordeDoorY,
+        HordeDoorZ + 0.6006592f, HordeDoorO, 0, 0,
+        std::sin(HordeDoorO / 2), std::cos(HordeDoorO / 2), 0.5f))
+    { Trace("setup_failed", nullptr, HordeGateObject, "horde_gate", true); return false; }
+    GameObject* gate = GetBgMap()->GetGameObject(m_BgObjects[HordeGateObject]);
+    if (!gate || !gate->m_model)
+    { Trace("setup_failed", nullptr, HordeGateObject, "horde_gate_collision", true); return false; }
+    gate->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
+    if (!AddObject(AllianceGateObject, 2020407, AllianceDoorX, AllianceDoorY,
+        AllianceDoorZ, AllianceDoorO, 0, 0,
+        std::sin(AllianceDoorO / 2), std::cos(AllianceDoorO / 2), 1.65f))
+    { Trace("setup_failed", nullptr, AllianceGateObject, "alliance_gate", true); return false; }
+    gate = GetBgMap()->GetGameObject(m_BgObjects[AllianceGateObject]);
+    if (!gate || !gate->m_model)
+    { Trace("setup_failed", nullptr, AllianceGateObject, "alliance_gate_collision", true); return false; }
+    gate->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
     Trace("setup_complete", nullptr, 0, "objects_and_spirit_guides", true);
     return true;
 }
 
 void BattleGroundTG::StartingEventCloseDoors()
 {
+    DoorClose(m_BgObjects[HordeGateObject]);
+    DoorClose(m_BgObjects[AllianceGateObject]);
     Trace("countdown", nullptr, 60, "seconds", true);
     Announce("Match starts in 60 seconds. Capture bases by standing near their banners; deliver the central flag to a base you control. First to 1600 resources wins.");
 }
 
 void BattleGroundTG::StartingEventOpenDoors()
 {
+    DoorOpen(m_BgObjects[HordeGateObject]);
+    DoorOpen(m_BgObjects[AllianceGateObject]);
     for (unsigned node = 0; node < 4; ++node) { UpdateBanner(node); SendNodeStates(node); }
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_IMMEDIATELY);
     Trace("match_start", nullptr, 0, "countdown_complete", true);
@@ -203,7 +234,8 @@ void BattleGroundTG::UpdateObjectives()
                 if (score != m_PlayerScores.end()) ++static_cast<BattleGroundTGScore*>(score->second)->FlagCaptures;
                 RewardHonorToTeam(40, NativeTeam(Side(p)));
                 Trace("flag_delivered", p, node);
-                Announce("Flag delivered!");
+                PlaySoundToAll(Side(p) == ThornGorge::Alliance ? 8173 : 8213);
+                Announce("Flag delivered! The flag returns to the center in 10 seconds.");
             }
     }
     for (auto const& it : m_Players)
@@ -229,14 +261,19 @@ void BattleGroundTG::Update(uint32 diff)
     if (diff >= 2000) Trace("update_delay", nullptr, diff, "owner_update_ms");
     if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
     {
-        // Use a start-area leash rather than guessing gate positions from video.
+        // Native doors block passage; the countdown leash also catches bypasses.
         for (auto const& it : m_Players)
             if (Player* p = GetBgMap()->GetPlayer(it.first))
             {
                 auto side = Side(p);
                 if (side == ThornGorge::Neutral || p->IsGameMaster()) continue;
                 auto loc = sWorldSafeLocsStore.LookupEntry(StartLocations[side]);
-                if (loc && !p->IsBeingTeleported() && !p->IsWithinDist3d(loc->x, loc->y, loc->z, 35.0f))
+                float const doorX = side == ThornGorge::Horde ? HordeDoorX : AllianceDoorX;
+                float const doorY = side == ThornGorge::Horde ? HordeDoorY : AllianceDoorY;
+                if (loc && !p->IsBeingTeleported() &&
+                    (!p->IsWithinDist3d(loc->x, loc->y, loc->z, side == ThornGorge::Horde ? 35.0f : 55.0f) ||
+                        (doorX - loc->x) * (p->GetPositionX() - doorX) +
+                        (doorY - loc->y) * (p->GetPositionY() - doorY) > 0.0f))
                     p->NearTeleportTo(loc->x, loc->y, loc->z, 0);
             }
     }
@@ -253,7 +290,12 @@ void BattleGroundTG::Update(uint32 diff)
             }
         }
         auto oldFlag = m_rules.flag;
+        uint32 const previousTimer = m_rules.flagTimer;
         m_rules.Tick(diff);
+        uint32 const countdown = ThornGorge::FlagCountdownSeconds(previousTimer, m_rules.flagTimer);
+        if (countdown && (m_rules.flag == ThornGorge::Dropped || m_rules.flag == ThornGorge::Respawning))
+            Announce(("Flag returns to the center in " + std::to_string(countdown) +
+                (countdown == 1 ? " second." : " seconds.")).c_str());
         if (oldFlag != ThornGorge::Center && m_rules.flag == ThornGorge::Center) RestoreFlag();
         m_tick += diff;
         // Sample players once per owner update after a stall, without granting
@@ -315,13 +357,10 @@ void BattleGroundTG::EventPlayerDroppedFlag(Player* player)
     player->RemoveAurasDueToSpell(CarrySpell);
     DelObject(DroppedObject);
     if (GetStatus() != STATUS_IN_PROGRESS || player->GetMap() != GetBgMap() ||
-        !AddObject(DroppedObject, 2020421, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), 0, 0, 0, 0, 1))
+        !AddObject(DroppedObject, 2020421, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), 0, 0, 0, 0, 1, m_flagScale))
     {
         m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs;
     }
-    if (m_rules.flag == ThornGorge::Dropped)
-        if (GameObject* flag = GetBgMap()->GetGameObject(m_BgObjects[DroppedObject]))
-            flag->SetObjectScale(m_flagScale);
     Trace("flag_dropped", player, 0, m_rules.flag == ThornGorge::Dropped ? "ground_flag_created" : "center_reset_scheduled");
     Announce(m_rules.flag == ThornGorge::Dropped ? "Flag dropped; it returns to the center after 30 seconds." : "Flag returns to the center in 10 seconds.");
     SendStates();
@@ -331,6 +370,7 @@ void BattleGroundTG::RestoreFlag()
 {
     DelObject(DroppedObject);
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_IMMEDIATELY);
+    PlaySoundToAll(8232); // Native WSG flags-respawned sound.
     Trace("flag_reset");
     Announce("The flag has returned to the center.");
 }
@@ -340,6 +380,7 @@ void BattleGroundTG::AddPlayer(Player* player)
     BattleGround::AddPlayer(player);
     m_PlayerScores[player->GetObjectGuid()] = new BattleGroundTGScore;
     Trace("player_join", player);
+    SendClientState(player);
 }
 
 void BattleGroundTG::RemovePlayer(Player* player, ObjectGuid guid)
@@ -462,7 +503,25 @@ void BattleGroundTG::SendStates()
         UpdateWorldState(BaseStates[team], m_rules.Bases(ThornGorge::Team(team)));
     }
     UpdateWorldState(3603, ThornGorge::MaxScore);
+    for (auto const& member : m_Players)
+        SendClientState(GetBgMap()->GetPlayer(member.first));
 }
+
+void BattleGroundTG::SendClientState(Player* player)
+{
+    // Native addon delivery: display-only state, never accepted back as input.
+    // The 1.12 carrier-position packet has no carrier-team or reset-timer field.
+    if (!player || !player->IsInWorld() || player->GetBattleGround() != this ||
+        !player->GetSession() || !player->GetSession()->GetSocket()) return;
+    Player* carrier = m_carrier ? GetBgMap()->GetPlayer(m_carrier) : nullptr;
+    uint32 const carrierTeam = carrier ? uint32(Side(carrier)) : uint32(ThornGorge::Neutral);
+    std::string const payload = "1;" + std::to_string(GetInstanceID()) + ";" +
+        std::to_string(m_rules.ended ? STATUS_WAIT_LEAVE : GetStatus()) + ";" +
+        std::to_string(uint32(m_rules.flag)) + ";" + std::to_string(carrierTeam) + ";" +
+        std::to_string(m_rules.flagTimer);
+    player->SendAddonMessage("MT_TG1", payload);
+}
+// End Thorn Gorge client state.
 
 void BattleGroundTG::HandleCommand(Player* player, ChatHandler* handler, char* args)
 {
@@ -487,24 +546,38 @@ ObjectGuid BattleGroundTG::GetAvailableFlag() const
 bool BattleGroundTG::GetObjective(Player* player, float& x, float& y, float& z) const
 {
     if (GetStatus() != STATUS_IN_PROGRESS || !Eligible(player)) return false;
-    auto team = Side(player);
+    auto const team = Side(player);
+    bool const carrying = m_carrier == player->GetObjectGuid();
+    unsigned const role = player->GetGUIDLow() % 6;
+    unsigned const owned = m_rules.Bases(team);
+    // Stable assignments: flag runner, escort/interceptor, defender, three
+    // capture roles. Re-evaluate ownership and carrier lifetime on the map owner.
+    if (!carrying && role == 1)
+        if (Player* carrier = m_carrier ? GetBgMap()->GetPlayer(m_carrier) : nullptr)
+            if (Eligible(carrier))
+            { x=carrier->GetPositionX(); y=carrier->GetPositionY(); z=carrier->GetPositionZ(); return true; }
+    if (!carrying && role == 0 && owned)
+        if (GameObject* flag = GetBgMap()->GetGameObject(GetAvailableFlag()))
+            if (flag->isSpawned())
+            { x=flag->GetPositionX(); y=flag->GetPositionY(); z=flag->GetPositionZ(); return true; }
+
+    bool const defend = !carrying && owned && (role == 2 || owned == 4);
     float distance = 1e30f;
     bool found = false;
     for (unsigned node = 0; node < 4; ++node)
     {
-        // Carriers deliver; others spread across capture points by stable GUID.
-        unsigned idx = (node + player->GetGUIDLow()) % 4;
-        if (m_carrier == player->GetObjectGuid() ? m_rules.owner[idx] != team : m_rules.owner[idx] == team) continue;
+        unsigned const idx = (node + player->GetGUIDLow()) % 4;
+        bool const wantOwned = carrying ? owned != 0 : defend;
+        if ((m_rules.owner[idx] == team) != wantOwned) continue;
         auto loc = sWorldSafeLocsStore.LookupEntry(NodeLocations[idx]);
         if (!loc) continue;
-        float d = player->GetDistanceSqr(loc->x, loc->y, loc->z);
-        if (m_carrier != player->GetObjectGuid() || d < distance)
-        { x = loc->x; y = loc->y; z = loc->z; distance = d; found = true; }
-        if (m_carrier != player->GetObjectGuid()) break;
+        float const d = player->GetDistanceSqr(loc->x, loc->y, loc->z);
+        if (!carrying || d < distance)
+        { x=loc->x; y=loc->y; z=loc->z; distance=d; found=true; }
+        if (!carrying) break;
     }
-    if (m_carrier != player->GetObjectGuid() && m_rules.Bases(team) && player->GetGUIDLow() % 3 == 0)
-        if (GameObject* flag = GetBgMap()->GetGameObject(GetAvailableFlag()))
-        { x = flag->GetPositionX(); y = flag->GetPositionY(); z = flag->GetPositionZ(); return true; }
+    // With no owned base, the carrier helps establish the nearest one instead
+    // of losing its objective and chasing arbitrary enemies.
     return found;
 }
 
@@ -553,6 +626,7 @@ void BattleGroundTG::TraceSnapshot(char const* reason)
             sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=player inst=%u seq=%u guid=%u available=0", GetInstanceID(), sequence, it.first.GetCounter());
             continue;
         }
+        TraceMovement(player, sequence);
         float x=0, y=0, z=0;
         bool objective=GetObjective(player,x,y,z);
         auto found=m_PlayerScores.find(it.first);
@@ -566,3 +640,53 @@ void BattleGroundTG::TraceSnapshot(char const* reason)
             score ? score->KillingBlows : 0, score ? score->Deaths : 0, score ? score->BonusHonor : 0, score ? score->FlagCaptures : 0);
     }
 }
+
+// Owner-local, bounded observations. A floor gap is evidence for review, not a
+// movement verdict: bridges, jumps, knockbacks and transports need context.
+void BattleGroundTG::TraceMovement(Player* player, uint32 sequence)
+{
+    if (m_diagnostics.level < 2 || !player || !player->IsInWorld() ||
+        player->GetMap() != GetBgMap() || player->IsBeingTeleported()) return;
+    float const x = player->GetPositionX(), y = player->GetPositionY(), z = player->GetPositionZ();
+    // Start near the feet, not above the terrain: otherwise hut roofs can be
+    // mistaken for the supporting floor. The search is limited to 100 yards.
+    float const floor = GetBgMap()->GetHeight(x, y, z + 0.5f, true, 100.0f);
+    bool const floorValid = std::isfinite(floor) && floor > INVALID_HEIGHT;
+    auto* spline = player->movespline;
+    if (spline && !spline->Initialized()) spline = nullptr;
+    std::ostringstream points, speedAuras;
+    uint32 pointCount = 0, auraCount = 0;
+    if (spline)
+    {
+        auto const& path = spline->getPath();
+        // These are spline control vertices, not an invented straight route.
+        // Include the current vertex and at most seven following vertices.
+        for (int i = std::max(0, spline->_currentSplineIdx());
+            i < int(path.size()) && pointCount < 8; ++i, ++pointCount)
+        {
+            if (pointCount) points << ';';
+            points << i << ':' << path[i].x << ',' << path[i].y << ',' << path[i].z;
+        }
+    }
+    for (AuraType type : {SPELL_AURA_MOD_INCREASE_SPEED, SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED,
+        SPELL_AURA_MOD_SPEED_ALWAYS, SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS,
+        SPELL_AURA_MOD_SPEED_NOT_STACK, SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK, SPELL_AURA_MOD_DECREASE_SPEED})
+        for (auto* aura : player->GetAurasByType(type))
+        {
+            if (auraCount == 8) break;
+            if (auraCount++) speedAuras << ';';
+            speedAuras << uint32(type) << ':' << aura->GetId() << ':' << aura->GetModifier()->m_amount;
+        }
+    sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=movement inst=%u seq=%u elapsed_ms=%u guid=%u x=%.3f y=%.3f z=%.3f floor_valid=%u floor_z=%.3f floor_gap=%.3f move_flags=%u unit_state=%u motion=%u run_speed=%.3f swim_speed=%.3f mounted=%u spline_initialized=%u spline_id=%u spline_done=%u spline_ms=%d spline_total_ms=%d spline_flags=%u spline_transport=%u spline_points=%u vertices=%s speed_auras=%s",
+        GetInstanceID(), sequence, m_elapsed, player->GetGUIDLow(), x, y, z,
+        uint32(floorValid), floorValid ? floor : 0.0f, floorValid ? z - floor : 0.0f,
+        player->m_movementInfo.GetMovementFlags(), player->GetUnitState(),
+        uint32(player->GetMotionMaster()->GetCurrentMovementGeneratorType()),
+        player->GetSpeed(MOVE_RUN), player->GetSpeed(MOVE_SWIM), uint32(player->IsMounted()),
+        uint32(spline != nullptr), spline ? spline->GetId() : 0, uint32(!spline || spline->Finalized()),
+        spline ? spline->timePassed() : 0, spline ? spline->Duration() : 0,
+        spline ? spline->GetFlags() : 0, spline ? spline->GetTransportGuid() : 0,
+        pointCount, pointCount ? points.str().c_str() : "-", auraCount ? speedAuras.str().c_str() : "-");
+}
+
+// End Thorn Gorge movement observations.

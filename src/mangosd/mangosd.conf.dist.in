@@ -238,6 +238,17 @@ vmap.petLOS = 1
 
 mmap.enabled = 1
 
+# Per-map path search budget (2048..65535 nodes per map-owning thread).
+# Unlisted maps keep 2048. Changes require restart or unloading the map.
+# Thorn Gorge's routes exhaust 2048; 16384 resolves all tested objective routes.
+mmap.QueryNodes.821 = 16384
+
+# Restrict native player path requests on this map to player-walkable slopes.
+# Bots use the same filter for objectives, combat and path shortcut checks.
+# Maps without a key retain their existing behavior. Missing nav data fails
+# the request; it does not authorize straight-line travel through obstacles.
+mmap.PlayerWalkable.821 = 1
+
 # Collision.Models.Unload. Free model when no one uses it anymore.
 
 Collision.Models.Unload = 1

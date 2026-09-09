@@ -183,6 +183,11 @@ namespace ai
             creators["bg ended"] = [](PlayerbotAI* ai) { return new BgEndedTrigger(ai); };
             creators["bg invite active"] = [](PlayerbotAI* ai) { return new BgInviteActiveTrigger(ai); };
             creators["player has no flag"] = [](PlayerbotAI* ai) { return new PlayerHasNoFlag(ai); };
+#ifdef MANGOSBOT_ZERO
+            creators["thorn flag delivery"] = [](PlayerbotAI* ai) { return new ThornFlagDelivery(ai); };
+            creators["thorn objective travel"] = [](PlayerbotAI* ai) { return new ThornObjectiveTravel(ai); };
+            creators["thorn carrier intercept"] = [](PlayerbotAI* ai) { return new ThornCarrierIntercept(ai); };
+#endif
             creators["player has flag"] = [](PlayerbotAI* ai) { return new PlayerHasFlag(ai); };
             creators["team has flag"] = [](PlayerbotAI* ai) { return new TeamHasFlag(ai); };
             creators["enemy team has flag"] = [](PlayerbotAI* ai) { return new EnemyTeamHasFlag(ai); };

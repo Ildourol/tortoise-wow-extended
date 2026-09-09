@@ -9,6 +9,15 @@
 // this object owns no players, maps, timers from other threads, or persistence.
 namespace ThornGorge
 {
+    // Announce only crossed final-five-second boundaries. A delayed update
+    // emits the current remaining time once, never a burst of stale numbers.
+    inline unsigned FlagCountdownSeconds(unsigned before, unsigned after)
+    {
+        unsigned const remaining = (after + 999) / 1000;
+        return after && after < before && remaining <= 5 &&
+            (before + 999) / 1000 != remaining ? remaining : 0;
+    }
+
 constexpr unsigned NodeCount = 4;
 constexpr unsigned MaxScore = 1600;
 constexpr unsigned CaptureRadius = 30;

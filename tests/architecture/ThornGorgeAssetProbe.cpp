@@ -6,10 +6,40 @@
 #include <stdexcept>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
+#include <chrono>
+#include <string>
+#include "DetourCommon.h"
+
+using uint32=uint32_t;using int32=int32_t;
+#define MAX_PATH_LENGTH 256
+#define MAX_POINT_PATH_LENGTH 256
+#define VERTEX_SIZE 3
+#define SMOOTH_PATH_SLOP 0.4f
+#define SMOOTH_PATH_STEP_SIZE 2.0f
+#define INVALID_POLYREF 0
+#define DEBUG_LOG(...) ((void)0)
+struct PathInfo {
+    dtNavMeshQuery const* m_navMeshQuery;dtNavMesh const* m_navMesh;dtQueryFilter m_filter;
+    static uint32 fixupCorridor(dtPolyRef*,uint32,uint32,dtPolyRef const*,uint32);
+    bool getSteerTarget(float const*,float const*,float,dtPolyRef const*,uint32,float*,unsigned char&,dtPolyRef&)const;
+    dtStatus findSmoothPath(float const*,float const*,dtPolyRef const*,uint32,float*,int*,uint32);
+    static bool inRangeYZX(float const* a,float const* b,float r,float h){float x=a[0]-b[0],y=a[1]-b[1],z=a[2]-b[2];return x*x+z*z<r*r&&std::fabs(y)<h;}
+};
+#include "NativePathSmoothing.inc"
+
 static void Check(bool ok, char const* msg) { if (!ok) throw std::runtime_error(msg); }
 int main(int argc, char** argv)
 {
-    Check(argc == 2, "usage: ThornGorgeAssetProbe <map-821-mmaps-directory>");
+    Check(argc >= 2, "usage: ThornGorgeAssetProbe <map-821-mmaps-directory> [--exclude-steep] [--nodes N] [--routes output.jsonl]");
+    int nodes=2048; bool excludeSteep=false; std::ofstream routes;
+    for(int i=2;i<argc;++i) {
+        if(std::strcmp(argv[i],"--exclude-steep")==0) excludeSteep=true;
+        else if(std::strcmp(argv[i],"--nodes")==0 && i+1<argc) nodes=std::stoi(argv[++i]);
+        else if(std::strcmp(argv[i],"--routes")==0 && i+1<argc) {routes.open(argv[++i]);Check(bool(routes),"cannot open route export");}
+        else Check(false,"unknown probe option");
+    }
+    Check(nodes>=2048&&nodes<=65535,"nodes must be 2048..65535");
     std::filesystem::path dir(argv[1]);
     dtNavMeshParams params{};
     std::ifstream root(dir/"821.mmap", std::ios::binary);
@@ -36,7 +66,8 @@ int main(int argc, char** argv)
         {2174.469482f,1569.349243f,1160.459473f}};
     char const* names[]={"Amberhorn","Farseer","Grimtotem","MageTower","AllianceStart","HordeStart","Center"};
     dtPolyRef refs[7]{}; float points[7][3]{}; dtQueryFilter filter;
-    filter.setIncludeFlags(0x09); // native ground + water, excludes steep/lava
+    filter.setIncludeFlags(0x09); // native ground + water
+    filter.setExcludeFlags(excludeSteep ? 0x10 : 0); // steep polygons also have GROUND: include alone does not exclude them
     float ext[3]={5,150,5};
     std::cout<<"Loaded "<<tiles<<" map 821 tiles\n";
     for(unsigned i=0;i<7;++i)
@@ -57,5 +88,29 @@ int main(int argc, char** argv)
         if(full) ++complete; else {++partial; std::cout<<"INCOMPLETE "<<names[from]<<" -> "<<names[to]<<"\n";}
     }
     std::cout<<"Routes: "<<complete<<" complete, "<<partial<<" incomplete (incomplete routes require explicit traversal review)\n";
-    return partial ? 2 : 0;
+
+    // Run the real core smoother at its production query/corridor/point limits.
+    // Connectivity alone does not prove the movement consumer accepts a route.
+    dtNavMeshQuery nativeQuery;Check(dtStatusSucceed(nativeQuery.init(&mesh,nodes)),"native query init");
+    PathInfo native{&nativeQuery,&mesh,filter};unsigned failed=0,outOfNodes=0;
+    auto started=std::chrono::steady_clock::now();
+    for(unsigned from=0;from<7;++from) for(unsigned to=0;to<7;++to){
+        if(to==from)continue;
+        dtPolyRef corridor[256];int polygons=0,pointCount=0;float smoothed[256*3]{};
+        auto route=nativeQuery.findPath(refs[from],refs[to],points[from],points[to],&filter,corridor,&polygons,256);
+        bool exhausted=dtStatusDetail(route,DT_OUT_OF_NODES);if(exhausted)++outOfNodes;
+        auto status=dtStatusSucceed(route)&&polygons ? native.findSmoothPath(points[from],points[to],corridor,polygons,smoothed,&pointCount,256) : DT_FAILURE;
+        bool usable=dtStatusSucceed(status)&&pointCount>=2;
+        bool reaches=usable&&dtVdistSqr(smoothed+(pointCount-1)*3,points[to])<4;
+        if(!usable)++failed;
+        std::cout<<"Native "<<names[from]<<" -> "<<names[to]<<" polys="<<polygons<<" points="<<pointCount<<" usable="<<usable
+            <<" reaches="<<reaches<<" exhausted="<<exhausted<<" corridor_status="<<route<<" smooth_status="<<status;
+        if(pointCount)std::cout<<" end="<<smoothed[(pointCount-1)*3+2]<<","<<smoothed[(pointCount-1)*3]<<","<<smoothed[(pointCount-1)*3+1];
+        std::cout<<"\n";
+        if(routes){routes<<"{\"from\":"<<from<<",\"to\":"<<to<<",\"usable\":"<<usable<<",\"reaches\":"<<reaches<<",\"points\":[";
+            for(int p=0;p<pointCount;++p){if(p)routes<<",";routes<<"["<<smoothed[p*3+2]<<","<<smoothed[p*3]<<","<<smoothed[p*3+1]<<"]";}routes<<"]}\n";}
+    }
+    auto ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-started).count();
+    std::cout<<"Native summary nodes="<<nodes<<" failed="<<failed<<" exhausted="<<outOfNodes<<" total_ms="<<ms<<"\n";
+    return partial ? 2 : failed ? 3 : 0;
 }

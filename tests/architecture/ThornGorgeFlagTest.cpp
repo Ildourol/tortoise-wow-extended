@@ -51,10 +51,11 @@ public:
     unsigned GetStatus(){return status;}
     bool Eligible(Player* p){return p&&p->eligible&&p->map==GetBgMap();}
     void Announce(char const*){} void SendStates(){}
+    unsigned sound=0;void PlaySoundToAll(unsigned id){sound=id;}
     void SpawnObject(ObjectGuid g,unsigned respawn){(g==center.guid?center:drop).spawned=respawn==0;}
     void DelObject(unsigned slot){m_BgObjects[slot].Clear();drop.spawned=false;}
-    bool AddObject(unsigned slot,unsigned,float,float,float,int,int,int,int,int)
-    {++adds;if(!addSucceeds)return false;drop.guid=100+adds;m_BgObjects[slot]=drop.guid;drop.spawned=true;return true;}
+    bool AddObject(unsigned slot,unsigned,float,float,float,int,int,int,int,int,float scale)
+    {++adds;if(!addSucceeds)return false;drop.guid=100+adds;m_BgObjects[slot]=drop.guid;drop.spawned=true;drop.scale=scale;return true;}
     void Trace(char const*,Player* =nullptr,unsigned =0,char const* ="-",bool =false){}
     char const* FlagRejection(Player*,GameObject*);
     bool OwnFlagObject(GameObject*)const;
@@ -69,6 +70,10 @@ void Player::RemoveAurasDueToSpell(unsigned)
 static void Check(bool ok,char const* message){if(!ok)throw std::runtime_error(message);}
 int main()
 {
+    Check(ThornGorge::FlagCountdownSeconds(6000,5000)==5,"five-second countdown");
+    Check(ThornGorge::FlagCountdownSeconds(5000,4999)==0,"no duplicate countdown");
+    Check(ThornGorge::FlagCountdownSeconds(8000,1999)==2,"stall emits only current time");
+    Check(ThornGorge::FlagCountdownSeconds(1,0)==0,"no zero after reset");
     BattleGroundTG bg; Player p; p.bg=&bg;p.map=&bg;
     bg.EventPlayerClickedOnFlag(&p,&bg.center);
     Check(p.casts==1 && !bg.m_carrier,"click starts cast; cannot grant flag early");
@@ -97,6 +102,7 @@ int main()
     Check(bg.m_rules.flag==ThornGorge::Respawning && !bg.m_carrier && !other.aura,"spawn failure clears carrier and schedules reset");
     Check(bg.m_rules.flagTimer==10000,"failed ground spawn retains ten-second center reset");
     bg.m_rules.Tick(10000);bg.RestoreFlag();
+    Check(bg.sound==8232,"native WSG reset sound missing");
     Check(bg.center.spawned && !bg.m_BgObjects[13],"native reset restores center and removes dropped object");
     p.castSucceeds=false;bg.addSucceeds=true;bg.CompleteFlagPickup(&p,&bg.center);
     Check(!bg.m_carrier && bg.m_rules.flag==ThornGorge::Dropped,"carry aura failure never strands carrier state");

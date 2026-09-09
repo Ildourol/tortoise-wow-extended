@@ -1109,6 +1109,7 @@ bool WorldPosition::cropPathTo(std::vector<WorldPosition>& path, const float max
 //A sequential series of pathfinding attempts. Returns the complete path and if the patfinder eventually found a way to the destination.
 std::vector<WorldPosition> WorldPosition::getPathFromPath(const std::vector<WorldPosition>& startPath, const Unit* bot, uint8 maxAttempt) const
 {
+    if (startPath.empty()) return {};
     //We start at the end of the last path.
     WorldPosition currentPos = startPath.back();
 
@@ -1160,7 +1161,9 @@ std::vector<WorldPosition> WorldPosition::getPathFromPath(const std::vector<Worl
         currentPos = subPath.back();
     }
 
-    return fullPath;
+    // A lone origin after a failed query is not a movement path. Returning it
+    // made callers report success indefinitely without issuing any movement.
+    return fullPath.size() > 1 ? fullPath : std::vector<WorldPosition>{};
 }
 
 bool WorldPosition::ClosestCorrectPoint(float maxRange, float maxHeight, uint32 instanceId)

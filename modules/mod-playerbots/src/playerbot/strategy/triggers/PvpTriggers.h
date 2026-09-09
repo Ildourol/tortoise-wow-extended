@@ -12,6 +12,27 @@ namespace ai
         virtual bool IsActive() override;
     };
 
+#ifdef MANGOSBOT_ZERO
+    class ThornFlagDelivery : public Trigger
+    {
+    public:
+        ThornFlagDelivery(PlayerbotAI* ai) : Trigger(ai, "thorn flag delivery") {}
+        bool IsActive() override;
+    };
+    class ThornCarrierIntercept : public Trigger
+    {
+    public:
+        ThornCarrierIntercept(PlayerbotAI* ai) : Trigger(ai, "thorn carrier intercept") {}
+        bool IsActive() override;
+    };
+    class ThornObjectiveTravel : public Trigger
+    {
+    public:
+        ThornObjectiveTravel(PlayerbotAI* ai) : Trigger(ai, "thorn objective travel") {}
+        bool IsActive() override;
+    };
+#endif
+
     class PlayerHasNoFlag : public Trigger
     {
     public:

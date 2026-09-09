@@ -83,6 +83,16 @@ foreach(test SoapCommandLifecycleTest BotHolderDispatchTest TurtleBagStorageTest
     add_test(NAME ${test} COMMAND ${test})
     set_tests_properties(${test} PROPERTIES TIMEOUT 20)
 endforeach()
+
+extract_native_fragment("${CORE_ROOT}/src/game/Objects/Unit.cpp"
+    "void Unit::SetSpeedRate(" "void Unit::SetSpeedRateReal(" SocketlessSpeedNative.inc)
+add_executable(SocketlessSpeedUpdateTest SocketlessSpeedUpdateTest.cpp)
+target_compile_features(SocketlessSpeedUpdateTest PRIVATE cxx_std_17)
+target_include_directories(SocketlessSpeedUpdateTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(SocketlessSpeedUpdateTest PRIVATE /EHsc)
+endif()
+add_test(NAME SocketlessSpeedUpdateTest COMMAND SocketlessSpeedUpdateTest)
 extract_native_fragment("${TRAVEL_ROOT}/PlayerbotAI.cpp"
     "bool ChatHandler::HandleAhBotCommand(char* args)" "float PlayerbotAI::GetRange" NativeAhBotChatDispatch.inc)
 extract_native_fragment("${CORE_ROOT}/modules/mod-playerbots/src/ahbot/AhBot.cpp"
@@ -569,3 +579,45 @@ if(MSVC)
     target_compile_options(BattlegroundPlayerPresentationTest PRIVATE /EHsc)
 endif()
 add_test(NAME BattlegroundPlayerPresentationTest COMMAND BattlegroundPlayerPresentationTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/Maps/PathFinder.cpp"
+    "uint32 PathInfo::fixupCorridor(" "// Nostalrius\nbool PathInfo::UpdateForCaster(" NativePathSmoothing.inc)
+target_include_directories(ThornGorgeAssetProbe PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::TraceMovement(" "// End Thorn Gorge movement observations." ThornMovementNative.inc)
+add_executable(ThornMovementDiagnosticsTest ThornMovementDiagnosticsTest.cpp)
+target_compile_features(ThornMovementDiagnosticsTest PRIVATE cxx_std_17)
+target_include_directories(ThornMovementDiagnosticsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(ThornMovementDiagnosticsTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornMovementDiagnosticsTest COMMAND ThornMovementDiagnosticsTest)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGround.cpp"
+    "bool BattleGround::AddObject(" "//some doors aren't despawned" BattlegroundObjectScaleNative.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/triggers/PvpTriggers.cpp"
+    "bool ThornFlagDelivery::IsActive()" "#endif" ThornCarrierTriggerNative.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/generic/BattlegroundStrategy.cpp"
+    "void ThornGorgeStrategy::InitNonCombatTriggers(" "#endif" ThornCarrierStrategyNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "bool BattleGroundTG::GetObjective(" "void BattleGroundTG::Trace(" ThornObjectiveNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::SendClientState(" "// End Thorn Gorge client state." ThornClientStateNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Maps/PathFinder.cpp"
+    "void PathInfo::createFilter()" "void PathInfo::updateFilter()" PlayerWalkableFilterNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Maps/PathFinder.cpp"
+    "dtPolyRef PathInfo::getPolyByLocation(" "void PathInfo::BuildPolyPath(" PlayerWalkableLookupNative.inc)
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/MovementActions.cpp"
+    "bool JumpAction::TryThornTraversal(" "bool JumpAction::Execute(" ThornTraversalNative.inc)
+extract_native_fragment("${TRAVEL_ROOT}/WorldPosition.cpp"
+    "std::vector<WorldPosition> WorldPosition::getPathFromPath(" "bool WorldPosition::ClosestCorrectPoint(" MovementPathProgressNative.inc)
+foreach(test IN ITEMS BattlegroundObjectScaleTest ThornCarrierStrategyTest ThornObjectiveAssignmentTest ThornClientStateTest PlayerWalkableFilterTest ThornTraversalTest MovementPathProgressTest)
+    add_executable(${test} ${test}.cpp)
+    target_compile_features(${test} PRIVATE cxx_std_17)
+    target_include_directories(${test} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_include_directories(${test} PRIVATE ../../src/game/Battlegrounds)
+    if(MSVC)
+        target_compile_options(${test} PRIVATE /EHsc)
+    endif()
+    add_test(NAME ${test} COMMAND ${test})
+endforeach()
