@@ -451,3 +451,26 @@ The native smoother detects a repeated two-point oscillation after an oversized 
 TG walking failure can ask the existing cached JumpAction for bounded traversal: at most16 run/walk ballistic candidates per5s, normal jump vertical speed, native collision/landing checks and a following walk improving remaining objective distance. No teleport, unrestricted dispatch or artificial speed is introduced. Native facilities lacked an objective-directed safe jump retry; this uses their existing trajectory/DoJump lifecycle. This is scoped to a live TG, but actual geometry traversal still needs live acceptance.
 
 MT_TG1 is a one-way native addon message for same-BG human sockets, carrying version, instance, status, flag state, faction and remaining timer. Native carrier packets lack colour/timer fields; the client companion supplies those visuals without replacing coordinate APIs. No incoming command or extra thread. WorldMapArea821 is expanded and original art fitted/cropped; four Thorn ADTs add existing ramp models. Matching extracted collision/navmesh are deployed in a separate data directory to avoid mixing live cached trees with new tiles. See client/ManTechThornGorge/README.md and the playtest report for reproducibility and live limits.
+
+
+### September 9 generic walking failure contract
+
+MovementAction::MoveTo delegates to MoveTo2. ResolveMovePath now receives the
+required-path intent before resolving; required walking failure stays empty on
+all maps. Native travel nodes and special portal/transport handling are retained.
+The shared failure retry cache gates repeats. Detailed ground actors may call
+JumpAction::TryGroundTraversal only after failure; it uses bounded existing
+ballistics, landing collision/navmesh and subsequent walking progress. There is
+no TG-only movement fallback. TG tactics only choose objectives.
+
+MoveSplineInit::Move must interpret PathInfo status before copying coordinates:
+NOPATH can carry BuildShortcut coordinates which are not an approved route.
+Reject failures, preserve valid normal/incomplete paths and explicit direct
+MoveTo requests. Player ground paths use the generic mmap.PlayerWalkable filter;
+flight/explicit ignore states and creature capabilities remain distinct. The
+per-map query-node capacity setting is independent of this behavioral contract.
+CheckMountStateAction requires an actual current target before declaring a close
+attack target. Nearby target discovery alone must not create a zero-distance foe.
+See StrictPathHandoffTest, GroundTraversalTest, PlayerWalkableFilterTest and
+MountTargetDecisionTest. Fixtures cover shared contracts; runtime acceptance and
+query cost under populated worlds remain required.

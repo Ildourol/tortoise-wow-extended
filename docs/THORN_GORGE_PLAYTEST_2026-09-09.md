@@ -37,3 +37,82 @@ Offline extraction rebuilt map821 from the same four patched ADTs shipped to cli
 Deployment selects a separate complete data directory, leaving the running server's original geometry intact until restart. Ship exactly five client MPQ files: four ADTs and WorldMapArea.dbc. Never ship the extraction-only reduced Map.dbc. The client addon and MPQ are both necessary; fully restart the client as well as the world server.
 
 Live acceptance: both gates/countdown exits, gnome bridge passage, bot spawn departure and terrain routes, human combat, flag delivery under pressure, carrier colour, first/drop/respawn flag scale, timers/sounds, player icons at both starts and queue NPCs. Review fresh movement/traversal logs before declaring these verified.
+
+
+## Follow-up: e33ddcd3 match 102 and generic movement repair
+
+This section supersedes the earlier one-minute preparation, ten-second delivery
+reset and map-specific movement restrictions. The user explicitly authorized
+shared bot fixes across PvP, instances, questing/grinding and open-world travel.
+The sole development branch remains `feature/thorn-gorge-prototype`.
+
+The completed log segment is September 9, server clock13:36:43–13:58:03,
+instance102 (not the older same-numbered instance). Native start was13:37:44:
+61seconds of preparation. Result: Horde1600/Alliance1021;1,198,826ms active
+simulation,26join events,45deaths,12pickups,11deliveries and10resets. The last
+delivery ended the match.6571movement samples include6308bot samples:984mounted
+and5324unmounted. These are samples, not a percentage of bots refusing mounts.
+81moving bot samples have a reported floor gap above4yards. Some gaps may be
+WMO/overhang support-query differences; a gap alone does not prove invalid travel.
+
+Concrete invalid handoff evidence includes Penno/guid2000012410 at13:44:40:
+a native POINT move with a straight3-vertex spline from approximately
+(2315.1,1506.65,1230.55) to(2286.36,1402.54,1197.3), and a sampled floor gap55.143.
+Unti/guid2000011802 at13:39:09 shows the same shape with54.52yards of floor gap.
+No bot_traversal events were emitted. The failed route was being converted to a
+single destination; the subsequent native point request copied NOPATH shortcut
+coordinates into the spline. Existing traversal recovery therefore never ran.
+Startup confirms `data-thorn-20260909-r1` vmaps/mmaps and enabled pathfinding.
+This is the rebuilt map821 data, not another map substituted for Thorn.
+
+Changes:
+- A required walking route remains empty on failure on every map. Explicit
+  direct movement retains its separate flight/swim/script contract. Existing
+  cross-map travel nodes, portals, transport handling, lifecycle and retry cache
+  remain in place.
+- Native spline handoff rejects NOPATH/invalid status for all callers. Player
+  ground requests additionally reject unverified shortcut coordinates; valid
+  native flight, underwater paths, partial walking prefixes and explicit direct
+  movement retain their handling. No teleport or forced destination masks failure.
+- `mmap.PlayerWalkable=1` applies slope exclusion to ground players on all maps.
+  Flight and explicit ignore-pathfinding states retain native capabilities;
+  ordinary creatures retain their own terrain/swim filter. QueryNodes821 remains
+  a per-map capacity setting because its measured mesh needs more query nodes.
+- The existing bounded ballistic traversal is now shared `TryGroundTraversal`,
+  called only after required walking fails and the AI permits detailed movement.
+  It preserves preparation, death, casting, roots, transport, flight, swimming,
+  falling and overlapping-jump guards. Maximum16candidates perbot per5seconds;
+  native collision, walkable landing and subsequent route progress must pass.
+  No unvalidated direct step is substituted if all candidates fail.
+- Mount eligibility no longer treats a missing current target as an enemy at
+  zero distance. Real close-enemy/combat, indoor, water, flag-carrying and other
+  native mount restrictions remain. This change is shared across destinations.
+- Horde gate visual pivot is recentered using the imported model bounds;
+  measured doorway containment plane remains unchanged.
+- Preparation now uses the native two-minute BG schedule. Delivery reset now
+  matches WSG's23seconds; dropped return remains30seconds. Existing timer/sounds
+  are retained and the user confirmed they worked.
+- Companion map margins cover exposed backing art without falsifying player
+  coordinates. Cosmetic labels identify Thorn Gorge/Battleground where native
+  continent lists have no entry. Art still occupies its real geographic extent;
+  this does not invent missing terrain art around the spawn. Other-map labels,
+  texture coordinates, tile geometry and native markers are restored/preserved.
+
+Validation:67native-fragment architecture tests plus the production Lua fixture.
+Coverage includes failure/partial/direct spline handoffs; player ground filters
+on maps0,1,30,33,409,489,529,821; creature filters, swimming, flight and explicit
+ignore states; bounded jump eligibility/progress; mount target absence/proximity;
+flag timer boundaries and repeated map changes. Map identifiers exercise generic
+code with fixtures: they do not constitute live dungeon/raid/continent playtests.
+The new native-handoff regression fails against the old MoveSplineInit::Move
+fragment and passes when the fixed fragment is restored. Full binary build,
+packaging and deployment receipts are delivered separately.
+
+Acceptance still required after restart: repeat the reported air routes and Mage
+Tower approach, observe native jumps at the hut, mounting during clear travel,
+Horde gate fit, both teams' preparation, map borders/labels,23second flag resets,
+and normal combat/instance travel. A refused route can expose a remaining navmesh
+connectivity gap rather than hide it. Keep movement logging enabled for the next
+run. Human Yes was still using a GM5x speed override (35vsnormal7) in this log;
+use `.modify speed 1` for normal-speed comparisons. GM kill/invisibility actions
+also make this match unsuitable as a normal PvP balance benchmark.

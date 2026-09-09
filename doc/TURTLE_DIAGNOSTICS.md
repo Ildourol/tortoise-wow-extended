@@ -1110,4 +1110,22 @@ splines, bounded vertices/auras and transport context.
 
 ### Thorn native traversal decisions
 
-TryThornTraversal adds event=bot_traversal through the existing level2 admission budget: jump, rejected or no_safe_progress, sampled-candidate count and source/landing positions. Failed walking bots may perform at most16 native ballistic candidates per5s; those queries are gameplay decisions, not diagnostic work. Logging does not initiate them. The records share the existing64-events/second cap and per-bot interval; no history or retained players. Disable samples with LogLevel1 or all TG logs with0. Removal: the small trace lambda and calls in JumpAction::TryThornTraversal. Preserve traversal eligibility and safety checks if removing logging.
+TryGroundTraversal adds event=bot_traversal through the existing level2 admission budget: jump, rejected or no_safe_progress, sampled-candidate count and source/landing positions. Failed walking bots may perform at most16 native ballistic candidates per5s; those queries are gameplay decisions, not diagnostic work. Logging does not initiate them. The records share the existing64-events/second cap and per-bot interval; no history or retained players. Disable samples with LogLevel1 or all TG logs with0. Removal: the small trace lambda and calls in JumpAction::TryGroundTraversal. Preserve traversal eligibility and safety checks if removing logging.
+
+
+### September 9 required-route failure admission
+
+The existing five-second movement snapshots already captured position, speed,
+mount/aura context, floor query, motion generator and bounded spline vertices.
+No additional periodic sampling was needed for match102. Shared ResolveMovePath
+now emits `event=bot_path result=no_route` for admitted TG bot failures with
+source and requested destination XYZ. This and `bot_traversal` use the existing
+level2 per-bot admission and64events/second cap. Outside TG, the generic movement
+behavior works identically without TG log records. No global movement log,
+retained paths/players, new threads or additional periodic height queries were
+added. Removing the diagnostic branch in ResolveMovePath and traversal trace
+lambda leaves generic failure handling intact. LogLevel1 omits these details;
+0 disables TG logging. Detailed AI movement permission, retry cache and a5second
+per-bot traversal cooldown bound gameplay query attempts separately from logs.
+Monitor tick time when many bots are blocked;16candidate arcs is a ceiling,
+not a guarantee that every blocked actor will recover or that geometry is sound.
