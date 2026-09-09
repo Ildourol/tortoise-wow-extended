@@ -42,11 +42,13 @@ int main()
     f.Tick(9999); Check(f.flag == Respawning, "flag respawn is not early");
     f.Tick(1); Check(f.flag == Center, "flag respawns on time");
     Check(f.PickUp(22) && f.Drop(22), "death/disconnect drop");
-    f.Tick(9999); Check(f.flag == Dropped, "dropped flag remains available");
+    f.Tick(2107); // Real match: pickup started two seconds after drop.
+    f.Tick(10000); Check(f.flag == Dropped, "drop survives travel and full native pickup cast");
     Check(f.PickUp(33), "another player can recover dropped flag");
     f.Tick(10000); Check(f.flag == Carried && f.carrier == 33, "old reset timer cannot clear new carrier");
     Check(f.Drop(33), "second drop");
-    f.Tick(10000); Check(f.flag == Center && f.carrier == 0, "unclaimed flag returns");
+    f.Tick(29999); Check(f.flag == Dropped, "unclaimed drop does not reset early");
+    f.Tick(1); Check(f.flag == Center && f.carrier == 0, "unclaimed flag returns");
     f.PickUp(44); f.Finish(); auto scores = f.score;
     f.Tick(90000); f.Capture(0, 0, 15); f.AddPoints(Horde, 500);
     Check(!f.PickUp(55) && !f.Deliver(44, Alliance, 0) && f.carrier == 0 && f.score == scores, "ended match is inert");

@@ -36,11 +36,13 @@ public:
     // Map-owner bot consumers may query objectives, never mutate match state.
     bool GetObjective(Player* player, float& x, float& y, float& z) const;
     ObjectGuid GetAvailableFlag() const;
+    bool AdmitBotDiagnostic(Player* player);
 
 private:
     ThornGorge::Rules m_rules;
     ThornGorge::DiagnosticBudget m_diagnostics;
     uint32 m_snapshotSequence = 0;
+    std::map<ObjectGuid, uint32> m_botDiagnosticTicks;
     unsigned m_captureCounts[4][2] = {};
     void Trace(char const* event, Player* player = nullptr, uint32 related = 0, char const* reason = "-", bool critical = false);
     void TraceSnapshot(char const* reason);

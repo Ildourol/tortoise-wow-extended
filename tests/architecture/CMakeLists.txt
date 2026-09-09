@@ -154,7 +154,7 @@ endif()
 add_test(NAME BotTaxiCacheRefreshTest COMMAND BotTaxiCacheRefreshTest)
 set_tests_properties(BotTaxiCacheRefreshTest PROPERTIES TIMEOUT 20)
 extract_native_fragment("${TRAVEL_ROOT}/BotDiagnostics.cpp"
-    "    void TraceBehavior(" "\n}}" BotTraceBody.inc)
+    "    void TraceBehavior(" "    void TraceThornBehavior(" BotTraceBody.inc)
 extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSpline.h"
     "int32 Duration() const" "int32 Duration(int first" BotNativeSplineDuration.inc)
 add_executable(BotTraceSnapshotTest BotTraceSnapshotTest.cpp)
@@ -480,3 +480,17 @@ if(MSVC)
     target_compile_options(ThornGorgePresentationTest PRIVATE /EHsc)
 endif()
 add_test(NAME ThornGorgePresentationTest COMMAND ThornGorgePresentationTest)
+
+extract_native_fragment("${TRAVEL_ROOT}/WorldPosition.cpp"
+    "bool WorldPosition::isBg() const" "std::string WorldPosition::getAreaName(" BotMapClassification.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "bool BattleGroundTG::AdmitBotDiagnostic(" "void BattleGroundTG::TraceSnapshot(" ThornBotAdmission.inc)
+extract_native_fragment("${TRAVEL_ROOT}/BotDiagnostics.cpp"
+    "    void TraceThornBehavior(" "\n}}" ThornBotTrace.inc)
+add_executable(ThornBotDiagnosticsTest ThornBotDiagnosticsTest.cpp)
+target_compile_features(ThornBotDiagnosticsTest PRIVATE cxx_std_17)
+target_include_directories(ThornBotDiagnosticsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornBotDiagnosticsTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornBotDiagnosticsTest COMMAND ThornBotDiagnosticsTest)

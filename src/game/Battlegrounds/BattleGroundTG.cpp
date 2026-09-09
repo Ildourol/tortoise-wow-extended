@@ -45,6 +45,7 @@ void BattleGroundTG::Reset()
     m_carrier.Clear();
     m_tick = m_elapsed = 0;
     m_snapshotSequence = 0;
+    m_botDiagnosticTicks.clear();
     m_diagnostics.Configure(sConfig.GetIntDefault("Battleground.ThornGorge.LogLevel", 0),
         sConfig.GetIntDefault("Battleground.ThornGorge.LogIntervalMs", 5000));
     for (auto& counts : m_captureCounts) counts[0] = counts[1] = 0;
@@ -243,7 +244,7 @@ void BattleGroundTG::Update(uint32 diff)
             if (!p || !Eligible(p) || !p->HasAura(CarrySpell))
             {
                 if (p) EventPlayerDroppedFlag(p);
-                else { Trace("carrier_unavailable", nullptr, m_carrier.GetCounter()); m_rules.Drop(m_rules.carrier); m_carrier.Clear(); m_rules.flag = ThornGorge::Respawning; }
+                else { Trace("carrier_unavailable", nullptr, m_carrier.GetCounter()); m_rules.Drop(m_rules.carrier); m_carrier.Clear(); m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs; }
             }
         }
         auto oldFlag = m_rules.flag;
@@ -310,9 +311,11 @@ void BattleGroundTG::EventPlayerDroppedFlag(Player* player)
     DelObject(DroppedObject);
     if (GetStatus() != STATUS_IN_PROGRESS || player->GetMap() != GetBgMap() ||
         !AddObject(DroppedObject, 2020421, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), 0, 0, 0, 0, 1))
-        m_rules.flag = ThornGorge::Respawning;
+    {
+        m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs;
+    }
     Trace("flag_dropped", player, 0, m_rules.flag == ThornGorge::Dropped ? "ground_flag_created" : "center_reset_scheduled");
-    Announce("Flag dropped; it returns to the center after 10 seconds.");
+    Announce(m_rules.flag == ThornGorge::Dropped ? "Flag dropped; it returns to the center after 30 seconds." : "Flag returns to the center in 10 seconds.");
     SendStates();
 }
 
@@ -334,10 +337,11 @@ void BattleGroundTG::AddPlayer(Player* player)
 void BattleGroundTG::RemovePlayer(Player* player, ObjectGuid guid)
 {
     Trace("player_leave", player, guid.GetCounter());
+    m_botDiagnosticTicks.erase(guid);
     if (guid == m_carrier)
     {
         if (player) EventPlayerDroppedFlag(player);
-        else { Trace("carrier_unavailable", nullptr, m_carrier.GetCounter()); m_rules.Drop(m_rules.carrier); m_carrier.Clear(); m_rules.flag = ThornGorge::Respawning; }
+        else { Trace("carrier_unavailable", nullptr, m_carrier.GetCounter()); m_rules.Drop(m_rules.carrier); m_carrier.Clear(); m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs; }
     }
     if (player) player->RemoveAurasDueToSpell(CarrySpell);
 }
@@ -506,6 +510,19 @@ void BattleGroundTG::Trace(char const* event, Player* player, uint32 related, ch
         m_rules.score[0], m_rules.score[1], m_rules.Bases(ThornGorge::Alliance), m_rules.Bases(ThornGorge::Horde),
         uint32(m_rules.flag), m_carrier.GetCounter(), player ? player->GetPositionX() : 0,
         player ? player->GetPositionY() : 0, player ? player->GetPositionZ() : 0);
+}
+
+bool BattleGroundTG::AdmitBotDiagnostic(Player* player)
+{
+    // Called only by this map's bot AI owner; no retained player pointers.
+    if (m_diagnostics.level < 2 || GetStatus() != STATUS_IN_PROGRESS || !player ||
+        player->GetMap() != GetBgMap() || player->GetBattleGround() != this ||
+        m_Players.find(player->GetObjectGuid()) == m_Players.end()) return false;
+    auto found = m_botDiagnosticTicks.find(player->GetObjectGuid());
+    if (found != m_botDiagnosticTicks.end() && m_elapsed - found->second < m_diagnostics.interval) return false;
+    if (!m_diagnostics.Event()) return false;
+    m_botDiagnosticTicks[player->GetObjectGuid()] = m_elapsed;
+    return true;
 }
 
 void BattleGroundTG::TraceSnapshot(char const* reason)

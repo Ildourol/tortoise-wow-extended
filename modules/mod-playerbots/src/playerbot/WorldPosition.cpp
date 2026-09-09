@@ -480,6 +480,13 @@ bool WorldPosition::isEnemyHomeZoneFor(Team team) const
         || (areaTeam == AREATEAM_HORDE && team == ALLIANCE);
 }
 
+bool WorldPosition::isBg() const
+{
+    // The core loads custom battlegrounds from map_template as well as stock maps.
+    MapEntry const* entry = sMapStore.LookupEntry(getMapId());
+    return entry && entry->IsBattleGround();
+}
+
 std::string WorldPosition::getAreaName(const bool fullName, const bool zoneName) const
 {
     if (!isOverworld())

@@ -12,6 +12,9 @@ namespace ThornGorge
 constexpr unsigned NodeCount = 4;
 constexpr unsigned MaxScore = 1600;
 constexpr unsigned CaptureRadius = 30;
+// Recovery must allow travel plus the native ten-second pickup cast.
+constexpr unsigned DroppedFlagReturnMs = 30000;
+constexpr unsigned FlagRespawnMs = 10000;
 enum Team : unsigned { Alliance, Horde, Neutral };
 enum Flag : unsigned { Center, Carried, Dropped, Respawning };
 
@@ -84,7 +87,7 @@ struct Rules
     bool Drop(std::uint64_t guid)
     {
         if (flag != Carried || carrier != guid) return false;
-        carrier = 0; flag = Dropped; flagTimer = 10000;
+        carrier = 0; flag = Dropped; flagTimer = DroppedFlagReturnMs;
         return true;
     }
     bool Deliver(std::uint64_t guid, Team team, unsigned node)
@@ -93,7 +96,7 @@ struct Rules
             flag != Carried || carrier != guid) return false;
         constexpr unsigned points[5] = {0, 75, 85, 100, 500};
         AddPoints(team, points[Bases(team)]);
-        carrier = 0; flag = Respawning; flagTimer = 10000;
+        carrier = 0; flag = Respawning; flagTimer = FlagRespawnMs;
         return true;
     }
     void Finish() { ended = true; carrier = 0; flag = Respawning; flagTimer = 0; }

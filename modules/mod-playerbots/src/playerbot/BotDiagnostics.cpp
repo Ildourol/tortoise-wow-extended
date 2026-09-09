@@ -1,4 +1,6 @@
 #include "BotDiagnostics.h"
+#include "BattleGroundTG.h"
+#include "strategy/Engine.h"
 #include "PlayerbotAIConfig.h"
 #include "playerbot.h"
 #include "PlayerbotAI.h"
@@ -160,5 +162,38 @@ namespace ai { namespace botdiag {
             uint32(spline != nullptr),
             travel ? travel->GetRetryCount(true) : 0, travel ? travel->GetRetryCount(false) : 0,
             travel ? travel->GetTimeLeft() : 0, taxiDetail.c_str());
+    }
+
+    void TraceThornBehavior(PlayerbotAI* ai, bool minimal)
+    {
+        if (!ai) return;
+        Player* bot = ai->GetBot();
+        if (!bot || !bot->IsInWorld() || bot->IsBeingTeleported()) return;
+        BattleGround* bg = bot->GetBattleGround();
+        if (!bg || bg->GetTypeId() != BATTLEGROUND_TG ||
+            !static_cast<BattleGroundTG*>(bg)->AdmitBotDiagnostic(bot)) return;
+        // Read existing owner-local state only, after admission. Never evaluate
+        // priorities/triggers, initiate paths, or force a bot to move for tracing.
+        auto* context = ai->GetAiObjectContext();
+        LastMovement& move = context->GetValue<LastMovement&>("last movement")->Get();
+        auto* engine = ai->GetEngine(ai->GetState());
+        std::string actions = engine ? engine->GetLastAction() : "none";
+        for (char& c : actions) if (c <= ' ' || c == '"') c = '_';
+        if (actions.size() > 256) actions = actions.substr(actions.size() - 256);
+        auto* spline = bot->movespline;
+        if (spline && !spline->Initialized()) spline = nullptr;
+        uint32 now = WorldTimer::getMSTime();
+        int32 retry = int32(move.failedPathRetryUntil - now);
+        Log::Instance().out(LOG_BG,
+            "THORN_GORGE schema=1 map=821 event=bot_ai inst=%u guid=%u tick=%u minimal=%u state=%u "
+            "cached_active=%u cached_detailed=%u cached_react=%u motion=%u moving=%u unit_state=%u "
+            "spline_initialized=%u spline_done=%u spline_ms=%u path_size=%zu path_retry_ms=%u "
+            "next_teleport=%lld actions=%s",
+            bot->GetInstanceId(), bot->GetGUIDLow(), now, uint32(minimal), uint32(ai->GetState()),
+            uint32(ai->CachedActivity(ALL_ACTIVITY)), uint32(ai->CachedActivity(DETAILED_MOVE_ACTIVITY)),
+            uint32(ai->CachedActivity(REACT_ACTIVITY)), uint32(bot->GetMotionMaster()->GetCurrentMovementGeneratorType()),
+            uint32(bot->IsMoving()), bot->GetUnitState(), uint32(spline != nullptr),
+            uint32(!spline || spline->Finalized()), spline ? spline->timePassed() : 0,
+            move.lastPath.getPath().size(), move.failedPathRetryUntil && retry > 0 ? uint32(retry) : 0, (long long)move.nextTeleport, actions.c_str());
     }
 }}

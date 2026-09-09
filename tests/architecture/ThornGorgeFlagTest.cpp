@@ -84,10 +84,14 @@ int main()
     Check(bg.m_carrier==p.guid && bg.adds==0,"stale callbacks preserve current carrier");
     bg.EventPlayerDroppedFlag(&p);
     Check(bg.adds==1 && !bg.m_carrier && !p.aura && bg.drop.spawned,"reentrant aura callback makes exactly one drop");
+    bg.m_rules.Tick(2107);
+    bg.EventPlayerClickedOnFlag(&other,&bg.drop);
+    bg.m_rules.Tick(10000);
     bg.CompleteFlagPickup(&other,&bg.drop);
     Check(bg.m_carrier==other.guid && other.aura,"dropped flag pickup");
     bg.addSucceeds=false;bg.EventPlayerDroppedFlag(&other);
     Check(bg.m_rules.flag==ThornGorge::Respawning && !bg.m_carrier && !other.aura,"spawn failure clears carrier and schedules reset");
+    Check(bg.m_rules.flagTimer==10000,"failed ground spawn retains ten-second center reset");
     bg.m_rules.Tick(10000);bg.RestoreFlag();
     Check(bg.center.spawned && !bg.m_BgObjects[13],"native reset restores center and removes dropped object");
     p.castSucceeds=false;bg.addSucceeds=true;bg.CompleteFlagPickup(&p,&bg.center);

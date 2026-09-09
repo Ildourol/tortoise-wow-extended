@@ -1032,3 +1032,20 @@ is sufficient for the next restart without another executable build. Visual
 alignment at the supplied point still requires the next in-game check.
 The start enclosure still uses the prototype's 35-yard countdown leash; its
 physical gate has not been positioned. Screenshot feedback records that gap.
+
+### Thorn Gorge bot progress trace (September 9)
+
+Existing Battleground.ThornGorge.LogLevel=2 and LogIntervalMs controls also admit
+one bot_ai record per bot per interval during an active match. Records use
+LOG_BG/bg.log and share the match's 64-event/second budget; no global action log
+is enabled. Map-owner UpdateAI samples existing engine action history (last 256
+characters, whitespace escaped), cached activity decisions, minimal flag, motion
+generator/unit state, initialized spline progress, path size, failure retry and
+next teleport deadline. Cached flags can be initial/stale; they are not recomputed
+for diagnostics. A bot with player snapshots but no bot_ai samples may not be
+reaching UpdateAI. Path retry is evidence of a recent failed path, not its cause.
+No spell, trigger, priority evaluation or movement is initiated by the trace.
+Admission entries are erased on leave and reset; off/level1 returns before
+formatting/context reads. Disable with LogLevel=0 (or use level1 for match events).
+Removal sites: TraceThornBehavior, its UpdateAI hook, CachedActivity accessor,
+BattleGroundTG::AdmitBotDiagnostic and m_botDiagnosticTicks. No DB change.

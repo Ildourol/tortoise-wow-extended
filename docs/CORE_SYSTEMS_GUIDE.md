@@ -362,3 +362,17 @@ ThornGorgePresentationTest compiles the actual UI/quest methods in its harness.
 Flag placement follow-up: the live GPS-confirmed Thorn Gorge point is
 2174.469482,1569.349243,1160.459473. Deployment uses the existing XY config keys
 and native collision height. See the prototype guide for evidence and checks.
+
+### Thorn Gorge match review, September 9
+
+Dropped flags remain available for 30 seconds so travel plus native spell 59011's
+ten-second cast can complete. Center respawn after delivery or missing ground
+object remains ten seconds; native GO identity/range/LOS/aura checks still apply.
+WorldPosition::isBg now reads the core's loaded MapEntry::IsBattleGround metadata,
+including custom map_template entries. Its consumers are activity classification,
+login classification and test travel filtering; stock maps retain their native
+type. The old map-ID list omitted 821 and could demote distant bots once a path
+existed. This defect is corrected, but live attribution of the recorded Horde
+spawn stalls remains pending. Do not force teleport/revive or bypass path failures.
+ThornBotDiagnosticsTest executes native map classification, trace admission and
+formatting against deterministic services, including uninitialized splines.

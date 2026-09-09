@@ -700,6 +700,7 @@ public:
     std::pair<uint32,uint32> GetPriorityBracket(ActivePiorityType type);
     bool AllowActive(ActivityType activityType);
     bool AllowActivity(ActivityType activityType = ALL_ACTIVITY, bool checkNow = false);
+    bool CachedActivity(ActivityType type) const { return allowActive[type]; }
 
     bool HasCheat(BotCheatMask mask) const;
     BotCheatMask GetCheat() { return cheatMask; }
