@@ -15,6 +15,11 @@ constexpr unsigned CaptureRadius = 30;
 enum Team : unsigned { Alliance, Horde, Neutral };
 enum Flag : unsigned { Center, Carried, Dropped, Respawning };
 
+// Extracted Turtle AreaPOI.dbc map 821: neutral icon 5, Horde 9, Alliance 10.
+// AV assault landmarks independently establish the icon colours (9 red, 10 blue).
+constexpr unsigned NodeIconState(unsigned node, Team owner)
+{ return 3606 + node * 3 + (owner == Alliance ? 2 : owner == Horde ? 1 : 0); }
+
 struct Rules
 {
     std::array<int, NodeCount> progress{{50, 50, 50, 50}};
@@ -25,6 +30,8 @@ struct Rules
     unsigned flagTimer = 0;
     unsigned resourceTimer = 0;
     bool ended = false;
+    unsigned maxCaptureAdvantage = 2;
+    void ConfigureCapture(int advantage) { maxCaptureAdvantage = unsigned(std::clamp(advantage, 1, 5)); }
 
     unsigned Bases(Team team) const
     {
@@ -33,7 +40,7 @@ struct Rules
     void Capture(unsigned node, unsigned allies, unsigned horde)
     {
         if (ended || node >= NodeCount) return;
-        int delta = std::max(-5, std::min(5, int(allies) - int(horde)));
+        int delta = std::clamp(int(allies) - int(horde), -int(maxCaptureAdvantage), int(maxCaptureAdvantage));
         progress[node] = std::max(0, std::min(100, progress[node] + 2 * delta));
         if (progress[node] == 100) owner[node] = Alliance;
         else if (progress[node] == 0) owner[node] = Horde;

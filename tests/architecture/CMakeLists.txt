@@ -468,3 +468,15 @@ add_executable(ThornGorgeDiagnosticsTest ThornGorgeDiagnosticsTest.cpp)
 target_compile_features(ThornGorgeDiagnosticsTest PRIVATE cxx_std_17)
 target_include_directories(ThornGorgeDiagnosticsTest PRIVATE ../../src/game/Battlegrounds)
 add_test(NAME ThornGorgeDiagnosticsTest COMMAND ThornGorgeDiagnosticsTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::RewardVictoryQuests(" "WorldSafeLocsEntry const* BattleGroundTG::GetClosestGraveYard" ThornGorgeRewardsNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::FillInitialWorldStates(" "void BattleGroundTG::SendStates()" ThornGorgePresentationNative.inc)
+add_executable(ThornGorgePresentationTest ThornGorgePresentationTest.cpp)
+target_compile_features(ThornGorgePresentationTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgePresentationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornGorgePresentationTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornGorgePresentationTest COMMAND ThornGorgePresentationTest)

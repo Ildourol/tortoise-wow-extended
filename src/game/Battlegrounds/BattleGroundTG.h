@@ -46,11 +46,14 @@ private:
     void TraceSnapshot(char const* reason);
     char const* FlagRejection(Player* player, GameObject* object);
     ObjectGuid m_carrier;
+    uint32 m_captureTickMs = 1200;
     uint32 m_tick = 0;
     uint32 m_elapsed = 0;
     float m_flagX = 0, m_flagY = 0, m_flagZ = 0;
     void UpdateObjectives();
     void UpdateBanner(unsigned node);
+    void SendNodeStates(unsigned node);
+    void RewardVictoryQuests(Team winner);
     void SendStates();
     void Announce(char const* text);
     bool Eligible(Player* player) const;

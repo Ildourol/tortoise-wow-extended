@@ -127,3 +127,48 @@ for failures. No DB migration is required for logging. See
 Logging regression verification: 48/48 architecture tests passed, including
 the actual native flag callbacks and the diagnostic budget checks. Live log
 acceptance requires a new match after the new binary is loaded.
+
+
+## First live-match corrections (2026-09-09)
+
+Match 103 ended Alliance 1600-1179 after 932 seconds of active simulation.
+Patch made three flag deliveries. The initial prototype sampled capture once
+per second with up to five net players; groups could take a neutral node in
+five samples. New defaults are CaptureTickMs=1200 and CaptureMaxAdvantage=2:
+25 samples (30 seconds) solo and 13 samples (15.6 seconds) with a net advantage
+of two or more. Equal teams cancel. A full enemy takeover requires 50 solo
+samples (60 seconds) or 25 grouped samples (30 seconds). These remain test
+tuning, not a claim about the original release. Settings are read on Reset;
+interval clamps to 1000-10000ms and advantage to 1-5. Stalls grant no retroactive
+capture at a player's new location.
+
+Native AreaPOI.dbc records 2749-2760 on map 821 define worldstates 3606-3617.
+Each node's three states are neutral, Horde, Alliance; icon IDs are 5, 9, 10.
+The colour ordering is independently consistent with the native AV assault
+landmarks. Initial and changed states publish exactly one active icon per
+node, clearing the other two. No client patch is required for the inspected
+assets. Server log confirmation is not proof of client rendering; check both
+teams' icons and late entry in the next live test.
+
+Victory quests 42098/42099 use Player::AreaExploredOrEventHappens for an accepted,
+incomplete quest on an online participating winner. Dead winners remain
+eligible. GMs, spectators, losing/tied teams, unavailable members and already
+complete/absent quests receive no new credit. Apply
+sql/custom/thorn_gorge_victory_quests.sql to set SpecialFlags bit 2, preventing
+completion before the victory event. Existing character progress is untouched.
+Players still turn in the quest normally for its imported reward; the BG
+does not grant quest items, XP or reputation directly.
+
+Added diagnostic records: layout (actual flag XYZ and capture tuning),
+capture_transition (old/new owner/progress, nearby counts, interval),
+map_icon_sent (active client worldstate), quest_credit / quest_credit_skipped,
+and update_delay (owner updates of at least 2000ms). Node snapshots include
+active_icon. Existing event budgets apply. No packet/combat spam or extra
+thread is added. Native-fragment tests exercise initial/live icon agreement
+and quest filters/repeat protection; rule tests cover capture caps.
+
+Bridge placement remains pending a verified in-game point: extracted collision
+data contains two Taurenbridgewide.wmo placements near the objectives, and
+does not establish which bridge midpoint the player intended. Existing flag
+coordinates remain unchanged. Log layout records expose the actual resolved
+height as well as XY for the next check. Do not mark this placement fixed.

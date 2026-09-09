@@ -352,3 +352,9 @@ BattleGround::Update, which may delete the instance. Logging does not change
 flag validation order, objective selection or character persistence. See
 doc/TURTLE_DIAGNOSTICS.md for configuration and overhead; regression coverage
 includes ThornGorgeDiagnosticsTest and ThornGorgeFlagTest.
+
+Thorn Gorge live-test follow-up: AreaPOI worldstates 3606-3617 provide native
+ownership icons. Accepted victory quests 42098/42099 receive native event
+credit; the paired SQL sets their required-event special flag. See the
+prototype guide for tunable capture pacing, lifecycle guards and diagnostics.
+ThornGorgePresentationTest compiles the actual UI/quest methods in its harness.

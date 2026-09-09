@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "3E6DD9B4274280DBB2493CAB4EBA0FFEF00F76B07B572F480246698371582E25"
+    "sha256": "CC08EBE1341B67830E0E9C42AE608194BFE01E0A1BD8853B96C6192A1A284572"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "EB429011104DC2FEB30E5F40C2F0C66A60083ACBC693A77619C2ED78F975B822"
+    "sha256": "143240A9DCD003F308D13C2DB1B18C93819E86ED4700EB5EE573AFC6FCED9316"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",
@@ -24601,7 +24601,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "367186F33FCEEC901C9826E9090A4652F95E96753B2E20CBD2EDDF85E132A2B4"
+    "sha256": "861EA600145C8B0961EBDFE3205FE1294EEFA09651836BEF92817104674EE573"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeRules.h",
@@ -24609,7 +24609,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "E0CC4E7E569191298A8BA48144F5D69A0A196339024C6F033FE3A283CBC2AA7A"
+    "sha256": "5BAF8DCE57F3FF6A5461D4511A4B8D707F15FC752221009424A80F7BF8E5D642"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeDiagnostics.h",

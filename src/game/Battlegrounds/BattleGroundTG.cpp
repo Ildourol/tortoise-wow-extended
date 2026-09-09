@@ -40,6 +40,8 @@ void BattleGroundTG::Reset()
 {
     BattleGround::Reset();
     m_rules = ThornGorge::Rules{};
+    m_rules.ConfigureCapture(sConfig.GetIntDefault("Battleground.ThornGorge.CaptureMaxAdvantage", 2));
+    m_captureTickMs = uint32(std::clamp(sConfig.GetIntDefault("Battleground.ThornGorge.CaptureTickMs", 1200), 1000, 10000));
     m_carrier.Clear();
     m_tick = m_elapsed = 0;
     m_snapshotSequence = 0;
@@ -110,6 +112,9 @@ bool BattleGroundTG::SetupBattleGround()
     if (!AddObject(CenterObject, 2020421, m_flagX, m_flagY, m_flagZ + 0.1f, 0, 0, 0, 0, 1))
     { Trace("setup_failed", nullptr, CenterObject, "center_flag_object", true); return false; }
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_NEVER);
+    if (m_diagnostics.Event(true))
+        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=layout inst=%u flag_x=%.3f flag_y=%.3f flag_z=%.3f capture_tick_ms=%u capture_max_advantage=%u capture_radius=%u",
+            GetInstanceID(), m_flagX, m_flagY, m_flagZ + 0.1f, m_captureTickMs, m_rules.maxCaptureAdvantage, ThornGorge::CaptureRadius);
     Trace("setup_complete", nullptr, 0, "objects_and_spirit_guides", true);
     return true;
 }
@@ -122,7 +127,7 @@ void BattleGroundTG::StartingEventCloseDoors()
 
 void BattleGroundTG::StartingEventOpenDoors()
 {
-    for (unsigned node = 0; node < 4; ++node) UpdateBanner(node);
+    for (unsigned node = 0; node < 4; ++node) { UpdateBanner(node); SendNodeStates(node); }
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_IMMEDIATELY);
     Trace("match_start", nullptr, 0, "countdown_complete", true);
     TraceSnapshot("match_start");
@@ -157,10 +162,16 @@ void BattleGroundTG::UpdateObjectives()
         m_captureCounts[node][0] = counts[0];
         m_captureCounts[node][1] = counts[1];
         auto previous = m_rules.owner[node];
+        int const previousProgress = m_rules.progress[node];
         m_rules.Capture(node, counts[0], counts[1]);
         if (previous != m_rules.owner[node])
         {
             Trace("node_owner_changed", nullptr, node, m_rules.owner[node] == ThornGorge::Alliance ? "alliance" : m_rules.owner[node] == ThornGorge::Horde ? "horde" : "neutral");
+            SendNodeStates(node);
+            if (m_diagnostics.Event())
+                sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=capture_transition inst=%u elapsed_ms=%u node=%u previous_owner=%u owner=%u previous_progress=%d progress=%d nearby_a=%u nearby_h=%u capture_tick_ms=%u active_icon=%u",
+                    GetInstanceID(), m_elapsed, node, uint32(previous), uint32(m_rules.owner[node]), previousProgress, m_rules.progress[node], counts[0], counts[1], m_captureTickMs,
+                    ThornGorge::NodeIconState(node, m_rules.owner[node]));
             UpdateBanner(node);
             if (GetStatus() != STATUS_IN_PROGRESS) return;
             std::string message = std::string(NodeNames[node]) + (m_rules.owner[node] == ThornGorge::Alliance ? " captured by Alliance." : m_rules.owner[node] == ThornGorge::Horde ? " captured by Horde." : " is neutral.");
@@ -209,6 +220,7 @@ void BattleGroundTG::UpdateObjectives()
 void BattleGroundTG::Update(uint32 diff)
 {
     bool const snapshotDue = m_diagnostics.Advance(diff);
+    if (diff >= 2000) Trace("update_delay", nullptr, diff, "owner_update_ms");
     if (GetStatus() == STATUS_WAIT_JOIN && GetPlayersSize())
     {
         // Use a start-area leash rather than guessing gate positions from video.
@@ -240,7 +252,7 @@ void BattleGroundTG::Update(uint32 diff)
         m_tick += diff;
         // Sample players once per owner update after a stall, without granting
         // retroactive capture time at their new positions.
-        if (!m_rules.HasWinner() && m_tick >= 1000) { m_tick %= 1000; UpdateObjectives(); }
+        if (!m_rules.HasWinner() && m_tick >= m_captureTickMs) { m_tick %= m_captureTickMs; UpdateObjectives(); }
         if (m_rules.HasWinner() || m_elapsed >= 30 * MINUTE * IN_MILLISECONDS)
             EndBattleGround(GetWinningTeam());
     }
@@ -360,10 +372,31 @@ void BattleGroundTG::EndBattleGround(Team winner)
     {
         RewardHonorToTeam(200, winner);
     }
+    RewardVictoryQuests(winner);
     Trace("match_end", nullptr, uint32(winner), "winner_team", true);
     TraceSnapshot("match_end");
     SendStates();
     BattleGround::EndBattleGround(winner);
+}
+
+// Match-owner only. Native quest credit preserves the accepted quest, event
+// state, completion packet and normal reward/turn-in rules. Never grant rewards
+// directly or credit spectators, losers, offline players, or absent quests.
+void BattleGroundTG::RewardVictoryQuests(Team winner)
+{
+    if (winner == TEAM_NONE) return;
+    for (auto const& member : m_Players)
+    {
+        Player* player = GetBgMap()->GetPlayer(member.first);
+        if (!player || !player->IsInWorld() || player->GetBattleGround() != this ||
+            player->IsGameMaster() || NativeTeam(Side(player)) != winner) continue;
+        uint32 const quest = player->GetTeam() == ALLIANCE ? 42098 : 42099;
+        if (player->GetQuestStatus(quest) != QUEST_STATUS_INCOMPLETE)
+        { Trace("quest_credit_skipped", player, quest, "quest_not_active"); continue; }
+        player->AreaExploredOrEventHappens(quest);
+        Trace("quest_credit", player, quest,
+            player->GetQuestStatus(quest) == QUEST_STATUS_COMPLETE ? "complete" : "not_complete");
+    }
 }
 
 WorldSafeLocsEntry const* BattleGroundTG::GetClosestGraveYard(Player* player)
@@ -390,10 +423,22 @@ void BattleGroundTG::FillInitialWorldStates(WorldPacket& data, uint32& count)
         FillInitialWorldState(data, count, ScoreStates[team], m_rules.score[team]);
         FillInitialWorldState(data, count, BaseStates[team], m_rules.Bases(ThornGorge::Team(team)));
     }
+    for (unsigned node = 0; node < 4; ++node)
+        for (unsigned team = 0; team < 3; ++team)
+            FillInitialWorldState(data, count, ThornGorge::NodeIconState(node, ThornGorge::Team(team)), m_rules.owner[node] == team);
     FillInitialWorldState(data, count, 3603, ThornGorge::MaxScore);
     FillInitialWorldState(data, count, 3623, 0);
     FillInitialWorldState(data, count, 3624, 50);
     FillInitialWorldState(data, count, 3625, 40);
+}
+
+void BattleGroundTG::SendNodeStates(unsigned node)
+{
+    // Clear all other states as well as setting the new one, as native AB does.
+    // Initial states use the same mapping so mid-match entry stays consistent.
+    for (unsigned team = 0; team < 3; ++team)
+        UpdateWorldState(ThornGorge::NodeIconState(node, ThornGorge::Team(team)), m_rules.owner[node] == team);
+    Trace("map_icon_sent", nullptr, ThornGorge::NodeIconState(node, m_rules.owner[node]), "active_worldstate");
 }
 
 void BattleGroundTG::SendStates()
@@ -472,8 +517,8 @@ void BattleGroundTG::TraceSnapshot(char const* reason)
         m_rules.Bases(ThornGorge::Alliance), m_rules.Bases(ThornGorge::Horde), uint32(m_rules.flag),
         m_carrier.GetCounter(), m_rules.flagTimer, GetPlayersSize(), m_diagnostics.TakeSuppressed());
     for (unsigned node=0; node<4; ++node)
-        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=node inst=%u seq=%u node=%u owner=%u progress=%d nearby_a=%u nearby_h=%u",
-            GetInstanceID(), sequence, node, uint32(m_rules.owner[node]), m_rules.progress[node], m_captureCounts[node][0], m_captureCounts[node][1]);
+        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=node inst=%u seq=%u node=%u owner=%u progress=%d nearby_a=%u nearby_h=%u active_icon=%u",
+            GetInstanceID(), sequence, node, uint32(m_rules.owner[node]), m_rules.progress[node], m_captureCounts[node][0], m_captureCounts[node][1], ThornGorge::NodeIconState(node, m_rules.owner[node]));
     if (m_diagnostics.level < 2) return;
     for (auto const& it : m_Players)
     {

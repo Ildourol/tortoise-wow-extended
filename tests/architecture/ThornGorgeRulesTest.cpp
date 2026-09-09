@@ -6,6 +6,18 @@ using namespace ThornGorge;
 static void Check(bool result, char const* message) { if (!result) throw std::runtime_error(message); }
 int main()
 {
+    Rules fast;
+    for (unsigned i=0; i<12; ++i) fast.Capture(0, 15, 0);
+    Check(fast.owner[0] == Neutral && fast.progress[0] == 98, "large group cannot capture before 13 samples");
+    fast.Capture(0, 15, 0); Check(fast.owner[0] == Alliance, "large group captures at capped speed");
+    fast.ConfigureCapture(0); Check(fast.maxCaptureAdvantage == 1, "capture lower clamp");
+    fast.ConfigureCapture(99); Check(fast.maxCaptureAdvantage == 5, "capture upper clamp");
+    for (unsigned n=0;n<4;++n)
+    {
+        Check(NodeIconState(n, Neutral)==3606+n*3, "neutral AreaPOI state");
+        Check(NodeIconState(n, Horde)==3607+n*3, "red AreaPOI state");
+        Check(NodeIconState(n, Alliance)==3608+n*3, "blue AreaPOI state");
+    }
     Rules a;
     for (unsigned i = 0; i < 100; ++i) a.Capture(0, 15, 15);
     Check(a.progress[0] == 50 && a.owner[0] == Neutral, "equal teams must not capture");
