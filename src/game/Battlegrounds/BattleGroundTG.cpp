@@ -103,6 +103,9 @@ bool BattleGroundTG::SetupBattleGround()
     // and configurable; resolve its actual terrain/collision height, fail closed.
     m_flagX = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagX", 2174.469482f);
     m_flagY = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagY", 1569.349243f);
+    m_flagScale = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagScale", 2.5f);
+    if (!std::isfinite(m_flagScale)) m_flagScale = 2.5f;
+    m_flagScale = std::clamp(m_flagScale, 1.0f, 5.0f);
     m_flagZ = GetBgMap()->GetHeight(m_flagX, m_flagY, 1300.0f, true, 250.0f);
     if (!std::isfinite(m_flagZ) || m_flagZ < 1000.0f || m_flagZ > 1300.0f)
     {
@@ -112,10 +115,12 @@ bool BattleGroundTG::SetupBattleGround()
     }
     if (!AddObject(CenterObject, 2020421, m_flagX, m_flagY, m_flagZ + 0.1f, 0, 0, 0, 0, 1))
     { Trace("setup_failed", nullptr, CenterObject, "center_flag_object", true); return false; }
+    if (GameObject* flag = GetBgMap()->GetGameObject(m_BgObjects[CenterObject]))
+        flag->SetObjectScale(m_flagScale);
     SpawnObject(m_BgObjects[CenterObject], RESPAWN_NEVER);
     if (m_diagnostics.Event(true))
-        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=layout inst=%u flag_x=%.3f flag_y=%.3f flag_z=%.3f capture_tick_ms=%u capture_max_advantage=%u capture_radius=%u",
-            GetInstanceID(), m_flagX, m_flagY, m_flagZ + 0.1f, m_captureTickMs, m_rules.maxCaptureAdvantage, ThornGorge::CaptureRadius);
+        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=layout inst=%u flag_x=%.3f flag_y=%.3f flag_z=%.3f flag_scale=%.2f capture_tick_ms=%u capture_max_advantage=%u capture_radius=%u",
+            GetInstanceID(), m_flagX, m_flagY, m_flagZ + 0.1f, m_flagScale, m_captureTickMs, m_rules.maxCaptureAdvantage, ThornGorge::CaptureRadius);
     Trace("setup_complete", nullptr, 0, "objects_and_spirit_guides", true);
     return true;
 }
@@ -314,6 +319,9 @@ void BattleGroundTG::EventPlayerDroppedFlag(Player* player)
     {
         m_rules.flag = ThornGorge::Respawning; m_rules.flagTimer = ThornGorge::FlagRespawnMs;
     }
+    if (m_rules.flag == ThornGorge::Dropped)
+        if (GameObject* flag = GetBgMap()->GetGameObject(m_BgObjects[DroppedObject]))
+            flag->SetObjectScale(m_flagScale);
     Trace("flag_dropped", player, 0, m_rules.flag == ThornGorge::Dropped ? "ground_flag_created" : "center_reset_scheduled");
     Announce(m_rules.flag == ThornGorge::Dropped ? "Flag dropped; it returns to the center after 30 seconds." : "Flag returns to the center in 10 seconds.");
     SendStates();
@@ -549,10 +557,10 @@ void BattleGroundTG::TraceSnapshot(char const* reason)
         bool objective=GetObjective(player,x,y,z);
         auto found=m_PlayerScores.find(it.first);
         auto* score=found==m_PlayerScores.end() ? nullptr : static_cast<BattleGroundTGScore*>(found->second);
-        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=player inst=%u seq=%u guid=%u name=%s available=1 team=%u socketless=%u alive=%u hp=%u max_hp=%u combat=%u gm=%u mounted=%u ghost=%u carry_aura=%u casting=%u victim=%u x=%.2f y=%.2f z=%.2f objective=%u objective_x=%.2f objective_y=%.2f objective_z=%.2f kills=%u deaths=%u honor=%u captures=%u",
+        sLog.out(LOG_BG, "THORN_GORGE schema=1 map=821 event=player inst=%u seq=%u guid=%u name=%s available=1 team=%u socketless=%u alive=%u hp=%u max_hp=%u combat=%u gm=%u god_hp=%u pvp=%u unit_flags=%u run_speed=%.3f mounted=%u ghost=%u carry_aura=%u casting=%u victim=%u x=%.2f y=%.2f z=%.2f objective=%u objective_x=%.2f objective_y=%.2f objective_z=%.2f kills=%u deaths=%u honor=%u captures=%u",
             GetInstanceID(), sequence, player->GetGUIDLow(), player->GetName(), uint32(Side(player)),
             uint32(!player->GetSession() || !player->GetSession()->GetSocket()), uint32(player->IsAlive()), player->GetHealth(), player->GetMaxHealth(),
-            uint32(player->IsInCombat()), uint32(player->IsGameMaster()), uint32(player->IsMounted()), uint32(player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)),
+            uint32(player->IsInCombat()), uint32(player->IsGameMaster()), player->GetInvincibilityHpThreshold(), uint32(player->IsPvP()), player->GetUInt32Value(UNIT_FIELD_FLAGS), player->GetSpeed(MOVE_RUN), uint32(player->IsMounted()), uint32(player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)),
             uint32(player->HasAura(CarrySpell)), uint32(player->IsNonMeleeSpellCasted(false)), player->GetVictim() ? player->GetVictim()->GetGUIDLow() : 0,
             player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), uint32(objective), x,y,z,
             score ? score->KillingBlows : 0, score ? score->Deaths : 0, score ? score->BonusHonor : 0, score ? score->FlagCaptures : 0);

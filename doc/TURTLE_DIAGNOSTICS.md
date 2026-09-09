@@ -1059,3 +1059,21 @@ limiter under our parallel map updates. Logging runs only on the exceptional
 path; ordinary motion has no extra clock or atomic access. Retain this diagnostic
 until the invalid timestamp producer is understood; the guard does not certify
 path generation. Location: MoveSpline::_updateState; no new config or thread.
+
+### September 9 Thorn Gorge match 102 follow-up
+
+Existing level-2 bot_ai samples now include pvp_nc/pvp_combat, the effective
+speed-cheat flag, actual run/swim speeds, native movement flags, spline ID,
+full duration, current/sent point indexes and next/final XYZ. Player snapshots
+include god_hp, pvp, unit_flags and run_speed. Fields are additive to schema=1.
+This separates proactive combat strategy loss, immunity/GM state, genuine speed
+changes and client spline continuation defects. No AI targets or priorities are
+evaluated, no terrain/path queries added and no movement initiated. Existing
+per-bot interval and 64-event/second cap remain; overhead is bounded field reads
+and longer log lines. Fresh splines are excluded before position/index reads.
+Removal: added fields in TraceThornBehavior and BattleGroundTG::TraceSnapshot;
+existing LogLevel=0 disables all TG diagnostics, level1 omits bot/player samples.
+The layout event additionally records flag_scale. FlagScale defaults to 2.5,
+clamps to 1-5, and is applied to both center and dropped objects at spawn.
+ThornBotDiagnosticsTest checks strategy/speed/continuation formatting alongside
+existing admission, disabled, reentry, no-spline and fresh-spline coverage.

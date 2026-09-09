@@ -2057,6 +2057,8 @@ Battleground.ThornGorge.Enabled = 0
 # Provisional central flag position. Z is resolved from terrain/collision.
 Battleground.ThornGorge.FlagX = 2174.469482
 Battleground.ThornGorge.FlagY = 1569.349243
+# Center/dropped flag model scale. Same scale as WSG templates; clamps to 1-5.
+Battleground.ThornGorge.FlagScale = 2.5
 # Capture samples: 25 samples from neutral for one player, 13 for two or more.
 # Interval clamps to 1000-10000ms; net player advantage clamps to 1-5.
 Battleground.ThornGorge.CaptureTickMs = 1200

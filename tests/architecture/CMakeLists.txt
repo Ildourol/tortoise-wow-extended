@@ -540,3 +540,32 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME PenqleMigrationTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/PenqleMigrationTest.py)
 endif()
+
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/packet_builder.cpp"
+    "int32 WriteLinearPath(" "void PacketBuilder::WriteCreate(" SplinePacketNative.inc)
+add_executable(SplinePacketContinuationTest SplinePacketContinuationTest.cpp)
+target_compile_features(SplinePacketContinuationTest PRIVATE cxx_std_17)
+target_include_directories(SplinePacketContinuationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(SplinePacketContinuationTest PRIVATE /EHsc)
+endif()
+add_test(NAME SplinePacketContinuationTest COMMAND SplinePacketContinuationTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/Handlers/BattleGroundHandler.cpp"
+    "void WorldSession::HandleBattleGroundPlayerPositionsOpcode(" "void WorldSession::HandlePVPLogDataOpcode(" BattlegroundPositionsNative.inc)
+# Extract the actual final BG block of the noncombat factory, including its
+# closing function brace; the harness supplies only pre-BG strategy state.
+file(READ "${TRAVEL_ROOT}/AiFactory.cpp" factory_source)
+string(FIND "${factory_source}" "    // Battleground switch" factory_bg REVERSE)
+string(SUBSTRING "${factory_source}" ${factory_bg} -1 factory_source)
+string(FIND "${factory_source}" "Engine* AiFactory::createNonCombatEngine(" factory_end)
+string(SUBSTRING "${factory_source}" 0 ${factory_end} factory_source)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BattlegroundNonCombatNative.inc" "${factory_source}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${TRAVEL_ROOT}/AiFactory.cpp")
+add_executable(BattlegroundPlayerPresentationTest BattlegroundPlayerPresentationTest.cpp)
+target_compile_features(BattlegroundPlayerPresentationTest PRIVATE cxx_std_17)
+target_include_directories(BattlegroundPlayerPresentationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(BattlegroundPlayerPresentationTest PRIVATE /EHsc)
+endif()
+add_test(NAME BattlegroundPlayerPresentationTest COMMAND BattlegroundPlayerPresentationTest)

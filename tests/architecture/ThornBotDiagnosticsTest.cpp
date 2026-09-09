@@ -21,8 +21,14 @@ struct BattleGroundTG:BattleGround {
     unsigned GetStatus(){return status;}void* GetBgMap(){return this;}
     bool AdmitBotDiagnostic(Player*);
 };
+namespace G3D {struct Vector3{float x=0,y=0,z=0;};}
+enum BotState {BOT_STATE_NON_COMBAT,BOT_STATE_COMBAT};
+enum class BotCheatMask {movespeed};
+enum {MOVE_RUN,MOVE_SWIM};
 struct Spline {
     bool initialized=false,done=false;
+    G3D::Vector3 CurrentDestination(){return {1,2,3};} G3D::Vector3 FinalDestination(){return {4,5,6};}
+    unsigned GetId(){return 17;} unsigned Duration(){return 9000;} int _currentSplineIdx(){return 81;} int getLastPointSent(){return 85;}
     bool Initialized(){return initialized;}
     bool Finalized(){if(!initialized)throw std::runtime_error("fresh spline read");return done;}
     unsigned timePassed(){if(!initialized)throw std::runtime_error("fresh spline time read");return 120;}
@@ -31,6 +37,8 @@ struct Motion {unsigned GetCurrentMovementGeneratorType(){return 8;}};
 struct Player {
     unsigned guid=1;bool inWorld=true,teleport=false;BattleGroundTG* bg=nullptr;void* map=nullptr;
     Spline* movespline=nullptr;Motion motion;
+    struct MovementInfo {unsigned GetMovementFlags(){return 5;}}m_movementInfo;
+    float GetSpeed(int){return 7.0f;}
     bool IsInWorld(){return inWorld;}bool IsBeingTeleported(){return teleport;}
     unsigned GetGUIDLow(){return guid;}unsigned GetObjectGuid(){return guid;}
     unsigned GetInstanceId(){return 104;}unsigned GetUnitState(){return 0;}
@@ -50,6 +58,8 @@ struct PlayerbotAI {
     Player* GetBot(){return bot;}Context* GetAiObjectContext(){++reads;return &context;}
     unsigned GetState(){return 1;}Engine* GetEngine(unsigned){return &engine;}
     bool CachedActivity(ActivityType){return true;}
+    bool HasStrategy(std::string const&,BotState state){return state==BOT_STATE_NON_COMBAT;}
+    bool HasCheat(BotCheatMask){return false;}
 };
 struct WorldTimer {inline static unsigned now=10000;static unsigned getMSTime(){return now;}};
 struct Log {
@@ -79,6 +89,8 @@ int main(){
     bg.m_elapsed+=5000;spline.initialized=true;ai.context.move.failedPathRetryUntil=10500;sample();
     Check(Log::Instance().last.find("path_retry_ms=500")!=std::string::npos,"retry not reported");
     Check(Log::Instance().last.find("spline_ms=120")!=std::string::npos,"spline not reported");
+    Check(Log::Instance().last.find("pvp_nc=1 pvp_combat=0 speed_cheat=0 run_speed=7.000")!=std::string::npos,"PvP/speed not reported");
+    Check(Log::Instance().last.find("spline_index=81 spline_sent=85 next_x=1.00")!=std::string::npos,"spline continuation state missing");
     bg.m_elapsed+=5000;bg.m_diagnostics.events=64;sample();Check(ai.reads==3,"event cap bypassed");
     bg.m_diagnostics.Advance(1000);sample();Check(ai.reads==4,"cap failed to recover");
     bg.m_botDiagnosticTicks.erase(1);p.movespline=nullptr;sample();Check(ai.reads==5,"reentry or absent spline failed");

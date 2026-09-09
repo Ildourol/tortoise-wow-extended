@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "3544A1A13BCF3C67BE288CA9C71D98AB7D398BD9545C3E1BEC639FFBAF111014"
+    "sha256": "3E6DD9B4274280DBB2493CAB4EBA0FFEF00F76B07B572F480246698371582E25"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -5259,7 +5259,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "123D739672F960513696D58ED3695B648F4CD2B57247A08D47D08D5F3A783755"
+    "sha256": "CD671E85C5AC10A9F3F1806CA675218EFE8486F85EC355A66842F7A3009E52E8"
   },
   {
     "file": "src/game/Handlers/AuctionHouseHandler.cpp",
@@ -8304,7 +8304,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "77CD1DFF5FB0AD26B33BF2EF30A97AAA50838BDB6D44B63D94E8720E7E34A392"
+    "sha256": "5A496298FC7ADE4DD2EFDF31BE04ACDFD7746EF0A614D4DA5006DC410B5D9634"
   },
   {
     "file": "src/game/Movement/spline/MoveSplineInitArgs.h",
@@ -13513,7 +13513,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "320F0009C2AF58DE4701B1825479221FB43A456EDEBF8E2F727E11347D8FC718"
+    "sha256": "1EA6317CC2C8BAD2443D188099F02BC2CDA72595A24B6112C3D73C950E990B40"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/BotActionLog.h",
@@ -13545,7 +13545,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "7CC98EE3EDB6E74827A03FA7E6C9748DBCD642185A76B7FB53899C40520DD2EC"
+    "sha256": "14C6799ECDED707D7E10FD05A4DCEE2E31A8C74DE45D98ABA3B0635D6AF70870"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/AiContextAugment.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "F8B1A21BA6D090AB63570CA434915557DCE95272E924DABCF0777815AD3F77C5"
+    "sha256": "7C1E1F618C8CFCF72FF74E9E75E38FE0926B1546455E686F0520CBC3F4C2387E"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",
@@ -24601,7 +24601,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "300FD4B16C3350C88B9656D4EC8D020BB63CB49D1B0B12E1EF751D3413305D08"
+    "sha256": "0CEFAA1F3536E112A9060DF2E7FC96079664F7246A66048707521C9216A3A40A"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeRules.h",

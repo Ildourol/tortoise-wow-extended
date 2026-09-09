@@ -17,7 +17,8 @@ struct ObjectGuid {
 constexpr unsigned CenterObject=12,DroppedObject=13,CarrySpell=59005,PickupSpell=59011;
 constexpr unsigned STATUS_IN_PROGRESS=3,RESPAWN_NEVER=86400,RESPAWN_IMMEDIATELY=0;
 struct GameObject {
-    ObjectGuid guid; void* map=nullptr; bool spawned=true;
+    ObjectGuid guid; void* map=nullptr; bool spawned=true; float scale=1;
+    void SetObjectScale(float value){scale=value;}
     void* GetMap(){return map;} bool isSpawned(){return spawned;}
     ObjectGuid GetObjectGuid(){return guid;}
 };
@@ -44,7 +45,9 @@ public:
     std::array<ObjectGuid,14> m_BgObjects{};
     GameObject center,drop; unsigned status=3,adds=0; bool addSucceeds=true;
     BattleGroundTG(){m_BgObjects[12]=1;center.guid=1;center.map=this;drop.map=this;}
-    void* GetBgMap()const{return const_cast<BattleGroundTG*>(this);}
+    BattleGroundTG* GetBgMap()const{return const_cast<BattleGroundTG*>(this);}
+    GameObject* GetGameObject(ObjectGuid g){return g==drop.guid?&drop:nullptr;}
+    float m_flagScale=2.5f;
     unsigned GetStatus(){return status;}
     bool Eligible(Player* p){return p&&p->eligible&&p->map==GetBgMap();}
     void Announce(char const*){} void SendStates(){}
@@ -84,6 +87,7 @@ int main()
     Check(bg.m_carrier==p.guid && bg.adds==0,"stale callbacks preserve current carrier");
     bg.EventPlayerDroppedFlag(&p);
     Check(bg.adds==1 && !bg.m_carrier && !p.aura && bg.drop.spawned,"reentrant aura callback makes exactly one drop");
+    Check(bg.drop.scale==2.5f,"dropped flag scale lost");
     bg.m_rules.Tick(2107);
     bg.EventPlayerClickedOnFlag(&other,&bg.drop);
     bg.m_rules.Tick(10000);

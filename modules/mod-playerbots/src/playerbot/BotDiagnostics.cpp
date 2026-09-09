@@ -184,16 +184,25 @@ namespace ai { namespace botdiag {
         if (spline && !spline->Initialized()) spline = nullptr;
         uint32 now = WorldTimer::getMSTime();
         int32 retry = int32(move.failedPathRetryUntil - now);
+        G3D::Vector3 const next = spline ? spline->CurrentDestination() : G3D::Vector3();
+        G3D::Vector3 const end = spline ? spline->FinalDestination() : G3D::Vector3();
         Log::Instance().out(LOG_BG,
             "THORN_GORGE schema=1 map=821 event=bot_ai inst=%u guid=%u tick=%u minimal=%u state=%u "
             "cached_active=%u cached_detailed=%u cached_react=%u motion=%u moving=%u unit_state=%u "
             "spline_initialized=%u spline_done=%u spline_ms=%u path_size=%zu path_retry_ms=%u "
-            "next_teleport=%lld actions=%s",
+            "next_teleport=%lld pvp_nc=%u pvp_combat=%u speed_cheat=%u run_speed=%.3f swim_speed=%.3f "
+            "move_flags=%u spline_id=%u spline_total_ms=%u spline_index=%d spline_sent=%d "
+            "next_x=%.2f next_y=%.2f next_z=%.2f end_x=%.2f end_y=%.2f end_z=%.2f actions=%s",
             bot->GetInstanceId(), bot->GetGUIDLow(), now, uint32(minimal), uint32(ai->GetState()),
             uint32(ai->CachedActivity(ALL_ACTIVITY)), uint32(ai->CachedActivity(DETAILED_MOVE_ACTIVITY)),
             uint32(ai->CachedActivity(REACT_ACTIVITY)), uint32(bot->GetMotionMaster()->GetCurrentMovementGeneratorType()),
             uint32(bot->IsMoving()), bot->GetUnitState(), uint32(spline != nullptr),
             uint32(!spline || spline->Finalized()), spline ? spline->timePassed() : 0,
-            move.lastPath.getPath().size(), move.failedPathRetryUntil && retry > 0 ? uint32(retry) : 0, (long long)move.nextTeleport, actions.c_str());
+            move.lastPath.getPath().size(), move.failedPathRetryUntil && retry > 0 ? uint32(retry) : 0, (long long)move.nextTeleport,
+            uint32(ai->HasStrategy("pvp", BotState::BOT_STATE_NON_COMBAT)), uint32(ai->HasStrategy("pvp", BotState::BOT_STATE_COMBAT)),
+            uint32(ai->HasCheat(BotCheatMask::movespeed)), bot->GetSpeed(MOVE_RUN), bot->GetSpeed(MOVE_SWIM),
+            bot->m_movementInfo.GetMovementFlags(), spline ? spline->GetId() : 0, spline ? spline->Duration() : 0,
+            spline ? spline->_currentSplineIdx() : -1, spline ? spline->getLastPointSent() : -1,
+            next.x, next.y, next.z, end.x, end.y, end.z, actions.c_str());
     }
 }}

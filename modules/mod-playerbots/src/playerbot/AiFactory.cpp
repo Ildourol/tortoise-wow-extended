@@ -1071,7 +1071,9 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     // Battleground switch
     if (player->InBattleGround())
     {
-        nonCombatEngine->addStrategies("racials", "nc", "default", "buff", "food", "mount", "collision", "dps assist", "attack tagged", "emote", NULL);
+        // Keep proactive PvP after any strategy reset, not only the queue-join
+        // callback. Otherwise idle BG bots lose their enemy-player trigger.
+        nonCombatEngine->addStrategies("racials", "nc", "default", "pvp", "buff", "food", "mount", "collision", "dps assist", "attack tagged", "emote", NULL);
         nonCombatEngine->removeStrategy("custom::say");
         nonCombatEngine->removeStrategy("travel");
         nonCombatEngine->removeStrategy("tfish");

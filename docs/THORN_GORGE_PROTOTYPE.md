@@ -178,3 +178,44 @@ is sufficient for the next restart without another executable build. Visual
 alignment at the supplied point still requires the next in-game check.
 The start enclosure still uses the prototype's 35-yard countdown leash; its
 physical gate has not been positioned. Screenshot feedback records that gap.
+
+### September 9 Horde match 102 playtest
+
+Build b7e93426 completed with Horde 1600 / Alliance 861 after 1,114,104ms
+including countdown. Player screenshots confirm neutral/owned node map icons
+and center alignment. Eight deliveries, eleven pickups and 159 player-death
+events were recorded. These are match observations, not completeness criteria.
+
+Next build adds carrier coordinates through the native BG positions opcode,
+keeps proactive PvP in noncombat defaults across resets, and scales both flag
+objects to 2.5 by default (the scale of native WSG templates, with a different
+model). Configure Battleground.ThornGorge.FlagScale in the TG section; clamp
+1-5, nonfinite fallback 2.5. No pickup radius, cast time, score or reward changes.
+Client carrier rendering and visual flag size still need the next playtest.
+The native ground-packet continuation correction preserves untraversed turns
+and timing. It does not modify navigation, movement speed or collision assets.
+
+Live read-only checks found vmap LOS/height and mmaps enabled. Neither configured
+BotCheats nor RndBotCheats contains movespeed (taxi/repair/breath, plus item for
+random bots). No bot exceeded 16 yards/sec between consecutive five-second
+position samples with unchanged death count and alive at both ends; this cannot
+exclude brief bursts or mount/speed changes inside a sample. New bounded log
+fields distinguish these cases. Do not call the bridge collision problem fixed.
+
+Existing queue NPC templates 63203-63208 are all bound to TG (BG type 6).
+Currently spawned: Fanwyn Wildbrand in Ironforge (63203), Ingwelda Wildbrand in
+Stormwind (63204), and Suda Steelweaver in Thunder Bluff (63206). Rubertus,
+Fahesa and Esoch exist as templates without spawns. These are imported NPCs,
+not new inventions. Existing custom BG bindings are Blood Ring type 4 and
+Sunnyglade Valley type 5. This records this server's data, not historical
+public Turtle release behavior. Map 821/area 5722 already identifies Thorn
+Gorge in the inspected client and server; a zone label does not imply finished
+quests, rewards or collision.
+
+Still open: physical start gates and side-bridge ledges. Native templates
+2020407/2020408 exist but are not positioned; the user will show the Horde hut
+exit next match. The countdown leash remains in force. Screenshots identify
+four side-bridge ends that small characters cannot climb. A binary cannot
+by itself establish that their client collision geometry is repaired. Do not
+invent verified placements, add teleport shortcuts or claim complete geometry
+from the existing 42-route navmesh connectivity probe.
