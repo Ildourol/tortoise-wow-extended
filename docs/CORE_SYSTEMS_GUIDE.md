@@ -1,5 +1,14 @@
 # Turtle core: native systems and change contracts
 
+Chat-channel follow-up (2026-09-09): ObjectMgr's database loader preserves each
+channel ID. Fixed names/shortcuts match exactly and localized zone names match
+the anchored prefix/suffix around `%s`; custom names containing a built-in name
+must not acquire its identity or zone restrictions. `Channel` consumes ID/flags
+and `ChannelMgr` enforces zone-dependent admission. The native-fragment
+`ChatChannelLookupTest` covers loading, locales, misses and reloads. See
+[Penqle integration](PENQLE_INTEGRATION_2026-09-09.md) for the upstream ancestry,
+SQL contracts and unapplied migration limitations.
+
 Source baseline: `mantech-turtle`, `b2d5a8549194f7ffa38e324dcb7a82ccc0ba2132`, reviewed 2026-09-05. This guide is a navigational and ownership reference, not a substitute for reading the current implementation. Line numbers below describe this baseline and will drift.
 
 Start with the [compatibility audit](CORE_COMPATIBILITY_AUDIT_2026-09-05.md), [map coverage](core-audit/COVERAGE.md), and [diagnostic inventory](../doc/TURTLE_DIAGNOSTICS.md). `AGENTS.md` requires using native mechanisms and checking their full contract before making changes.

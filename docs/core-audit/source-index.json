@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "5F1AAB9F5029104B3A7FE5D6EDA232E947694E638F685144E99FF6DD04B93FDE"
+    "sha256": "3544A1A13BCF3C67BE288CA9C71D98AB7D398BD9545C3E1BEC639FFBAF111014"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -7098,7 +7098,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "638BC37616C42371E9A0E8F53D5D27EDA040ED69469B775D757CB96B8903FD8E"
+    "sha256": "838B6E06C320E60E9058D57FAFBC4C8419209E2D31E7EE80C1131E0CDC7BEA8D"
   },
   {
     "file": "src/game/ObjectGuid.h",
@@ -8356,7 +8356,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "A822C71C6615981BAD936E0D996890EAC6CF9221098D2BE44EC23794D9ACBD39"
+    "sha256": "0438781F3BEAE819FAA3019ABB1D47ABCE757604C79EC221C62E04FC88179555"
   },
   {
     "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
