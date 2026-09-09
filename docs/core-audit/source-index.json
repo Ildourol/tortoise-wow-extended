@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "6B61731F36D330EC4F284CAA881EB9565A8C1BC9A620DC8C33A430890877D6A7"
+    "sha256": "EB429011104DC2FEB30E5F40C2F0C66A60083ACBC693A77619C2ED78F975B822"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",
@@ -24601,7 +24601,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "CAD3A1C1CCFC0119276B4200C25BAA148EBF7E7A5971B3E6D139602F576442D6"
+    "sha256": "367186F33FCEEC901C9826E9090A4652F95E96753B2E20CBD2EDDF85E132A2B4"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeRules.h",
@@ -24610,5 +24610,13 @@
     "loader_calls": [],
     "dependency_signals": [],
     "sha256": "E0CC4E7E569191298A8BA48144F5D69A0A196339024C6F033FE3A283CBC2AA7A"
+  },
+  {
+    "file": "src/game/Battlegrounds/ThornGorgeDiagnostics.h",
+    "cmake_listed": true,
+    "addsc": [],
+    "loader_calls": [],
+    "dependency_signals": [],
+    "sha256": "2005F2A4753707A418C8488B46DE488BF05113FD86E96E2F53588F63ED8696CF"
   }
 ]

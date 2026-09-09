@@ -341,3 +341,14 @@ the final call in the derived update. Missing templates now yield no bracket
 instead of asserting in Player::GetBattleGroundBracketIdFromLevel.
 The extracted client HUD uses 3601/3602/3603 and 3621-3625, not TBC EotS IDs.
 Pure rules tests and real-asset route tests are not live gameplay certification.
+
+
+### Thorn Gorge diagnostic ownership (2026-09-08)
+
+Optional structured match telemetry uses the native LOG_BG sink. Budget and
+snapshot state belong to each BattleGroundTG and are accessed only through its
+native match callbacks/map owner. Periodic snapshots run before the final base
+BattleGround::Update, which may delete the instance. Logging does not change
+flag validation order, objective selection or character persistence. See
+doc/TURTLE_DIAGNOSTICS.md for configuration and overhead; regression coverage
+includes ThornGorgeDiagnosticsTest and ThornGorgeFlagTest.

@@ -112,3 +112,18 @@ rows can remain while disabled. Building/packaging does not change production.
   was approximately 1159.09. This does not establish live client/server behavior.
 - A real two-faction match, terrain and flag visuals, spirit-guide behavior,
   and quest/reward design remain acceptance work before production.
+
+
+## Collecting a test match
+
+Enable `Battleground.ThornGorge.LogLevel = 2` and
+`Battleground.ThornGorge.LogIntervalMs = 5000` in the battleground configuration
+section. Restart with the logging build, queue and play normally. Match events
+and five-second player/node snapshots append to the native `logs/bg.log` when
+`BgLogFile="bg.log"`. Filter for `THORN_GORGE` and the instance's `inst=` value
+to reconstruct the test. Keep the matching executable/PDB and server/crash logs
+for failures. No DB migration is required for logging. See
+`doc/TURTLE_DIAGNOSTICS.md` for fields, overhead, limits and removal controls.
+Logging regression verification: 48/48 architecture tests passed, including
+the actual native flag callbacks and the diagnostic budget checks. Live log
+acceptance requires a new match after the new binary is loaded.

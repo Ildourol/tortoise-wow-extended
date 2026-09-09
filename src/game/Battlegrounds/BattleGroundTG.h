@@ -3,6 +3,7 @@
 
 #include "BattleGround.h"
 #include "ThornGorgeRules.h"
+#include "ThornGorgeDiagnostics.h"
 
 class BattleGroundTGScore : public BattleGroundScore
 {
@@ -38,6 +39,12 @@ public:
 
 private:
     ThornGorge::Rules m_rules;
+    ThornGorge::DiagnosticBudget m_diagnostics;
+    uint32 m_snapshotSequence = 0;
+    unsigned m_captureCounts[4][2] = {};
+    void Trace(char const* event, Player* player = nullptr, uint32 related = 0, char const* reason = "-", bool critical = false);
+    void TraceSnapshot(char const* reason);
+    char const* FlagRejection(Player* player, GameObject* object);
     ObjectGuid m_carrier;
     uint32 m_tick = 0;
     uint32 m_elapsed = 0;

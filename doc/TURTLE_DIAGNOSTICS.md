@@ -932,8 +932,52 @@ network/database durability or a replay of that crash.
 
 `.bg thorn` inside a Thorn Gorge instance prints scores, node progress/ownership,
 flag state and elapsed time through the existing administrator BG command.
-It runs only on request. No global polling, DB writes or file logging is added.
+It runs only on request. Optional match logging is described below. No global polling or DB writes are added.
 Feature control: Battleground.ThornGorge.Enabled (default 0; restart required).
 The opt-in match samples at most 30 members across four nodes once per second
 and publishes native HUD updates. Lifecycle announcements are match messages.
 See docs/THORN_GORGE_PROTOTYPE.md for activation, provisional values and removal.
+
+
+## Thorn Gorge match logging (2026-09-08)
+
+The native `BgLogFile` receives structured `THORN_GORGE schema=1 map=821`
+records. With `LogsDir="logs"` and `BgLogFile="bg.log"`, read `logs/bg.log`.
+Other native battleground messages remain in the same file. Each structured
+record includes an instance ID; snapshots also have a sequence number.
+
+`Battleground.ThornGorge.LogLevel` defaults to 0 (off). Level 1 logs lifecycle,
+joins/leaves, deaths, node ownership, flag requests/rejections/pickups/drops/
+deliveries/resets, setup failures, and team/node snapshots. Level 2 adds each
+member's GUID/name, socket presence, position, health, combat/ghost/GM/mount/
+carry/cast state, victim, selected objective and scoreboard counters. A
+socketless session is reported as such; it is not an identity guarantee.
+Objective coordinates describe a selected destination, not proof of arrival.
+
+`Battleground.ThornGorge.LogIntervalMs` defaults to 5000 and clamps to
+1000-60000. Settings are read on match Reset; restart with the new binary and
+configuration for the next test. Start/end also emit snapshots. `.bg thorn`
+requests an extra snapshot at most once per configured interval. Team values
+are 0=Alliance, 1=Horde, 2=neutral; `match_end related` uses native winner values
+469=Alliance, 67=Horde, 0=tie. Flag values are 0=center, 1=carried, 2=dropped,
+3=respawning. Node indexes 0-3 follow the locations listed in the prototype guide.
+Node nearby counts describe the last once-per-second capture sample.
+
+Events are capped at 64 per match simulation-second, except critical lifecycle
+and setup failures. Suppression counts appear on the next snapshot. After a
+stall only one periodic snapshot is emitted, without a catch-up burst. Level 2
+normally adds at most 35 snapshot lines per interval for a full 30-player match.
+The existing logger flushes each line synchronously on the match owner thread;
+live disk/CPU overhead is not yet measured. Use level 1 or a longer interval to
+reduce detail, or level 0 to disable it for new matches. No extra thread, SQL
+write, or global scan is introduced. Off mode returns before formatting or
+walking players for diagnostics. Existing BG logging must also be enabled.
+
+This is event and sampled-state telemetry, not every packet/spell/damage tick.
+It cannot recover events from earlier binaries or prove that a missing final
+record was a crash. Match state is in memory; character autosaves do not contain
+the live score or capture timeline. New records contain no account IDs, IPs,
+chat, or credentials; unrelated existing BG records may contain native session
+metadata. The file uses the existing append/retention behavior; archive test
+logs as needed. `ThornGorgeDiagnosticsTest` checks disabled mode, clamps, rate
+limits, suppression accounting, manual cooldown and long-stall behavior.

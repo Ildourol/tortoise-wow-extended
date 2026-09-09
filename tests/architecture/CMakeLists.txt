@@ -463,3 +463,8 @@ if(MSVC)
     target_compile_options(ThornGorgeAssetProbe PRIVATE /EHsc)
 endif()
 set_tests_properties(NavMeshLifetimeTest PROPERTIES TIMEOUT 90)
+
+add_executable(ThornGorgeDiagnosticsTest ThornGorgeDiagnosticsTest.cpp)
+target_compile_features(ThornGorgeDiagnosticsTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgeDiagnosticsTest PRIVATE ../../src/game/Battlegrounds)
+add_test(NAME ThornGorgeDiagnosticsTest COMMAND ThornGorgeDiagnosticsTest)

@@ -299,6 +299,7 @@ set (game_SRCS
     Battlegrounds/BattleGroundSV.h
     Battlegrounds/BattleGroundTG.h
     Battlegrounds/ThornGorgeRules.h
+    Battlegrounds/ThornGorgeDiagnostics.h
     Chat/Channel.h
     Chat/ChannelMgr.h
     Chat/Chat.h

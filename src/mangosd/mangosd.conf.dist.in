@@ -2057,6 +2057,11 @@ Battleground.ThornGorge.Enabled = 0
 # Provisional central flag position. Z is resolved from terrain/collision.
 Battleground.ThornGorge.FlagX = 2165.89
 Battleground.ThornGorge.FlagY = 1564.21
+# Native BgLogFile receives THORN_GORGE events. 0=off, 1=events/team snapshots,
+# 2=also player positions, state, scores and chosen objectives. New matches read
+# these settings. Snapshot interval is clamped to 1000-60000ms; events to 64/s.
+Battleground.ThornGorge.LogLevel = 0
+Battleground.ThornGorge.LogIntervalMs = 5000
 
 # Battleground.QueueAnnouncer.Join. Enable queue announcer posting to chat at join.
 

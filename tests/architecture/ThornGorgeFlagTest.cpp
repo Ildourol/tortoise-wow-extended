@@ -10,6 +10,7 @@ struct ObjectGuid {
     ObjectGuid(unsigned long long v=0):value(v){}
     explicit operator bool()const{return value!=0;}
     void Clear(){value=0;}
+    unsigned GetCounter()const{return unsigned(value);}
     bool operator==(ObjectGuid b)const{return value==b.value;}
     bool operator!=(ObjectGuid b)const{return value!=b.value;}
 };
@@ -51,6 +52,8 @@ public:
     void DelObject(unsigned slot){m_BgObjects[slot].Clear();drop.spawned=false;}
     bool AddObject(unsigned slot,unsigned,float,float,float,int,int,int,int,int)
     {++adds;if(!addSucceeds)return false;drop.guid=100+adds;m_BgObjects[slot]=drop.guid;drop.spawned=true;return true;}
+    void Trace(char const*,Player* =nullptr,unsigned =0,char const* ="-",bool =false){}
+    char const* FlagRejection(Player*,GameObject*);
     bool OwnFlagObject(GameObject*)const;
     void EventPlayerClickedOnFlag(Player*,GameObject*);
     void CompleteFlagPickup(Player*,GameObject*);
