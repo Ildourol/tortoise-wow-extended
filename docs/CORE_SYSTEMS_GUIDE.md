@@ -421,3 +421,17 @@ for initial/continuing/final chunks, remaining corners, late updates and timing;
 smooth-path encoding is also checked. The old writer fails on the continuation
 origin. This establishes a packet defect, not that all reported geometry issues
 are repaired. Live verification remains necessary, especially bridge ledges.
+
+### September 9 battleground PvP reset and carrier presentation
+
+The BG join callback adds pvp to both engines, but subsequent ResetStrategies
+recreates them from AiFactory. The noncombat BG defaults must also include pvp,
+otherwise an idle bot loses the enemy-player-near emergency attack trigger.
+Keep existing hostile target eligibility and combat strategies; god mode only
+sets the native minimum surviving HP and is not a target-exclusion flag.
+The native BG positions opcode now includes Thorn Gorge's neutral carrier for
+both teams, resolved on the owning BG map with membership/in-world checks.
+It retains the native count/GUID/XY wire structure and existing WSG handling.
+BattlegroundPlayerPresentationTest covers repeated BG resets and carrier absence,
+foreign membership, either viewer team, non-BG requests and WSG/AB behavior.
+Actual client rendering and renewed human-directed combat require live testing.
