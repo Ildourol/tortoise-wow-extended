@@ -927,3 +927,125 @@ the supplied crash text has no faulting instruction or matching binary snapshot;
 keep the underlying memory-fault diagnosis open. Focused native-fragment tests
 cover notification payloads and continuing mail operations, not production
 network/database durability or a replay of that crash.
+
+## Thorn Gorge prototype status (2026-09-08)
+
+`.bg thorn` inside a Thorn Gorge instance prints scores, node progress/ownership,
+flag state and elapsed time through the existing administrator BG command.
+It runs only on request. Optional match logging is described below. No global polling or DB writes are added.
+Feature control: Battleground.ThornGorge.Enabled (default 0; restart required).
+The opt-in match samples at most 30 members across four nodes once per second
+and publishes native HUD updates. Lifecycle announcements are match messages.
+See docs/THORN_GORGE_PROTOTYPE.md for activation, provisional values and removal.
+
+
+## Thorn Gorge match logging (2026-09-08)
+
+The native `BgLogFile` receives structured `THORN_GORGE schema=1 map=821`
+records. With `LogsDir="logs"` and `BgLogFile="bg.log"`, read `logs/bg.log`.
+Other native battleground messages remain in the same file. Each structured
+record includes an instance ID; snapshots also have a sequence number.
+
+`Battleground.ThornGorge.LogLevel` defaults to 0 (off). Level 1 logs lifecycle,
+joins/leaves, deaths, node ownership, flag requests/rejections/pickups/drops/
+deliveries/resets, setup failures, and team/node snapshots. Level 2 adds each
+member's GUID/name, socket presence, position, health, combat/ghost/GM/mount/
+carry/cast state, victim, selected objective and scoreboard counters. A
+socketless session is reported as such; it is not an identity guarantee.
+Objective coordinates describe a selected destination, not proof of arrival.
+
+`Battleground.ThornGorge.LogIntervalMs` defaults to 5000 and clamps to
+1000-60000. Settings are read on match Reset; restart with the new binary and
+configuration for the next test. Start/end also emit snapshots. `.bg thorn`
+requests an extra snapshot at most once per configured interval. Team values
+are 0=Alliance, 1=Horde, 2=neutral; `match_end related` uses native winner values
+469=Alliance, 67=Horde, 0=tie. Flag values are 0=center, 1=carried, 2=dropped,
+3=respawning. Node indexes 0-3 follow the locations listed in the prototype guide.
+Node nearby counts describe the last once-per-second capture sample.
+
+Events are capped at 64 per match simulation-second, except critical lifecycle
+and setup failures. Suppression counts appear on the next snapshot. After a
+stall only one periodic snapshot is emitted, without a catch-up burst. Level 2
+normally adds at most 35 snapshot lines per interval for a full 30-player match.
+The existing logger flushes each line synchronously on the match owner thread;
+live disk/CPU overhead is not yet measured. Use level 1 or a longer interval to
+reduce detail, or level 0 to disable it for new matches. No extra thread, SQL
+write, or global scan is introduced. Off mode returns before formatting or
+walking players for diagnostics. Existing BG logging must also be enabled.
+
+This is event and sampled-state telemetry, not every packet/spell/damage tick.
+It cannot recover events from earlier binaries or prove that a missing final
+record was a crash. Match state is in memory; character autosaves do not contain
+the live score or capture timeline. New records contain no account IDs, IPs,
+chat, or credentials; unrelated existing BG records may contain native session
+metadata. The file uses the existing append/retention behavior; archive test
+logs as needed. `ThornGorgeDiagnosticsTest` checks disabled mode, clamps, rate
+limits, suppression accounting, manual cooldown and long-stall behavior.
+
+
+## First live-match corrections (2026-09-09)
+
+Match 103 ended Alliance 1600-1179 after 932 seconds of active simulation.
+Patch made three flag deliveries. The initial prototype sampled capture once
+per second with up to five net players; groups could take a neutral node in
+five samples. New defaults are CaptureTickMs=1200 and CaptureMaxAdvantage=2:
+25 samples (30 seconds) solo and 13 samples (15.6 seconds) with a net advantage
+of two or more. Equal teams cancel. A full enemy takeover requires 50 solo
+samples (60 seconds) or 25 grouped samples (30 seconds). These remain test
+tuning, not a claim about the original release. Settings are read on Reset;
+interval clamps to 1000-10000ms and advantage to 1-5. Stalls grant no retroactive
+capture at a player's new location.
+
+Native AreaPOI.dbc records 2749-2760 on map 821 define worldstates 3606-3617.
+Each node's three states are neutral, Horde, Alliance; icon IDs are 5, 9, 10.
+The colour ordering is independently consistent with the native AV assault
+landmarks. Initial and changed states publish exactly one active icon per
+node, clearing the other two. No client patch is required for the inspected
+assets. Server log confirmation is not proof of client rendering; check both
+teams' icons and late entry in the next live test.
+
+Victory quests 42098/42099 use Player::AreaExploredOrEventHappens for an accepted,
+incomplete quest on an online participating winner. Dead winners remain
+eligible. GMs, spectators, losing/tied teams, unavailable members and already
+complete/absent quests receive no new credit. Apply
+sql/custom/thorn_gorge_victory_quests.sql to set SpecialFlags bit 2, preventing
+completion before the victory event. Existing character progress is untouched.
+Players still turn in the quest normally for its imported reward; the BG
+does not grant quest items, XP or reputation directly.
+
+Added diagnostic records: layout (actual flag XYZ and capture tuning),
+capture_transition (old/new owner/progress, nearby counts, interval),
+map_icon_sent (active client worldstate), quest_credit / quest_credit_skipped,
+and update_delay (owner updates of at least 2000ms). Node snapshots include
+active_icon. Existing event budgets apply. No packet/combat spam or extra
+thread is added. Native-fragment tests exercise initial/live icon agreement
+and quest filters/repeat protection; rule tests cover capture caps.
+
+Flag position was subsequently supplied by the player using .gps on map 821,
+instance 104: X=2174.469482, Y=1569.349243, Z=1160.459473, O=3.306524.
+The GPS also reported FloorZ=1160.459351 and GroundZ=1160.445312. Defaults,
+deployment configuration and the real-asset navigation probe now use that XY.
+The native terrain/collision query still resolves Z and adds the existing
+0.1-yard object offset; no fixed-height override or teleport is introduced.
+The d7f50f8 binary already supports these config keys, so deploying the config
+is sufficient for the next restart without another executable build. Visual
+alignment at the supplied point still requires the next in-game check.
+The start enclosure still uses the prototype's 35-yard countdown leash; its
+physical gate has not been positioned. Screenshot feedback records that gap.
+
+### Thorn Gorge bot progress trace (September 9)
+
+Existing Battleground.ThornGorge.LogLevel=2 and LogIntervalMs controls also admit
+one bot_ai record per bot per interval during an active match. Records use
+LOG_BG/bg.log and share the match's 64-event/second budget; no global action log
+is enabled. Map-owner UpdateAI samples existing engine action history (last 256
+characters, whitespace escaped), cached activity decisions, minimal flag, motion
+generator/unit state, initialized spline progress, path size, failure retry and
+next teleport deadline. Cached flags can be initial/stale; they are not recomputed
+for diagnostics. A bot with player snapshots but no bot_ai samples may not be
+reaching UpdateAI. Path retry is evidence of a recent failed path, not its cause.
+No spell, trigger, priority evaluation or movement is initiated by the trace.
+Admission entries are erased on leave and reset; off/level1 returns before
+formatting/context reads. Disable with LogLevel=0 (or use level1 for match events).
+Removal sites: TraceThornBehavior, its UpdateAI hook, CachedActivity accessor,
+BattleGroundTG::AdmitBotDiagnostic and m_botDiagnosticTicks. No DB change.

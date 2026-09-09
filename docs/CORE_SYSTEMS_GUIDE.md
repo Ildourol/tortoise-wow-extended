@@ -326,3 +326,53 @@ Knowing that a service touches `SPELL_EFFECT_LEARN_SPELL` is only the start. The
 - Existing architecture tests are under [tests/architecture](../tests/architecture). `ContentHookContract.cmake` checks source wiring by lexical/regex assertions; passing it does not establish exactly-once execution or all boss mechanics.
 - Diagnostic controls/removal belong in the existing [diagnostic inventory](../doc/TURTLE_DIAGNOSTICS.md), not scattered permanent logs. Disabled summary logging does not necessarily remove timers/atomics.
 - Record source revision and fresh evidence on every significant update. Repository documentation makes the knowledge reusable; it does not make an assistant infallible or remove the need to reopen current source.
+
+## Thorn Gorge prototype (2026-09-08)
+
+See [Thorn Gorge implementation and acceptance checks](THORN_GORGE_PROTOTYPE.md).
+Map 821 / type and queue 6 is opt-in. BattleGroundTG owns its proximity capture,
+flag and score state on the native battleground map update. Generic capture GOs
+currently dispatch events on use and do not supply timed player-count capture.
+Native queues, GO ownership, spell completion/aura hooks and resurrection are
+retained. Spell 59011 is an objective cast with fixed DBC time; completion must
+revalidate original GO identity and player eligibility. Client trigger packets
+must not advance time. BattleGround::Update can delete the instance and must be
+the final call in the derived update. Missing templates now yield no bracket
+instead of asserting in Player::GetBattleGroundBracketIdFromLevel.
+The extracted client HUD uses 3601/3602/3603 and 3621-3625, not TBC EotS IDs.
+Pure rules tests and real-asset route tests are not live gameplay certification.
+
+
+### Thorn Gorge diagnostic ownership (2026-09-08)
+
+Optional structured match telemetry uses the native LOG_BG sink. Budget and
+snapshot state belong to each BattleGroundTG and are accessed only through its
+native match callbacks/map owner. Periodic snapshots run before the final base
+BattleGround::Update, which may delete the instance. Logging does not change
+flag validation order, objective selection or character persistence. See
+doc/TURTLE_DIAGNOSTICS.md for configuration and overhead; regression coverage
+includes ThornGorgeDiagnosticsTest and ThornGorgeFlagTest.
+
+Thorn Gorge live-test follow-up: AreaPOI worldstates 3606-3617 provide native
+ownership icons. Accepted victory quests 42098/42099 receive native event
+credit; the paired SQL sets their required-event special flag. See the
+prototype guide for tunable capture pacing, lifecycle guards and diagnostics.
+ThornGorgePresentationTest compiles the actual UI/quest methods in its harness.
+
+Flag placement follow-up: the live GPS-confirmed Thorn Gorge point is
+2174.469482,1569.349243,1160.459473. Deployment uses the existing XY config keys
+and native collision height. See the prototype guide for evidence and checks.
+
+### Thorn Gorge match review, September 9
+
+Dropped flags remain available for 30 seconds so travel plus native spell 59011's
+ten-second cast can complete. Center respawn after delivery or missing ground
+object remains ten seconds; native GO identity/range/LOS/aura checks still apply.
+WorldPosition::isBg now reads the core's loaded MapEntry::IsBattleGround metadata,
+including custom map_template entries. Its consumers are activity classification,
+login classification and test travel filtering; stock maps retain their native
+type. The old map-ID list omitted 821 and could demote distant bots once a path
+existed. This defect is corrected, but live attribution of the recorded Horde
+spawn stalls remains pending. Do not force teleport/revive or bypass path failures.
+ThornBotDiagnosticsTest executes native map classification, trace admission and
+formatting against deterministic services, including uninitialized splines.

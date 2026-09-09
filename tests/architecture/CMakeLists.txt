@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(TurtleArchitectureTests LANGUAGES C CXX)
 enable_testing()
+add_executable(ThornGorgeRulesTest ThornGorgeRulesTest.cpp)
+target_compile_features(ThornGorgeRulesTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgeRulesTest PRIVATE ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornGorgeRulesTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornGorgeRulesTest COMMAND ThornGorgeRulesTest)
+set_tests_properties(ThornGorgeRulesTest PROPERTIES TIMEOUT 60)
 add_executable(BoundedBotTraceTest BoundedBotTraceTest.cpp)
 target_compile_features(BoundedBotTraceTest PRIVATE cxx_std_17)
 target_include_directories(BoundedBotTraceTest PRIVATE ../../src/shared)
@@ -26,6 +34,16 @@ function(extract_native_fragment source start end output)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${output}" "${fragment}")
 endfunction()
 set(CORE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "bool BattleGroundTG::OwnFlagObject(" "void BattleGroundTG::AddPlayer(" ThornGorgeFlagNative.inc)
+add_executable(ThornGorgeFlagTest ThornGorgeFlagTest.cpp)
+target_compile_features(ThornGorgeFlagTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgeFlagTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornGorgeFlagTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornGorgeFlagTest COMMAND ThornGorgeFlagTest)
+set_tests_properties(ThornGorgeFlagTest PROPERTIES TIMEOUT 60)
 set(TRAVEL_ROOT "${CORE_ROOT}/modules/mod-playerbots/src/playerbot")
 extract_native_fragment("${CORE_ROOT}/src/game/Handlers/AuctionHouseHandler.cpp"
     "void WorldSession::SendAuctionOwnerNotification(" "void WorldSession::SendAuctionRemovedNotification(" NativeAuctionOwnerNotification.inc)
@@ -136,7 +154,7 @@ endif()
 add_test(NAME BotTaxiCacheRefreshTest COMMAND BotTaxiCacheRefreshTest)
 set_tests_properties(BotTaxiCacheRefreshTest PROPERTIES TIMEOUT 20)
 extract_native_fragment("${TRAVEL_ROOT}/BotDiagnostics.cpp"
-    "    void TraceBehavior(" "\n}}" BotTraceBody.inc)
+    "    void TraceBehavior(" "    void TraceThornBehavior(" BotTraceBody.inc)
 extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSpline.h"
     "int32 Duration() const" "int32 Duration(int first" BotNativeSplineDuration.inc)
 add_executable(BotTraceSnapshotTest BotTraceSnapshotTest.cpp)
@@ -432,4 +450,47 @@ if(MSVC)
     target_compile_options(NavMeshLifetimeTest PRIVATE /EHsc)
 endif()
 add_test(NAME NavMeshLifetimeTest COMMAND NavMeshLifetimeTest)
+add_executable(ThornGorgeAssetProbe ThornGorgeAssetProbe.cpp
+    ${DETOUR_DIR}/Source/DetourAlloc.cpp ${DETOUR_DIR}/Source/DetourAssert.cpp
+    ${DETOUR_DIR}/Source/DetourCommon.cpp ${DETOUR_DIR}/Source/DetourNavMesh.cpp
+    ${DETOUR_DIR}/Source/DetourNavMeshBuilder.cpp ${DETOUR_DIR}/Source/DetourNavMeshQuery.cpp
+    ${DETOUR_DIR}/Source/DetourNode.cpp)
+target_compile_features(ThornGorgeAssetProbe PRIVATE cxx_std_17)
+target_compile_definitions(ThornGorgeAssetProbe PRIVATE DT_VIRTUAL_QUERYFILTER=1)
+target_include_directories(ThornGorgeAssetProbe PRIVATE ${DETOUR_DIR}/Include)
+target_link_libraries(ThornGorgeAssetProbe PRIVATE Threads::Threads)
+if(MSVC)
+    target_compile_options(ThornGorgeAssetProbe PRIVATE /EHsc)
+endif()
 set_tests_properties(NavMeshLifetimeTest PROPERTIES TIMEOUT 90)
+
+add_executable(ThornGorgeDiagnosticsTest ThornGorgeDiagnosticsTest.cpp)
+target_compile_features(ThornGorgeDiagnosticsTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgeDiagnosticsTest PRIVATE ../../src/game/Battlegrounds)
+add_test(NAME ThornGorgeDiagnosticsTest COMMAND ThornGorgeDiagnosticsTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::RewardVictoryQuests(" "WorldSafeLocsEntry const* BattleGroundTG::GetClosestGraveYard" ThornGorgeRewardsNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "void BattleGroundTG::FillInitialWorldStates(" "void BattleGroundTG::SendStates()" ThornGorgePresentationNative.inc)
+add_executable(ThornGorgePresentationTest ThornGorgePresentationTest.cpp)
+target_compile_features(ThornGorgePresentationTest PRIVATE cxx_std_17)
+target_include_directories(ThornGorgePresentationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornGorgePresentationTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornGorgePresentationTest COMMAND ThornGorgePresentationTest)
+
+extract_native_fragment("${TRAVEL_ROOT}/WorldPosition.cpp"
+    "bool WorldPosition::isBg() const" "std::string WorldPosition::getAreaName(" BotMapClassification.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Battlegrounds/BattleGroundTG.cpp"
+    "bool BattleGroundTG::AdmitBotDiagnostic(" "void BattleGroundTG::TraceSnapshot(" ThornBotAdmission.inc)
+extract_native_fragment("${TRAVEL_ROOT}/BotDiagnostics.cpp"
+    "    void TraceThornBehavior(" "\n}}" ThornBotTrace.inc)
+add_executable(ThornBotDiagnosticsTest ThornBotDiagnosticsTest.cpp)
+target_compile_features(ThornBotDiagnosticsTest PRIVATE cxx_std_17)
+target_include_directories(ThornBotDiagnosticsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ../../src/game/Battlegrounds)
+if(MSVC)
+    target_compile_options(ThornBotDiagnosticsTest PRIVATE /EHsc)
+endif()
+add_test(NAME ThornBotDiagnosticsTest COMMAND ThornBotDiagnosticsTest)

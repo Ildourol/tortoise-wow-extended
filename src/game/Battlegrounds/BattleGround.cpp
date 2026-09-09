@@ -1914,6 +1914,8 @@ std::string BattleGround::TypeToString(BattleGroundTypeId type)
         return "Blood Ring";
     case BATTLEGROUND_SV:
         return "Sunnyglade Valley";
+    case BATTLEGROUND_TG:
+        return "Thorn Gorge";
     default:
         return "???";
     }

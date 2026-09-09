@@ -304,6 +304,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
     // Existing opt-in, bounded trace: sample progress even while no action can
     // execute (e.g. a taxi leg). Reads occur on this bot's current AI owner.
     ai::botdiag::TraceBehavior(this, "journey", minimal ? "minimal" : "active");
+    ai::botdiag::TraceThornBehavior(this, minimal);
     if (uint32 const trigger = requestedTransition.exchange(0, std::memory_order_acq_rel))
     {
         AreaTriggerEntry const* entry = sAreaTriggerStore.LookupEntry(trigger);
