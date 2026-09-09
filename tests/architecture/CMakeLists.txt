@@ -540,3 +540,13 @@ find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
     add_test(NAME PenqleMigrationTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/PenqleMigrationTest.py)
 endif()
+
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/packet_builder.cpp"
+    "int32 WriteLinearPath(" "void PacketBuilder::WriteCreate(" SplinePacketNative.inc)
+add_executable(SplinePacketContinuationTest SplinePacketContinuationTest.cpp)
+target_compile_features(SplinePacketContinuationTest PRIVATE cxx_std_17)
+target_include_directories(SplinePacketContinuationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(SplinePacketContinuationTest PRIVATE /EHsc)
+endif()
+add_test(NAME SplinePacketContinuationTest COMMAND SplinePacketContinuationTest)

@@ -129,6 +129,7 @@ void WriteCatmullRomCyclicPath(const Spline<int32>& spline, ByteBuffer& data)
 
 int PacketBuilder::WriteMonsterMove(const MoveSpline& move_spline, WorldPacket& data, int firstPoint)
 {
+    size_t const startPositionPos = data.wpos();
     WriteCommonMonsterMovePart(move_spline, data);
     size_t durationPos = data.wpos() - 4;
 
@@ -144,9 +145,23 @@ int PacketBuilder::WriteMonsterMove(const MoveSpline& move_spline, WorldPacket& 
     }
     else
     {
+        if (firstPoint > 1)
+        {
+            // A continuation replaces the client's active route. Start at the
+            // current spline position and include every untraversed corner,
+            // even those in the tail of the previous packet. Restarting at the
+            // original origin or last-sent vertex cuts across the terrain.
+            Vector3 const position = move_spline.ComputePosition();
+            data.put<float>(startPositionPos, position.x);
+            data.put<float>(startPositionPos + sizeof(float), position.y);
+            data.put<float>(startPositionPos + 2 * sizeof(float), position.z);
+            firstPoint = move_spline._currentSplineIdx();
+        }
         int32 lastNode = WriteLinearPath(spline, data, firstPoint);
-        uint32 duration = move_spline.Duration(0, lastNode >= 0 ? lastNode : move_spline.CountSplinePoints());
-        data.put<uint32>(durationPos, duration - move_spline.time_passed);
+        // WriteLinearPath indexes real_path = spline[1]; its endpoint's native
+        // timestamp is therefore lastNode + 1, not lastNode.
+        int32 const deadline = move_spline.Duration(0, lastNode >= 0 ? lastNode + 1 : move_spline.CountSplinePoints());
+        data.put<uint32>(durationPos, uint32(std::max(int32(1), deadline - move_spline.time_passed)));
         return lastNode;
     }
 }

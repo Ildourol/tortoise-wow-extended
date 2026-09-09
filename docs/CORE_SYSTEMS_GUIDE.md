@@ -403,3 +403,21 @@ world; our log limiter uses an atomic timestamp for parallel map owners. This is
 a defensive guard, not proof that malformed path construction has been repaired.
 SplineAdvanceGuardTest executes native advance/finalize across normal, zero and
 decreasing deadlines, large deltas, cyclic paths and parallel diagnostic calls.
+
+### September 9 ground movement packet continuation
+
+Unit::UpdateSplineMovement resends a linear spline before its last transmitted
+vertex is reached. SMSG_MONSTER_MOVE replaces the client's route: the header
+must start at ComputePosition(), and the new route must include every remaining
+vertex starting at _currentSplineIdx() in the real_path array (whose zero is
+spline[1]). The previous last-sent index is a send-watermark, not the next
+untraversed point. Reusing the original origin and skipping to that watermark
+can draw straight client travel across terrain despite a valid server route.
+Partial packet deadlines use spline index lastNode+1; the old lastNode deadline
+was one segment early. Preserve full-path/smooth/cyclic encoding and map-owner
+movement/arrival lifecycle. No path, speed, collision or teleport rule changes.
+SplinePacketContinuationTest executes native writers and decodes ground packets
+for initial/continuing/final chunks, remaining corners, late updates and timing;
+smooth-path encoding is also checked. The old writer fails on the continuation
+origin. This establishes a packet defect, not that all reported geometry issues
+are repaired. Live verification remains necessary, especially bridge ledges.
