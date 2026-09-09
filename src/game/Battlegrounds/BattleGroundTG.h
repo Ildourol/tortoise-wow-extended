@@ -52,6 +52,7 @@ private:
     uint32 m_tick = 0;
     uint32 m_elapsed = 0;
     float m_flagX = 0, m_flagY = 0, m_flagZ = 0;
+    float m_flagScale = 2.5f;
     void UpdateObjectives();
     void UpdateBanner(unsigned node);
     void SendNodeStates(unsigned node);
