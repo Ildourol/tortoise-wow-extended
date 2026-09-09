@@ -386,3 +386,11 @@ changes retain normalization, length checks and verifier invalidation.
 ENABLE_SOAP controls compilation (portable, default ON); SOAP.Enabled controls
 listener startup (default OFF). Both startup and explicit shutdown join must be
 guarded in builds without SOAP. Our native module gossip order is retained.
+
+Spline advance retains native segment completion, cycle wrapping and arrival
+callbacks when a segment deadline is already behind time_passed. The upstream
+7e63fae3 guard consumes zero time for that expired segment instead of aborting the
+world; our log limiter uses an atomic timestamp for parallel map owners. This is
+a defensive guard, not proof that malformed path construction has been repaired.
+SplineAdvanceGuardTest executes native advance/finalize across normal, zero and
+decreasing deadlines, large deltas, cyclic paths and parallel diagnostic calls.

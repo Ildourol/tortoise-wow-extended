@@ -36,3 +36,8 @@ Other branch review:
   merge. Mainline ancestry and code adaptations are reviewed independently.
 
 No database migration or production deployment is part of this source integration.
+
+Movement follow-up: adapted 7e63fae3 as a separate commit. Native advance skips
+already-expired segment time and continues the native segment/cycle/arrival
+logic. Replace the upstream shared non-atomic log timestamp with an atomic CAS;
+otherwise parallel map updates would race. No movement teleport/fallback added.

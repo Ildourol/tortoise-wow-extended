@@ -18,6 +18,7 @@
 
 #include "MoveSpline.h"
 #include <cmath>
+#include <atomic>
 #include <sstream>
 #include "Log.h"
 #include "Unit.h"
@@ -214,7 +215,21 @@ MoveSpline::UpdateResult MoveSpline::_updateState(int32& ms_time_diff)
     UpdateResult result = Result_None;
 
     int32 minimal_diff = std::min(ms_time_diff, segment_time_elapsed());
-    MANGOS_ASSERT(minimal_diff >= 0);
+    if (minimal_diff < 0)
+    {
+        // Elapsed time already past the next timestamp: a spline set up with a zero or
+        // negative segment. One creature like that took the whole server down on 6.9.
+        // (assertion, no core). Clamp, say so once a minute, and let the segment end.
+        static std::atomic<time_t> s_saidAt{0};
+        const time_t nowT = time(nullptr);
+        time_t last = s_saidAt.load(std::memory_order_relaxed);
+        if (nowT - last >= 60 && s_saidAt.compare_exchange_strong(last, nowT, std::memory_order_relaxed))
+        {
+            sLog.outError("MoveSpline::_updateState: minimal_diff %d < 0 (time_passed %d, next_timestamp %d, diff %d) -- clamped instead of asserting",
+                          minimal_diff, time_passed, next_timestamp(), ms_time_diff);
+        }
+        minimal_diff = 0;
+    }
     time_passed += minimal_diff;
     ms_time_diff -= minimal_diff;
 

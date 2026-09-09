@@ -1049,3 +1049,13 @@ Admission entries are erased on leave and reset; off/level1 returns before
 formatting/context reads. Disable with LogLevel=0 (or use level1 for match events).
 Removal sites: TraceThornBehavior, its UpdateAI hook, CachedActivity accessor,
 BattleGroundTG::AdmitBotDiagnostic and m_botDiagnosticTicks. No DB change.
+
+### Spline expired-segment guard, September 9
+
+Adapted Shyalya 7e63fae3: a negative segment remainder emits a native error log
+with elapsed/next timestamp/diff, globally limited to once per minute using an
+atomic compare/exchange. This avoids a data race in the upstream static time_t
+limiter under our parallel map updates. Logging runs only on the exceptional
+path; ordinary motion has no extra clock or atomic access. Retain this diagnostic
+until the invalid timestamp producer is understood; the guard does not certify
+path generation. Location: MoveSpline::_updateState; no new config or thread.

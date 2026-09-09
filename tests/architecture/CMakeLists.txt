@@ -506,3 +506,16 @@ if(MSVC)
     target_compile_options(AccountNameCacheTest PRIVATE /EHsc)
 endif()
 add_test(NAME AccountNameCacheTest COMMAND AccountNameCacheTest)
+
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSpline.cpp"
+    "MoveSpline::UpdateResult MoveSpline::_updateState(" "std::string MoveSpline::ToString(" SplineAdvanceNative.inc)
+extract_native_fragment("${CORE_ROOT}/src/game/Movement/spline/MoveSpline.cpp"
+    "void MoveSpline::_Finalize()" "int32 MoveSpline::currentPathIdx()" SplineFinalizeNative.inc)
+add_executable(SplineAdvanceGuardTest SplineAdvanceGuardTest.cpp)
+target_compile_features(SplineAdvanceGuardTest PRIVATE cxx_std_17)
+target_include_directories(SplineAdvanceGuardTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(SplineAdvanceGuardTest PRIVATE Threads::Threads)
+if(MSVC)
+    target_compile_options(SplineAdvanceGuardTest PRIVATE /EHsc)
+endif()
+add_test(NAME SplineAdvanceGuardTest COMMAND SplineAdvanceGuardTest)

@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "BD577BEC47A5EF3F98E4A2F37C7F780E1728D783C4A277DE15A82BC0BCA5B399"
+    "sha256": "5F1AAB9F5029104B3A7FE5D6EDA232E947694E638F685144E99FF6DD04B93FDE"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -4717,7 +4717,7 @@
       "instance_state",
       "threat"
     ],
-    "sha256": "B6F59009CFCC3D200349F31E0096E0BB0C2DCFCF091B26B1152D67710A7CE872"
+    "sha256": "770E322255FA1F25103A20F25AC442975C0892D6F675BE6DB5E66E4C18FFF1DB"
   },
   {
     "file": "src/game/ScriptedGossip.h",
@@ -5213,7 +5213,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "CDFFF5C490CBAE47CF7E529614EBDB6566EBBBC84AAB923B1FF61170A9AFEFD2"
+    "sha256": "094223209353BF3388A7A1FCDF7B03EA460E401C2075A7384ED41B41E528EA3E"
   },
   {
     "file": "src/game/Handlers/CharacterHandler.cpp",
@@ -8356,7 +8356,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "2FB7292427DBBCF61FAC4E6DC1AA7188D4E014933754FF0431098454D5F352FB"
+    "sha256": "A822C71C6615981BAD936E0D996890EAC6CF9221098D2BE44EC23794D9ACBD39"
   },
   {
     "file": "src/scripts/dungeons/hateforge_quarry/hateforge_quarry_trash.cpp",
@@ -11878,7 +11878,7 @@
       "death_reset",
       "timers"
     ],
-    "sha256": "3194AE5371AD3257AD4DA329FC5D5912955AF3EC46DE9E94D266663E2B310319"
+    "sha256": "5F8F32EEFC5FBCAE1C583D3D9336C9D68EB900C59C87B439AB4BA9E76B4B4896"
   },
   {
     "file": "modules/mod-dungeon-clear/routes/Route_109_5712.cpp",
@@ -13505,7 +13505,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "9A7E7C68A2B1E0CE7EDBCE2E349F6611BBE7DE3989D4FB898D4A738FAFF6A83C"
+    "sha256": "210BD1DA1199283FB0C164B177571D4A32120E0258AA89B5680587F0C9B76686"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/BotDiagnostics.cpp",
@@ -13513,7 +13513,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "A5C228CDD3D25030E0A3784A052C6522F9FC9965CC59B0704A6CF2F923EB5E68"
+    "sha256": "320F0009C2AF58DE4701B1825479221FB43A456EDEBF8E2F727E11347D8FC718"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/BotActionLog.h",
@@ -13791,7 +13791,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "3736E362D515D2824FE61C8B57557C9905A558F2BF39CB6ADBB5AEDAF14A4193"
+    "sha256": "B1CDFE7D4D6A10A305EB3876B50A1D11D062169404C21CC5803E011A8C5D53B8"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/PlayerbotAI.cpp",
@@ -13804,7 +13804,7 @@
       "death_reset",
       "async"
     ],
-    "sha256": "835C56AE100FCEF8465B8999DB3B4288391C16E82C4017C1D415CB990F4375FF"
+    "sha256": "8431B2040FCE62F8BF958675F79AEA92497C62E5BBBD169160FE3D8B5AF2D5B8"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/playerbot.h",
@@ -14538,7 +14538,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "6AE77CABA9C5E41F8BA170D4C7ADC8E4911C50281CFA8FF5D0FF2E55482B7E1E"
+    "sha256": "05B1D7E00A626CC80B17280B4EBD3ADEC413943FFC1AE40482AD923646D59991"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/WorldPosition.cpp",
@@ -14548,7 +14548,7 @@
     "dependency_signals": [
       "async"
     ],
-    "sha256": "A118EA4AB6D43581132907ED4C53371E08E38EDE172CE8310425B2A10EA7BF5C"
+    "sha256": "6088AB4E79710D9515C718D3221C0CD493A69DE8F870F8FAE80E8AC5B001E729"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/TravelRoutePolicy.h",
@@ -20263,7 +20263,7 @@
     "dependency_signals": [
       "spells"
     ],
-    "sha256": "326E2B9984FB136D78B254775C341F2D4FD915404072FA050A5236FF7BDAB52F"
+    "sha256": "46D40FE88AA9B11459400BDFF6FD4548BF196746EC7AB692FB3A5AF777CDCEDA"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/CheckMailAction.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "F3FFA2CD42C4BB78B8B762F81A4739DBB546DD15317A3B7F092E25C1BE548AAE"
+    "sha256": "F8B1A21BA6D090AB63570CA434915557DCE95272E924DABCF0777815AD3F77C5"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",
@@ -24601,7 +24601,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "16C0C8589E16479A03ADC04C7C4F1173C23F0467E4B4F6E04C70261B3ABE7971"
+    "sha256": "300FD4B16C3350C88B9656D4EC8D020BB63CB49D1B0B12E1EF751D3413305D08"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeRules.h",
@@ -24609,7 +24609,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "988F28F8D9C3EDFC14CFBB4893448ADD1285D8DEEB8A661520C53142F01B13DD"
+    "sha256": "7FB83A95A28CD9585DAEC194970DA2861C27787F2FE6BE5C3FFB2625D7609733"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeDiagnostics.h",
