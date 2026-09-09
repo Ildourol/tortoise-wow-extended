@@ -369,7 +369,7 @@ Each phase total uses the same map/report window. `n` is the number of completed
 
 The existing `Diagnostics.Architecture.Enabled` switch controls all new probes; the existing interval controls reporting. At the current 30-second interval there are at most 18 additional creature lines per active map/window, plus seven world phase summaries. No per-creature log writes occur inside the simulation loop. Storage is fixed-size per map and stack-local per update; identity snapshots retain no creature pointers after a call. There are no gameplay, cadence, configuration, SQL or bot-count changes in this candidate.
 
-Deployment needs only the newly built `mangosd.exe` and its matching PDB. The current server can keep running until the user stops it and replaces those files. No realmd replacement is needed. After the restart, retain 6,000 bots, allow population to settle, and repeat casting/looting for 2–3 minutes. Read the new phase totals and slowest samples alongside the original input/map timing rows. If a phase is dominated by waiting or still unexplained work, capture a bounded CPU/wait-stack profile of that phase using the matching PDB rather than infer its internal cause.
+Deployment needs only the newly built `mangosd.exe` and its matching PDB. The current server can keep running until the user stops it and replaces those files. No realmd replacement is needed. After the restart, retain 6,000 bots, allow population to settle, and repeat casting/looting for 2â€“3 minutes. Read the new phase totals and slowest samples alongside the original input/map timing rows. If a phase is dominated by waiting or still unexplained work, capture a bounded CPU/wait-stack profile of that phase using the matching PDB rather than infer its internal cause.
 
 No packet contents, chat, account credentials, SQL text, or per-bot per-tick logging. No automatic deletion of logs. No database migration. Keep instrumentation in its own named header and identifiable calls so it can be removed without reverting architecture fixes.
 
@@ -387,7 +387,7 @@ Candidate behavior:
 - Real players and responsive companions retain their normal activation areas. Non-continent maps retain the previous path. Active scripted, escort, event, non-idle movement and transport work bypass the added load-shedding policy. Transport routes and the transport-manager update loop are untouched.
 - Background bots' pets, guardians, totems, minipets and non-player charms are queued directly by GUID for owner-thread updates, even if no neighborhood was activated. Their combat targets stay discoverable. The owner deduplicates these with discovered objects after all collection workers join. Charmed players stay exclusively in the separate player update path. Farsight/camera viewers protect active-object discovery as well.
 - A background bot's selected NPC/gameobject and current loot object are also queued directly, retaining interaction/corpse processing without reactivating a whole region. Turtle's player selection is distinct from its Unit attack target; combat discovery considers both.
-- Ordinary distant living idle creatures receive stable 500–1000 ms deadlines; ordinary random-moving creatures receive 250–500 ms deadlines. Combat, ownership/pets/totems, pending events, casting, **any** auras, script/AI/template spell lists, zone scripts, world bosses, escorts, explicit active status, transports and other movement types bypass those deadlines. Gameobjects, doors, corpses and respawn processing are not assigned new deadlines.
+- Ordinary distant living idle creatures receive stable 500â€“1000 ms deadlines; ordinary random-moving creatures receive 250â€“500 ms deadlines. Combat, ownership/pets/totems, pending events, casting, **any** auras, script/AI/template spell lists, zone scripts, world bosses, escorts, explicit active status, transports and other movement types bypass those deadlines. Gameobjects, doors, corpses and respawn processing are not assigned new deadlines.
 - A deferred creature keeps its existing real elapsed-time tracker. Spell/aura/regeneration clocks receive real elapsed time on the eventual update. Eligible idle/random motion and generic AI catch up with a maximum 1000 ms logical step, avoiding an hours-long movement replay after cell inactivity. Protected objects retain the old logical-diff path. No extra per-creature state, map registry or object pointers are retained.
 - `bot_grid_only` counts background-bot grid-loading decisions (a combat bot may also activate combat cells). `background_creature_deferred` counts skipped not-yet-due creature calls. `discovered_objects` still includes collected/deferred objects; the `creature` phase and detailed creature probes count only executed creature updates. Compare those counts with input queue latency and map wall-clock times.
 
@@ -1077,3 +1077,37 @@ The layout event additionally records flag_scale. FlagScale defaults to 2.5,
 clamps to 1-5, and is applied to both center and dropped objects at spawn.
 ThornBotDiagnosticsTest checks strategy/speed/continuation formatting alongside
 existing admission, disabled, reentry, no-spline and fresh-spline coverage.
+
+### September 9 completed Horde match 101: movement observations
+
+At LogLevel=2, TraceSnapshot now calls TraceMovement for each available member,
+including human players. It rejects unloaded/foreign-map/teleporting players.
+Each admitted snapshot adds one `event=movement` record per member: current XYZ,
+100-yard downward floor query starting near the feet, validity and floor gap,
+movement flags, unit state, motion generator, run/swim speed, mount state,
+initialized spline ID/time/flags/transport and at most eight current/following
+control vertices. Up to eight active speed-affecting aura type/spell/amount
+records are included. No path is generated, trigger evaluated, packet captured,
+position corrected, or gameplay decision changed by this trace. Use elapsed_ms,
+instance, sequence and GUID to correlate the existing player and bot_ai records.
+
+A large floor gap is not an automatic violation. Distinguish collision surfaces,
+bridges, falling/jumping/knockback, spline-local transport coordinates, teleports,
+mount changes and GM speed changes before attributing a fault. The sampled
+vertices are control points; they are not a complete trajectory or proof of
+walkability. Sampling can miss a brief path between snapshots.
+
+Overhead at the default five-second interval: one height query and one bounded
+line per member per snapshot (six queries/lines per second averaged over a
+30-player match, in addition to existing logs). Work occurs on the existing BG
+owner; no retained player pointers, new threads or global action logging. The
+queries occur in a batch on the snapshot update. LogLevel=1 omits these samples;
+LogLevel=0 disables TG logging. Existing interval and manual-snapshot limits
+apply. Removal: TraceMovement, its TraceSnapshot call/declaration and the read-only
+MoveSpline::GetFlags accessor if unused elsewhere. ThornMovementDiagnosticsTest
+executes the native formatter and checks admission, invalid height, fresh/null
+splines, bounded vertices/auras and transport context.
+
+### Thorn native traversal decisions
+
+TryThornTraversal adds event=bot_traversal through the existing level2 admission budget: jump, rejected or no_safe_progress, sampled-candidate count and source/landing positions. Failed walking bots may perform at most16 native ballistic candidates per5s; those queries are gameplay decisions, not diagnostic work. Logging does not initiate them. The records share the existing64-events/second cap and per-bot interval; no history or retained players. Disable samples with LogLevel1 or all TG logs with0. Removal: the small trace lambda and calls in JumpAction::TryThornTraversal. Preserve traversal eligibility and safety checks if removing logging.

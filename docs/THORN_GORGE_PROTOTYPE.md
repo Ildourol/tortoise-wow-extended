@@ -219,3 +219,9 @@ four side-bridge ends that small characters cannot climb. A binary cannot
 by itself establish that their client collision geometry is repaired. Do not
 invent verified placements, add teleport shortcuts or claim complete geometry
 from the existing 42-route navmesh connectivity probe.
+
+### September 9 completed Horde match 101
+
+See [the report-by-report status](THORN_GORGE_PLAYTEST_2026-09-09.md) for the next
+batch, verified match timings, reproduced navigation failure and unresolved
+client geometry/UI work. This supersedes the earlier gate/flag status above.

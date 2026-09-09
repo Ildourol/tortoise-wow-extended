@@ -4554,7 +4554,7 @@
       "death_reset",
       "timers"
     ],
-    "sha256": "EE87B62E7D90501A07392ECE8B49C3EDC318659B6613A253B2F088F77AB8AD49"
+    "sha256": "DF4B715CFB93443B94BBD08BD5E2AE85576588149348343CB5CDC7BBE282B01A"
   },
   {
     "file": "src/game/Battlegrounds/BattleGround.cpp",
@@ -4567,7 +4567,7 @@
       "doors",
       "timers"
     ],
-    "sha256": "954F4CB63BDC1D5C26B33656196B7457B916F34F26CCEB177079296ADC58CFBF"
+    "sha256": "AD41A3CD30FE39004BF7E07241C185394AF41DA14FAABE542FA03AB83D66FAEC"
   },
   {
     "file": "src/scripts/dungeons/wailing_caverns/wailing_caverns.cpp",
@@ -5259,7 +5259,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "CD671E85C5AC10A9F3F1806CA675218EFE8486F85EC355A66842F7A3009E52E8"
+    "sha256": "E9DACC90F972560DDF517E09A469A330AF2C91B5135CD9FECD4A0374E31B5C51"
   },
   {
     "file": "src/game/Handlers/AuctionHouseHandler.cpp",
@@ -6071,7 +6071,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "2D22EDD35862C8844634B8569897F6AA4BEC51D0458B71CCEB5042A257977E33"
+    "sha256": "E6CC07153440868A5F82C9D127011FD1CE7CD5FE830A21954FDE9EF157F68AE4"
   },
   {
     "file": "src/game/Maps/Path.h",
@@ -6107,7 +6107,7 @@
     "dependency_signals": [
       "async"
     ],
-    "sha256": "9DD6010C13A708BD2F353E0623EAB9124701C4ECE3E6DD8E22ACFEF3D8D818DE"
+    "sha256": "56EFD106ED87383A4EA8B1C1C81D5D2FB917B82DE54B98FDFAF87695077907B0"
   },
   {
     "file": "src/game/Maps/MapRefManager.h",
@@ -6830,7 +6830,7 @@
       "timers",
       "threat"
     ],
-    "sha256": "7409A8C4CCBD99D5100E5F425F215EDDACDB52D161EEE232E953883EA46C624F"
+    "sha256": "5801796BCA0D716063647C9F9E5AA5697342E52B2E847C066C8647F84AB965FA"
   },
   {
     "file": "src/game/Objects/Totem.h",
@@ -8348,7 +8348,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "B62C85FC81E14B905F280AFDE875098287127275CDBBFA711BF432EADC7E5C87"
+    "sha256": "A3BE1A019E9F6E5461D272260997EE2FCB140E97EC5E732198B8169D6C0E1CFE"
   },
   {
     "file": "src/game/Movement/spline/MoveSpline.cpp",
@@ -13545,7 +13545,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "14C6799ECDED707D7E10FD05A4DCEE2E31A8C74DE45D98ABA3B0635D6AF70870"
+    "sha256": "4A555564AF054255EF9A25F131B9C9C867348FE6ACBCBC1EC8F58CB853AF6EF9"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/AiContextAugment.h",
@@ -14548,7 +14548,7 @@
     "dependency_signals": [
       "async"
     ],
-    "sha256": "6088AB4E79710D9515C718D3221C0CD493A69DE8F870F8FAE80E8AC5B001E729"
+    "sha256": "D7E03FA90705F4A7EBFB59A68899A09A3C950C8ABD8496FE7C19D61EB432F616"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/TravelRoutePolicy.h",
@@ -18379,7 +18379,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "050829DCD31119BCB4FCC7AC5F2DFAA68B5EC287AB41301597C4076DEC8E0176"
+    "sha256": "CF7E11446E261963C11EFCFAA59E4AAD782B94F1CC6428E58A456D3683BF8415"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/Strategy.h",
@@ -19003,7 +19003,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "6735504476EFC9499E387E7F5A001E0319181EEA5FD62995065765B530F451F9"
+    "sha256": "63C10FF972F1F768AD0C5860E0A154611D3836C205FE272C3E45C72189B423A3"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/generic/DeadStrategy.h",
@@ -19027,7 +19027,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "D0137A006B5E84E43F5AF52F7311E3245115CE014A948DBEE6CB2E597D3E21D7"
+    "sha256": "2F3232CB4135B4151EB31DDF527845C28C64019FC6359D9907B9E591D453ACE7"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/generic/ConsumableStrategy.h",
@@ -19563,7 +19563,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "9EBA58115288DDF2DE857CBB17609FE5955162D88ACC18AAAB508F550338E9FB"
+    "sha256": "F177F8304D4B3E8F459DE2AB524AEEE8D2CE8805369E1096A0F7BEC06D7E78A4"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/triggers/TravelTriggers.h",
@@ -19635,7 +19635,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "CD28E824AC7A285475241D7CBCBC240BA8C159555F631252127CFB1151C3A76E"
+    "sha256": "F52F42507DF3593EDC5BAE1CEF10B0387267CBA03CCC63D78AAC5722A1F0C87D"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/triggers/PvpTriggers.cpp",
@@ -19643,7 +19643,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "8098F7FF56A1846D85E206BEBC099BC7C14E9263A439F0CD0EB1D11E6D73C533"
+    "sha256": "A47EF0F35794EF8886179D3EBE9751ECC5C6CD0C7511A195F0AD6D368FF6482C"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/triggers/PullTriggers.h",
@@ -20039,7 +20039,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "702034B0F56B67E8D77C22020193F7E41FC669B7A31BE30C1950D3183BE5C615"
+    "sha256": "94369FF25EEF15FD8A7B6ED13CB6EBD313791AAFA6CA1F6A0A913CEE71274534"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/BattleGroundJoinAction.h",
@@ -20213,7 +20213,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "F7F2B3018DA7BE9B3A70EE281B0E6FB19196B606507D38E41BA3823B625EA0A9"
+    "sha256": "5D485B6BBCB0EF6AEFD654B635CB3BF39FBB22B4A5B5F46100D500B1829CCFEB"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/ChooseRpgTargetAction.h",
@@ -22658,7 +22658,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "5AC283C86CB294C64BD94F90A8079CB9084F80BCF808A0FBA782FE812D68AA9D"
+    "sha256": "A912B72708309AFBC7BE446518E099375902AC7FCB034F93216DA353A4D75B3C"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/MovementActions.cpp",
@@ -22671,7 +22671,7 @@
       "death_reset",
       "threat"
     ],
-    "sha256": "C3872095B6EC7708C813B8A96B4B5E5E43F0563A19E3F4EF8218A4170A7955BB"
+    "sha256": "C62233B79C50CEC61A9529E344348B1738BCC699278E0247696AF2FFEE94D61B"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/MoltenCoreDungeonActions.h",
@@ -24161,7 +24161,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "0401C21B597B09388E6E0D7D86227B206BC78B94356CBC2E118BF133E607F97F"
+    "sha256": "DAF3ECD2A00EE4B1054CB4517E3DCE48E837A0941C054F22788FFA4A84A9FF1D"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/values/PossibleTargetsValue.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "7C1E1F618C8CFCF72FF74E9E75E38FE0926B1546455E686F0520CBC3F4C2387E"
+    "sha256": "3F9BE2A54DEF707086ABF654C59DDD42766AEC7DBA73F7757EF2E29E3D514661"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",
@@ -24601,7 +24601,7 @@
     "dependency_signals": [
       "death_reset"
     ],
-    "sha256": "0CEFAA1F3536E112A9060DF2E7FC96079664F7246A66048707521C9216A3A40A"
+    "sha256": "859F08EBB5FCFD76DA614EF6AFCBD0092DFE6612B06A95DBB434EFB5A7D4FD48"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeRules.h",
@@ -24609,7 +24609,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "7FB83A95A28CD9585DAEC194970DA2861C27787F2FE6BE5C3FFB2625D7609733"
+    "sha256": "4F77843A4CA42FDEC2B88AFC5ECD5DBA3616010D2CABCCBF371772D4B0ED9455"
   },
   {
     "file": "src/game/Battlegrounds/ThornGorgeDiagnostics.h",

@@ -84,7 +84,7 @@ The CMaNGOS Classic/TBC/WotLK reference model supplies creature-rank, disenchant
 fishing, chest, skinning and profession stock. It uses `AuctionHouseBot.*`
 configuration, quality/class valuation, vendor prices, level limits, random
 properties, stack splitting, item overrides, and a 20-second normal check.
-Rebuild simulates mean auction duration * 90 sell-only checks (1,170 for 2–24h),
+Rebuild simulates mean auction duration * 90 sell-only checks (1,170 for 2â€“24h),
 not a fixed desired count. A shared house receives the same three logical
 CMaNGOS supply opportunities; expiry/status deduplicate physical houses.
 Native data/content differences mean a matching config does not promise an
@@ -159,13 +159,13 @@ commands and native expiry/refund/paging; they do not validate DB durability,
 actual drop distributions, client auction interaction, or 6k-bot latency.
 Those remain explicit deployment acceptance checks. See the diagnostic inventory.
 
-There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1–A6 in the audit.
+There is no source evidence in these inspected paths of two complete simulation engines. That does **not** mean the architecture port is behavior-neutral, or that every shared-state race is excluded. See findings A1â€“A6 in the audit.
 
 ## Creature, boss and trash AI: actual selection
 
 The important chain is:
 
-`creature` spawn definition / dynamic summon → `creature_template` → `Creature::AIM_Initialize` → `FactorySelector::selectAI` → native `Creature::Update` → selected `AI()->UpdateAI` and lifecycle hooks.
+`creature` spawn definition / dynamic summon â†’ `creature_template` â†’ `Creature::AIM_Initialize` â†’ `FactorySelector::selectAI` â†’ native `Creature::Update` â†’ selected `AI()->UpdateAI` and lifecycle hooks.
 
 - [CreatureAISelector.cpp](../src/game/AI/CreatureAISelector.cpp), `selectAI` at 37, asks the script manager first for eligible ordinary creatures/non-controlled pets. Possession, controlled pets, charm, totems and guards have special selection rules. Named AI, permit selection and fallback follow.
 - [ScriptMgr.cpp](../src/game/ScriptMgr.cpp), `GetCreatureAI` at 1767, supports legacy registered scripts, typed script registries, global creature hooks and optional Eluna. An empty or stale `ai_name` alone does not establish which implementation actually runs.
@@ -312,7 +312,7 @@ Knowing that a service touches `SPELL_EFFECT_LEARN_SPELL` is only the start. The
   native data is missing. `BotTaxiCacheRefreshTest` executes these production
   boundaries; see the bot integration ledger for the all-270 live-data audit.
 
-- Custom aura types 227–230 are native non-immediate modifiers. Registration
+- Custom aura types 227â€“230 are native non-immediate modifiers. Registration
   must cover both `AuraHandler` and `AuraProcHandler` and the `TOTAL_AURAS`
   bound. Actual arithmetic belongs in rage, skill cast time, periodic damage
   done and chain damage taken, using existing aura lists/multiplier helpers.
@@ -435,3 +435,19 @@ It retains the native count/GUID/XY wire structure and existing WSG handling.
 BattlegroundPlayerPresentationTest covers repeated BG resets and carrier absence,
 foreign membership, either viewer team, non-BG requests and WSG/AB behavior.
 Actual client rendering and renewed human-directed combat require live testing.
+
+### September 9 Thorn Gorge follow-up contracts
+
+BattleGround::AddObject takes optional instance scale (zero preserves template). Apply after successful Create and before Map::Add, update collision model; native ownership, GUID, hooks and failure handling remain. TG uses it for both flag objects and two native countdown doors. Missing door collision fails setup. Model-derived placement still requires client acceptance.
+
+TG strategy exists only in type6 on Turtle. Delivery95, local interception93 and objective travel92 outrank proactive90 while critical survival100+ remains. Stable GUID roles select runner, escort/interceptor, defender or distributed capture. Carrier lookup uses the owning map and BG-team membership, not global holders or race team. Native PositionMap and movement/cast checks remain.
+
+Unit::SetSpeedRate uses a live socket-bearing controller for ACK-driven speed changes. A synthetic connected session has no client to acknowledge; applying its native speed immediately prevents stale mounted ACK restoration after dismount. Real-client possession and pre-world transitions are covered by focused tests. Aura calculations are unchanged.
+
+MoveMap native per-thread/per-map queries read mmap.QueryNodes.<mapId> once at creation (default2048, bounded2048–65535). Map821 uses16384. PlayerWalkable.<mapId> defaults off;821 opts into native NAV_STEEP_SLOPES exclusion for players. Polygon lookup copies include AND exclude flags. When steep exclusion is requested, missing navigation data and forced destinations cannot silently bypass it. This preservation also applies to existing callers explicitly excluding steep slopes, beyond TG; other default map filters remain unchanged.
+
+The native smoother detects a repeated two-point oscillation after an oversized step around a tight corner and retries0.05yd past that corner through the same moveAlongSurface collision/filter query. It does not replace the corridor or invent a direct path. Real assets reproduce the former loop and verify the retry. WorldPosition path assembly rejects an unchanged singleton origin while retaining useful partial prefixes.
+
+TG walking failure can ask the existing cached JumpAction for bounded traversal: at most16 run/walk ballistic candidates per5s, normal jump vertical speed, native collision/landing checks and a following walk improving remaining objective distance. No teleport, unrestricted dispatch or artificial speed is introduced. Native facilities lacked an objective-directed safe jump retry; this uses their existing trajectory/DoJump lifecycle. This is scoped to a live TG, but actual geometry traversal still needs live acceptance.
+
+MT_TG1 is a one-way native addon message for same-BG human sockets, carrying version, instance, status, flag state, faction and remaining timer. Native carrier packets lack colour/timer fields; the client companion supplies those visuals without replacing coordinate APIs. No incoming command or extra thread. WorldMapArea821 is expanded and original art fitted/cropped; four Thorn ADTs add existing ramp models. Matching extracted collision/navmesh are deployed in a separate data directory to avoid mixing live cached trees with new tiles. See client/ManTechThornGorge/README.md and the playtest report for reproducibility and live limits.
