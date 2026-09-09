@@ -7918,11 +7918,17 @@ void Unit::SetSpeedRate(UnitMoveType mtype, float rate)
     if (m_speed_rate[mtype] == rate && !HasPendingMovementChange(changeType))
         return;
 
-    if (IsMovedByPlayer() && IsInWorld())
+    // Synthetic sessions have a client mover GUID but no client that can ACK.
+    // Queueing their speed changes can replay an old mounted speed after a
+    // spline has started and a newer dismount speed was applied immediately.
+    Player* controller = IsMovedByPlayer() ? GetPlayerMovingMe() : nullptr;
+    bool clientControlled = controller && controller->GetSession() &&
+        controller->GetSession()->GetSocket() && controller->GetSession()->IsConnected();
+    if (clientControlled && IsInWorld())
         MovementPacketSender::AddSpeedChangeToController(this, mtype, rate);
-    else if (IsMovedByPlayer() && !IsInWorld()) // (1)
+    else if (clientControlled && !IsInWorld()) // (1)
         SetSpeedRateReal(mtype, rate);
-    else // <=> if(!IsMovedByPlayer())
+    else
     {
         SetSpeedRateReal(mtype, rate);
         MovementPacketSender::SendSpeedChangeToAll(this, mtype, rate);
