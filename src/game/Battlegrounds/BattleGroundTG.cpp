@@ -100,8 +100,8 @@ bool BattleGroundTG::SetupBattleGround()
     }
     // Objective positions are extracted DBC records. The center is provisional
     // and configurable; resolve its actual terrain/collision height, fail closed.
-    m_flagX = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagX", 2165.89f);
-    m_flagY = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagY", 1564.21f);
+    m_flagX = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagX", 2174.469482f);
+    m_flagY = sConfig.GetFloatDefault("Battleground.ThornGorge.FlagY", 1569.349243f);
     m_flagZ = GetBgMap()->GetHeight(m_flagX, m_flagY, 1300.0f, true, 250.0f);
     if (!std::isfinite(m_flagZ) || m_flagZ < 1000.0f || m_flagZ > 1300.0f)
     {

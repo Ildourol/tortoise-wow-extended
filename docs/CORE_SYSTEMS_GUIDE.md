@@ -358,3 +358,7 @@ ownership icons. Accepted victory quests 42098/42099 receive native event
 credit; the paired SQL sets their required-event special flag. See the
 prototype guide for tunable capture pacing, lifecycle guards and diagnostics.
 ThornGorgePresentationTest compiles the actual UI/quest methods in its harness.
+
+Flag placement follow-up: the live GPS-confirmed Thorn Gorge point is
+2174.469482,1569.349243,1160.459473. Deployment uses the existing XY config keys
+and native collision height. See the prototype guide for evidence and checks.

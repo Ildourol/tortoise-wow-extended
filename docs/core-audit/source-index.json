@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "CC08EBE1341B67830E0E9C42AE608194BFE01E0A1BD8853B96C6192A1A284572"
+    "sha256": "BD577BEC47A5EF3F98E4A2F37C7F780E1728D783C4A277DE15A82BC0BCA5B399"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "143240A9DCD003F308D13C2DB1B18C93819E86ED4700EB5EE573AFC6FCED9316"
+    "sha256": "6B639446E42A94ABCEE43E25A9ECF7CF12A0964F696E32A3CEF1C1132361FD60"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",

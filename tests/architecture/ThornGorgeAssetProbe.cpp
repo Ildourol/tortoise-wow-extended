@@ -33,7 +33,7 @@ int main(int argc, char** argv)
     float world[][3]={{2043.89f,1729.70f,1190.03f},{2048.46f,1393.48f,1194.51f},
         {2286.36f,1402.54f,1197.30f},{2284.85f,1731.11f,1190.06f},
         {2554.20f,1597.33f,1273.19f},{1806.60f,1538.97f,1263.27f},
-        {2165.89f,1564.21f,1160.0f}};
+        {2174.469482f,1569.349243f,1160.459473f}};
     char const* names[]={"Amberhorn","Farseer","Grimtotem","MageTower","AllianceStart","HordeStart","Center"};
     dtPolyRef refs[7]{}; float points[7][3]{}; dtQueryFilter filter;
     filter.setIncludeFlags(0x09); // native ground + water, excludes steep/lava

@@ -20,8 +20,8 @@ reproduce the official server's implementation.
 
    ```ini
    Battleground.ThornGorge.Enabled = 1
-   Battleground.ThornGorge.FlagX = 2165.89
-   Battleground.ThornGorge.FlagY = 1564.21
+   Battleground.ThornGorge.FlagX = 2174.469482
+   Battleground.ThornGorge.FlagY = 1569.349243
    ```
 
 5. Start the test realm. Join Thorn Gorge from the Turtle minimap queue or an
@@ -167,8 +167,14 @@ active_icon. Existing event budgets apply. No packet/combat spam or extra
 thread is added. Native-fragment tests exercise initial/live icon agreement
 and quest filters/repeat protection; rule tests cover capture caps.
 
-Bridge placement remains pending a verified in-game point: extracted collision
-data contains two Taurenbridgewide.wmo placements near the objectives, and
-does not establish which bridge midpoint the player intended. Existing flag
-coordinates remain unchanged. Log layout records expose the actual resolved
-height as well as XY for the next check. Do not mark this placement fixed.
+Flag position was subsequently supplied by the player using .gps on map 821,
+instance 104: X=2174.469482, Y=1569.349243, Z=1160.459473, O=3.306524.
+The GPS also reported FloorZ=1160.459351 and GroundZ=1160.445312. Defaults,
+deployment configuration and the real-asset navigation probe now use that XY.
+The native terrain/collision query still resolves Z and adds the existing
+0.1-yard object offset; no fixed-height override or teleport is introduced.
+The d7f50f8 binary already supports these config keys, so deploying the config
+is sufficient for the next restart without another executable build. Visual
+alignment at the supplied point still requires the next in-game check.
+The start enclosure still uses the prototype's 35-yard countdown leash; its
+physical gate has not been positioned. Screenshot feedback records that gap.
