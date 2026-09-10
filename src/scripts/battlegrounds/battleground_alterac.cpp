@@ -1587,6 +1587,8 @@ struct AV_NpcEventAI : public npc_escortAI
         b_isNPCMovedToChannelingPointWB         = false;
         b_isNPCStartedMovingToChannelingPointWB = false;
         m_bWarRiderSummoned = false;
+        Event_Timer = 0;
+        Point = 0;
         m_uiDespawn_Timer = 0;
         b_isDead = false;
         av_x = m_creature->GetPositionX();
