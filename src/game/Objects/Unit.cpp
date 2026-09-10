@@ -5168,7 +5168,7 @@ void Unit::AttackedBy(Unit* attacker)
         // because there are cases with unattackable creatures spawning pets
         // example: Scarshield Portal (9707) spawns guardian pet Burning Imp (9708) with spell 15126
         if (Creature* pOwner = ::ToCreature(GetCharmerOrOwner()))
-            if (pOwner->AI() && pOwner->IsAlive() && attacker->IsTargetableBy(pOwner))
+            if (pOwner->AI() && pOwner->IsAlive() && pOwner->CanAttack(attacker))
                 pOwner->AI()->AttackedBy(attacker);
     }
 }

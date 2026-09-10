@@ -659,7 +659,7 @@ void WorldSession::HandleSellItemOpcode(WorldPacket & recv_data)
             if (!dcost)
             {
                 _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0);
-                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "RepairDurability: Wrong item lvl %u", pProto->ItemLevel);
+                sLog.outError("RepairDurability: Wrong item lvl %u", pProto->ItemLevel);
                 return;
             }
 
@@ -668,7 +668,7 @@ void WorldSession::HandleSellItemOpcode(WorldPacket & recv_data)
             if (!dQualitymodEntry)
             {
                 _player->SendSellError(SELL_ERR_CANT_SELL_ITEM, pCreature, itemGuid, 0);
-                sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
+                sLog.outError("RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
                 return;
             }
 
