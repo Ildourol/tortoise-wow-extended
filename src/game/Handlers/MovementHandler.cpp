@@ -913,9 +913,19 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket& recvData)
     ObjectGuid guid;
     recvData >> guid;
 
+    if (!_player)
+    {
+        sLog.outError("HandleSetActiveMoverOpcode: received packet for null player, new mover: %s",
+            guid.GetString().c_str());
+        return;
+    }
+
     if (!guid.IsEmpty())
     {
         Unit* pMover = _player->GetMover();
+        if (!pMover)
+            return;
+
         if (pMover->GetObjectGuid() != guid)
         {
             sLog.outError("HandleSetActiveMoverOpcode: incorrect mover guid: mover is %s and should be %s",
