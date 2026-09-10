@@ -108,6 +108,9 @@ bool FindCorpseAction::Execute(Event& event)
     float reclaimDist = CORPSE_RECLAIM_RADIUS - 5.0f;
     float corpseDist = botPos.distance(corpsePos);
 
+    if (!corpsePos) //Corpse is at 0,0,0,0
+        return false;
+
     //If player fell through terrain move corpse to player position.
     if (IsRealPlayer(bot) && botPos.getMapId() == moveToPos.getMapId())
     {
