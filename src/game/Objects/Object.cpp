@@ -4337,7 +4337,7 @@ int32 WorldObject::DealHeal(Unit *pVictim, uint32 addhealth, SpellEntry const *s
     if (IsCreature() && ((Creature*)this)->IsTotem() && ((Totem*)this)->GetTotemType() != TOTEM_STATUE)
         pHealer = pUnit->GetOwner();
 
-    if (IsPlayer() || pVictim->IsPlayer())
+    if (pHealer && (pHealer->IsPlayer() || pVictim->IsPlayer()))
         pHealer->SendHealSpellLog(pVictim, spellProto->Id, addhealth, critical);
 
     return gain;
