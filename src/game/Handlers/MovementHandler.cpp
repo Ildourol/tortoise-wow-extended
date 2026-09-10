@@ -1014,12 +1014,23 @@ void WorldSession::HandleMoveTimeSkippedOpcode(WorldPacket& recvData)
 // make sure this client is allowed to control the unit which guid is provided
 Unit* WorldSession::GetMoverFromGuid(ObjectGuid const& guid) const
 {
-    if (guid == _player->GetMover()->GetObjectGuid())
-        return _player->GetMover();
+    if (!_player)
+        return nullptr;
+
+    if (Unit* pMover = _player->GetMover())
+    {
+        if (guid == pMover->GetObjectGuid())
+            return pMover;
+    }
+
     if (guid == _player->GetObjectGuid())
         return _player;
+
     if (guid == m_clientMoverGuid)
-        return _player->GetMap()->GetUnit(guid);
+    {
+        if (Map* map = _player->FindMap())
+            return map->GetUnit(guid);
+    }
 
     return nullptr;
 }
