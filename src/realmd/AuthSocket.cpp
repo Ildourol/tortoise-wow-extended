@@ -917,7 +917,7 @@ bool AuthSocket::_HandleLogonProof()
     }
 
     ///- Check if SRP6 results match (password is correct), else send an error
-    if (!memcmp(M.AsByteArray().data(), lp.M1, 20) && pinResult)
+    if (!memcmp(M.AsByteArray(20).data(), lp.M1, 20) && pinResult)
     {
         if (!VerifyVersion(lp.A, sizeof(lp.A), lp.crc_hash, false))
         {
