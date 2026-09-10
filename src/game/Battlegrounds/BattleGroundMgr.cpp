@@ -186,7 +186,6 @@ GroupQueueInfo * BattleGroundQueue::AddGroup(Player *leader, Group* grp, BattleG
 
     //add players from group to ginfo
     {
-        //ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_Lock);
         if (grp)
         {
             const uint32 group_limit = sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_GROUP_LIMIT);
@@ -239,7 +238,7 @@ GroupQueueInfo * BattleGroundQueue::AddGroup(Player *leader, Group* grp, BattleG
         else
             return ginfo; // group size was above limit
 
-        //announce to world, this code needs mutex
+        // announce the current queue state
         if (!isPremade && sWorld.getConfig(CONFIG_UINT32_BATTLEGROUND_QUEUE_ANNOUNCER_JOIN))
         {
             BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(ginfo->BgTypeId);
@@ -273,7 +272,6 @@ GroupQueueInfo * BattleGroundQueue::AddGroup(Player *leader, Group* grp, BattleG
                 }
             }
         }
-        //release mutex
     }
 
     return ginfo;
@@ -334,7 +332,6 @@ void BattleGroundQueue::LogQueueInscription(Player *plr, BattleGroundTypeId BgTy
 void BattleGroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
 {
     //Player *plr = sObjectMgr.GetPlayer(guid);
-    //ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_Lock);
 
     int32 bracket_id = -1;                                     // signed for proper for-loop finish
     QueuedPlayersMap::iterator itr;
@@ -414,7 +411,6 @@ void BattleGroundQueue::RemovePlayer(ObjectGuid guid, bool decreaseInvitedCount)
 //returns true when player pl_guid is in queue and is invited to bgInstanceGuid
 bool BattleGroundQueue::IsPlayerInvited(ObjectGuid pl_guid, const uint32 bgInstanceGuid, const uint32 removeTime)
 {
-    //ACE_Guard<ACE_Recursive_Thread_Mutex> g(m_Lock);
     QueuedPlayersMap::const_iterator qItr = m_QueuedPlayers.find(pl_guid);
     return (qItr != m_QueuedPlayers.end()
             && qItr->second.GroupInfo->IsInvitedToBGInstanceGUID == bgInstanceGuid
@@ -423,7 +419,6 @@ bool BattleGroundQueue::IsPlayerInvited(ObjectGuid pl_guid, const uint32 bgInsta
 
 bool BattleGroundQueue::GetPlayerGroupInfoData(ObjectGuid guid, GroupQueueInfo* ginfo)
 {
-    //ACE_Guard<ACE_Recursive_Thread_Mutex> g(m_Lock);
     QueuedPlayersMap::const_iterator qItr = m_QueuedPlayers.find(guid);
     if (qItr == m_QueuedPlayers.end())
         return false;
@@ -707,7 +702,6 @@ should be called from BattleGround::RemovePlayer function in some cases
 */
 void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketId bracket_id)
 {
-    //ACE_Guard<ACE_Recursive_Thread_Mutex> guard(m_Lock);
 
     // First, remove players who shouldn't be in queue anymore
     QueuedPlayersMap::iterator itrOffline = m_QueuedPlayers.begin();
@@ -928,30 +922,9 @@ void BattleGroundQueue::Update(BattleGroundTypeId bgTypeId, BattleGroundBracketI
 
 bool BGQueueInviteEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 {
-    Player* plr = ObjectAccessor::FindPlayerNotInWorld(m_PlayerGuid);
-    // player logged off (we should do nothing, he is correctly removed from queue in another procedure)
-    if (!plr)
-        return true;
-
-    BattleGround* bg = sBattleGroundMgr.GetBattleGround(m_BgInstanceGUID, m_BgTypeId);
-    //if battleground ended and its instance deleted - do nothing
-    if (!bg)
-        return true;
-
-    BattleGroundQueueTypeId bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bg->GetTypeID());
-    uint32 queueSlot = plr->GetBattleGroundQueueIndex(bgQueueTypeId);
-    if (queueSlot < PLAYER_MAX_BATTLEGROUND_QUEUES)         // player is in queue or in battleground
-    {
-        // check if player is invited to this bg
-        BattleGroundQueue &bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
-        if (bgQueue.IsPlayerInvited(m_PlayerGuid, m_BgInstanceGUID, m_RemoveTime))
-        {
-            WorldPacket data;
-            //we must send remaining time in queue
-            sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME - INVITATION_REMIND_TIME, 0);
-            plr->GetSession()->SendPacket(&data);
-        }
-    }
+    // Unit events execute on map workers. Never touch global battleground queue
+    // state here; hand a value-only request to the world-thread owner instead.
+    sBattleGroundMgr.ScheduleQueueInviteReminder(m_PlayerGuid, m_BgInstanceGUID, m_BgTypeId, m_RemoveTime);
     return true;                                            //event will be deleted
 }
 
@@ -971,38 +944,10 @@ void BGQueueInviteEvent::Abort(uint64 /*e_time*/)
 */
 bool BGQueueRemoveEvent::Execute(uint64 /*e_time*/, uint32 /*p_time*/)
 {
-    Player* plr = ObjectAccessor::FindPlayerNotInWorld(m_PlayerGuid);
-    if (!plr)
-        // player logged off (we should do nothing, he is correctly removed from queue in another procedure)
-        return true;
-
-    BattleGround* bg = sBattleGroundMgr.GetBattleGround(m_BgInstanceGUID, m_BgTypeId);
-    //battleground can be deleted already when we are removing queue info
-    //bg pointer can be nullptr! so use it carefully!
-
-    uint32 queueSlot = plr->GetBattleGroundQueueIndex(m_BgQueueTypeId);
-    if (queueSlot < PLAYER_MAX_BATTLEGROUND_QUEUES)         // player is in queue, or in Battleground
-    {
-        // check if player is in queue for this BG and if we are removing his invite event
-        BattleGroundQueue &bgQueue = sBattleGroundMgr.m_BattleGroundQueues[m_BgQueueTypeId];
-        if (bgQueue.IsPlayerInvited(m_PlayerGuid, m_BgInstanceGUID, m_RemoveTime))
-        {
-            DEBUG_LOG("Battleground: removing player %u from bg queue for instance %u because of not pressing enter battle in time.", plr->GetGUIDLow(), m_BgInstanceGUID);
-
-            plr->RemoveBattleGroundQueueId(m_BgQueueTypeId);
-            bgQueue.RemovePlayer(m_PlayerGuid, true);
-            //update queues if battleground isn't ended
-            if (bg && bg->GetStatus() != STATUS_WAIT_LEAVE)
-                sBattleGroundMgr.ScheduleQueueUpdate(m_BgQueueTypeId, m_BgTypeId, bg->GetBracketId());
-
-            WorldPacket data;
-            sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_NONE, 0, 0);
-            plr->GetSession()->SendPacket(&data);
-        }
-    }
-
-    //event will be deleted
-    return true;
+    // Preserve the player-owned timer lifetime, but defer the global queue
+    // mutation to BattleGroundMgr::Update() on the world thread.
+    sBattleGroundMgr.ScheduleQueueInviteRemoval(m_PlayerGuid, m_BgInstanceGUID, m_BgTypeId, m_BgQueueTypeId, m_RemoveTime);
+    return true;                                            //event will be deleted
 }
 
 void BGQueueRemoveEvent::Abort(uint64 /*e_time*/)
@@ -1057,19 +1002,42 @@ void BattleGroundMgr::ApplyAllBattleGrounds(std::function<void(const BattleGroun
 // used to update running battlegrounds, and delete finished ones
 void BattleGroundMgr::Update(uint32 diff)
 {
-    // update scheduled queues
-    if (!m_QueueUpdateScheduler.empty())
+    // Map workers may produce queue requests while MapManager is updating.
+    // World::Update calls us only after all map workers have joined, so drain
+    // the mailbox here and perform every global queue mutation on this thread.
+    std::vector<QueueRequest> requests;
     {
-        std::vector<uint64> scheduled;
-        std::swap(scheduled, m_QueueUpdateScheduler);
+        std::lock_guard<std::mutex> guard(m_QueueMailboxMutex);
+        requests.swap(m_QueueRequests);
+    }
 
-        for (uint64 i = 0; i < scheduled.size(); i++)
-        {
-            BattleGroundQueueTypeId bgQueueTypeId = BattleGroundQueueTypeId(scheduled[i] >> 16 & 255);
-            BattleGroundTypeId bgTypeId = BattleGroundTypeId((scheduled[i] >> 8) & 255);
-            BattleGroundBracketId bracket_id = BattleGroundBracketId(scheduled[i] & 255);
-            m_BattleGroundQueues[bgQueueTypeId].Update(bgTypeId, bracket_id);
-        }
+    for (QueueRequest const& request : requests)
+        ProcessQueueRequest(request);
+
+    // Queue actions above may have scheduled matching work. Drain the update
+    // mailbox only after processing them so expirations are matched this tick.
+    std::vector<uint64> scheduled;
+    {
+        std::lock_guard<std::mutex> guard(m_QueueMailboxMutex);
+        scheduled.swap(m_QueueUpdateScheduler);
+    }
+
+    // Preserve the historical first-scheduled processing order while moving
+    // deduplication out of the producer-side critical section.
+    std::vector<uint64> uniqueScheduled;
+    uniqueScheduled.reserve(scheduled.size());
+    for (uint64 scheduleId : scheduled)
+    {
+        if (std::find(uniqueScheduled.begin(), uniqueScheduled.end(), scheduleId) == uniqueScheduled.end())
+            uniqueScheduled.emplace_back(scheduleId);
+    }
+
+    for (uint64 scheduleId : uniqueScheduled)
+    {
+        BattleGroundQueueTypeId bgQueueTypeId = BattleGroundQueueTypeId(scheduleId >> 16 & 255);
+        BattleGroundTypeId bgTypeId = BattleGroundTypeId((scheduleId >> 8) & 255);
+        BattleGroundBracketId bracket_id = BattleGroundBracketId(scheduleId & 255);
+        m_BattleGroundQueues[bgQueueTypeId].Update(bgTypeId, bracket_id);
     }
 }
 
@@ -1622,8 +1590,128 @@ void BattleGroundMgr::ScheduleQueueUpdate(BattleGroundQueueTypeId bgQueueTypeId,
 {
     uint64 const schedule_id = ((uint64)bgQueueTypeId << 16) | ((uint64)bgTypeId << 8) | (uint64)bracket_id;
 
-    if (std::find(m_QueueUpdateScheduler.begin(), m_QueueUpdateScheduler.end(), schedule_id) == m_QueueUpdateScheduler.end())
-        m_QueueUpdateScheduler.emplace_back(schedule_id);
+    std::lock_guard<std::mutex> guard(m_QueueMailboxMutex);
+    m_QueueUpdateScheduler.emplace_back(schedule_id);
+}
+
+void BattleGroundMgr::ScheduleQueueRequest(QueueRequest const& request)
+{
+    std::lock_guard<std::mutex> guard(m_QueueMailboxMutex);
+    m_QueueRequests.push_back(request);
+}
+
+void BattleGroundMgr::ScheduleQueueInviteReminder(ObjectGuid playerGuid, uint32 bgInstanceGuid, BattleGroundTypeId bgTypeId, uint32 removeTime)
+{
+    ScheduleQueueRequest({QueueRequestType::InviteReminder, playerGuid, bgInstanceGuid, bgTypeId, BATTLEGROUND_QUEUE_NONE, removeTime, BG_BRACKET_ID_NONE});
+}
+
+void BattleGroundMgr::ScheduleQueueInviteRemoval(ObjectGuid playerGuid, uint32 bgInstanceGuid, BattleGroundTypeId bgTypeId, BattleGroundQueueTypeId bgQueueTypeId, uint32 removeTime)
+{
+    ScheduleQueueRequest({QueueRequestType::InviteRemoval, playerGuid, bgInstanceGuid, bgTypeId, bgQueueTypeId, removeTime, BG_BRACKET_ID_NONE});
+}
+
+void BattleGroundMgr::ScheduleQueueBracketCleanup(ObjectGuid playerGuid, BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId oldBracketId)
+{
+    ScheduleQueueRequest({QueueRequestType::BracketCleanup, playerGuid, 0, bgTypeId, bgQueueTypeId, 0, oldBracketId});
+}
+
+void BattleGroundMgr::ProcessQueueRequest(QueueRequest const& request)
+{
+    switch (request.Type)
+    {
+        case QueueRequestType::InviteReminder:
+            ProcessQueueInviteReminder(request);
+            break;
+        case QueueRequestType::InviteRemoval:
+            ProcessQueueInviteRemoval(request);
+            break;
+        case QueueRequestType::PlayerLogout:
+            ProcessQueuePlayerLogout(request);
+            break;
+        case QueueRequestType::BracketCleanup:
+            ProcessQueueBracketCleanup(request);
+            break;
+    }
+}
+
+void BattleGroundMgr::ProcessQueueInviteReminder(QueueRequest const& request)
+{
+    Player* player = ObjectAccessor::FindPlayerNotInWorld(request.PlayerGuid);
+    if (!player)
+        return;
+
+    BattleGround* bg = GetBattleGround(request.BgInstanceGuid, request.BgTypeId);
+    if (!bg)
+        return;
+
+    BattleGroundQueueTypeId bgQueueTypeId = BGQueueTypeId(bg->GetTypeID());
+    uint32 queueSlot = player->GetBattleGroundQueueIndex(bgQueueTypeId);
+    if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+        return;
+
+    BattleGroundQueue& bgQueue = m_BattleGroundQueues[bgQueueTypeId];
+    if (!bgQueue.IsPlayerInvited(request.PlayerGuid, request.BgInstanceGuid, request.RemoveTime))
+        return;
+
+    WorldPacket data;
+    BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME - INVITATION_REMIND_TIME, 0);
+    player->GetSession()->SendPacket(&data);
+}
+
+void BattleGroundMgr::ProcessQueueInviteRemoval(QueueRequest const& request)
+{
+    Player* player = ObjectAccessor::FindPlayerNotInWorld(request.PlayerGuid);
+    if (!player)
+        return;
+
+    uint32 queueSlot = player->GetBattleGroundQueueIndex(request.BgQueueTypeId);
+    if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+        return;
+
+    BattleGroundQueue& bgQueue = m_BattleGroundQueues[request.BgQueueTypeId];
+    if (!bgQueue.IsPlayerInvited(request.PlayerGuid, request.BgInstanceGuid, request.RemoveTime))
+        return;
+
+    BattleGround* bg = GetBattleGround(request.BgInstanceGuid, request.BgTypeId);
+
+    DEBUG_LOG("Battleground: removing player %u from bg queue for instance %u because of not pressing enter battle in time.", player->GetGUIDLow(), request.BgInstanceGuid);
+
+    player->RemoveBattleGroundQueueId(request.BgQueueTypeId);
+    bgQueue.RemovePlayer(request.PlayerGuid, true);
+
+    if (bg && bg->GetStatus() != STATUS_WAIT_LEAVE)
+        ScheduleQueueUpdate(request.BgQueueTypeId, request.BgTypeId, bg->GetBracketId());
+
+    WorldPacket data;
+    BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_NONE, 0, 0);
+    player->GetSession()->SendPacket(&data);
+}
+
+void BattleGroundMgr::ProcessQueuePlayerLogout(QueueRequest const& request)
+{
+    if (request.BgQueueTypeId <= BATTLEGROUND_QUEUE_NONE || request.BgQueueTypeId >= MAX_BATTLEGROUND_QUEUE_TYPES)
+        return;
+
+    m_BattleGroundQueues[request.BgQueueTypeId].PlayerLoggedOut(request.PlayerGuid);
+}
+
+void BattleGroundMgr::ProcessQueueBracketCleanup(QueueRequest const& request)
+{
+    if (request.BgQueueTypeId <= BATTLEGROUND_QUEUE_NONE || request.BgQueueTypeId >= MAX_BATTLEGROUND_QUEUE_TYPES)
+        return;
+
+    BattleGroundQueue& bgQueue = m_BattleGroundQueues[request.BgQueueTypeId];
+    GroupQueueInfo groupInfo;
+    if (!bgQueue.GetPlayerGroupInfoData(request.PlayerGuid, &groupInfo))
+        return;
+
+    // A stale request must not remove a player who has already rejoined into a
+    // different bracket before the world thread drains this mailbox.
+    if (groupInfo.BracketId != request.BracketId)
+        return;
+
+    bgQueue.RemovePlayer(request.PlayerGuid, true);
+    ScheduleQueueUpdate(request.BgQueueTypeId, request.BgTypeId, request.BracketId);
 }
 
 uint32 BattleGroundMgr::GetPrematureFinishTime() const
@@ -1842,7 +1930,7 @@ void BattleGroundMgr::PlayerLoggedOut(Player* player)
         if (BattleGroundQueueTypeId bgQueueTypeId = player->GetBattleGroundQueueTypeId(i - 1))
         {
             player->RemoveBattleGroundQueueId(bgQueueTypeId);
-            m_BattleGroundQueues[bgQueueTypeId].PlayerLoggedOut(player->GetObjectGuid());
+            ScheduleQueueRequest({QueueRequestType::PlayerLogout, player->GetObjectGuid(), 0, BATTLEGROUND_TYPE_NONE, bgQueueTypeId, 0, BG_BRACKET_ID_NONE});
         }
     }
 }
