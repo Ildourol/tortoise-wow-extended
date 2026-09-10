@@ -569,6 +569,10 @@ std::pair<Unit*, ePetSelectTargetReason> PetAI::SelectNextTarget() const
 
 void PetAI::HandleReturnMovement()
 {
+    // This can happen somehow, even though pet should always have charminfo.
+    if (!m_creature->GetCharmInfo())
+        return;
+
     // Handles moving the pet back to stay or owner
 
     // Prevent activating movement when under control of spells
@@ -718,6 +722,10 @@ bool PetAI::CanAttack(Unit* target)
 
     // Pet desactive (monture)
     if (m_creature->IsPet() && !((Pet*)m_creature)->IsEnabled())
+        return false;
+
+    // This can happen somehow, even though pet should always have charminfo.
+    if (!m_creature->GetCharmInfo())
         return false;
 
     // Passive - passive pets can attack if told to
