@@ -4026,22 +4026,16 @@ void Player::GiveLevel(uint32 level)
             BattleGroundTypeId bgTypeId = BattleGroundMgr::BGTemplateId(bgQueueTypeId);
             if (GetBattleGroundBracketIdFromLevel(bgTypeId, level) != GetBattleGroundBracketIdFromLevel(bgTypeId, GetLevel()))
             {
-                BattleGroundQueue& bgQueue = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId];
-                GroupQueueInfo ginfo;
-                if (!bgQueue.GetPlayerGroupInfoData(GetObjectGuid(), &ginfo))
-                    continue;
+                BattleGroundBracketId const oldBracketId = GetBattleGroundBracketIdFromLevel(bgTypeId, GetLevel());
 
-                BattleGround* bg = sBattleGroundMgr.GetBattleGround(ginfo.IsInvitedToBGInstanceGUID, bgTypeId);
-                if (!bg)
-                    bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
-
+                // Player::GiveLevel can run on a map worker. Keep only player-local
+                // state and the client notification here; the global queue belongs
+                // to the world thread and is cleaned up after map updates finish.
                 WorldPacket data;
-                RemoveBattleGroundQueueId(bgQueueTypeId);  // must be called this way, because if you move this call to queue->removeplayer, it causes bugs
-                sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_NONE, 0, 0);
-                bgQueue.RemovePlayer(GetObjectGuid(), true);
-                // player left queue, we should update it
-                sBattleGroundMgr.ScheduleQueueUpdate(bgQueueTypeId, bgTypeId, GetBattleGroundBracketIdFromLevel(bgTypeId, GetLevel()));
+                RemoveBattleGroundQueueId(bgQueueTypeId);
+                sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, nullptr, queueSlot, STATUS_NONE, 0, 0);
                 GetSession()->SendPacket(&data);
+                sBattleGroundMgr.ScheduleQueueBracketCleanup(GetObjectGuid(), bgQueueTypeId, bgTypeId, oldBracketId);
             }
         }
     }
