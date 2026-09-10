@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2017-2018 namreeb (legal@namreeb.org)
  *
  * This is private software and may not be shared under any circumstances,
@@ -425,6 +425,14 @@ void Warden::HandlePacket(WorldPacket& recvData)
                 uint16 length;
                 uint32 checksum;
                 recvData >> length >> checksum;
+
+                if (length > (recvData.size() - recvData.rpos()))
+                {
+                    recvData.rpos(recvData.wpos());
+                    _anticheat->RecordCheatInternal(CheatType::CHEAT_TYPE_WARDEN, "Packet checksum length overflow");
+                    _session->KickPlayer();
+                    return;
+                }
 
                 if (BuildChecksum(recvData.contents() + recvData.rpos(), length) != checksum)
                 {
