@@ -16681,20 +16681,28 @@ void Player::SendPushToPartyResponse(Player *pPlayer, uint8 msg) const
 
 void Player::SendQuestUpdateAddItem(Quest const* pQuest, uint32 item_idx, uint32 current, uint32 count)
 {
-    DEBUG_LOG("WORLD: Sent SMSG_QUESTUPDATE_ADD_ITEM");
-    WorldPacket data(SMSG_QUESTUPDATE_ADD_ITEM, (4 + 4));
-    data << pQuest->ReqItemId[item_idx];
-    data << count;
-    GetSession()->SendPacket(&data);
-
-    // Update player field and fire UNIT_QUEST_LOG_CHANGED for self
-    uint16 slot = FindQuestSlot(pQuest->GetQuestId());
-    if (slot < MAX_QUEST_LOG_SIZE)
+    while (count > 0)
     {
-        // item counters are stored after the creature or GO counters within the same quest slot
-        uint8 counterIdx = uint8(item_idx + pQuest->GetReqCreatureOrGOcount());
-        if (counterIdx < QUEST_OBJECTIVES_COUNT)
-            SetQuestSlotCounter(slot, counterIdx, uint8(current + count));
+        uint32 batchCount = std::min(count, 63u); // Send up to 63 at a time (due to packet limitations)
+
+        DEBUG_LOG("WORLD: Sent SMSG_QUESTUPDATE_ADD_ITEM");
+        WorldPacket data(SMSG_QUESTUPDATE_ADD_ITEM, (4 + 4));
+        data << pQuest->ReqItemId[item_idx];
+        data << batchCount;
+        GetSession()->SendPacket(&data);
+
+        // Update player field and fire UNIT_QUEST_LOG_CHANGED for self for the current batch
+        uint16 slot = FindQuestSlot(pQuest->GetQuestId());
+        if (slot < MAX_QUEST_LOG_SIZE)
+        {
+            // item counters are stored after the creature or GO counters within the same quest slot
+            uint8 counterIdx = uint8(item_idx + pQuest->GetReqCreatureOrGOcount());
+            if (counterIdx < QUEST_OBJECTIVES_COUNT)
+                SetQuestSlotCounter(slot, counterIdx, uint8(std::min(current + batchCount, 63u)));
+        }
+
+        current += batchCount;
+        count -= batchCount;
     }
 }
 
