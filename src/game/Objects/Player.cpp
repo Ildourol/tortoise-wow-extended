@@ -20149,8 +20149,9 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
     uint32 lastPath = 0;
     uint32 lastNode = nodes[1];
     sObjectMgr.GetTaxiPath(sourcenode, lastNode, sourcepath, sourceCost);
-    if (!sourcepath)
+    if (!sourcepath || sourcepath >= sTaxiPathNodesByPath.size())
     {
+        sLog.outError("ActivateTaxiPathTo: Taxi path from nodes %u to %u is invalid!", sourcenode, lastNode);
         m_taxi.ClearTaxiDestinations();
         return false;
     }
@@ -20169,8 +20170,9 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc 
         {
             nextNode = nodes[nodeIndex];
             sObjectMgr.GetTaxiPath(lastNode, nextNode, nextPath, nextCost);
-            if (!nextPath)
+            if (!nextPath || nextPath >= sTaxiPathNodesByPath.size())
             {
+                sLog.outError("ActivateTaxiPathTo: Taxi path from nodes %u to %u is invalid!", lastNode, nextNode);
                 m_taxi.ClearTaxiDestinations();
                 return false;
             }
@@ -20356,8 +20358,12 @@ void Player::ContinueTaxiFlight()
     uint32 mountDisplayId = sObjectMgr.GetTaxiMountDisplayId(sourceNode, GetTeam(), true);
     uint32 path = m_taxi.GetCurrentTaxiPath();
 
-    // search appropriate start path node
-    uint32 startNode = 0;
+    if (path >= sTaxiPathNodesByPath.size())
+    {
+        sLog.outError("ContinueTaxiFlight: %s attempts to continue out of bounds taxi path %u", GetName(), path);
+        m_taxi.ClearTaxiDestinations();
+        return;
+    }
 
     TaxiPathNodeList const& nodeList = sTaxiPathNodesByPath[path];
 
@@ -20369,6 +20375,9 @@ void Player::ContinueTaxiFlight()
         (nodeList[0].x - GetPositionX()) * (nodeList[0].x - GetPositionX()) +
         (nodeList[0].y - GetPositionY()) * (nodeList[0].y - GetPositionY()) +
         (nodeList[0].z - GetPositionZ()) * (nodeList[0].z - GetPositionZ());
+
+    // search appropriate start path node
+    uint32 startNode = 0;
 
     for (uint32 i = 1; i < nodeList.size(); ++i)
     {
