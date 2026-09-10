@@ -63,7 +63,12 @@ bool BuildRawData(const std::string &hexData, turtle_vector<uint8, Category_Anti
 
 void WardenScanMgr::loadFromDB()
 {
-    auto result = WorldDatabase.Query("SELECT id,type,str,data,address,length,result,flags,comment FROM warden_scans");
+    std::unique_ptr<QueryResult> result(WorldDatabase.Query("SELECT id,type,str,data,address,length,result,flags,comment FROM warden_scans"));
+    if (!result)
+    {
+        sLog.outError("Table `warden_scans` is empty!");
+        return;
+    }
 
     // copy any non-database scans into a placeholder
     turtle_vector<std::shared_ptr<const Scan>, Category_Anticheat > new_scans;
@@ -215,9 +220,7 @@ void WardenScanMgr::loadFromDB()
 
         m_scans.emplace_back(std::shared_ptr<const Scan>(scan));
     } while (result->NextRow());
-
-    delete result;
-
+ 
     sLog.outBasic("%u Warden scans loaded from world database.", m_scans.size());
 }
 
