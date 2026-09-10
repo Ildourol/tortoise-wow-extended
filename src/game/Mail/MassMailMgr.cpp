@@ -55,7 +55,10 @@ struct MassMailerQueryHandler
     void HandleQueryCallback(QueryResult* result, MailDraft* mailProto, MailSender sender)
     {
         if (!result)
+        {
+            delete mailProto;
             return;
+        }
 
         MassMailMgr::ReceiversList& recievers = sMassMailMgr.AddMassMailTask(mailProto, sender);
 
