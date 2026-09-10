@@ -1246,33 +1246,61 @@ void PlayerbotAI::OnResurrected()
 void PlayerbotAI::HandleCommands()
 {
     ExternalEventHelper helper(aiObjectContext);
-    std::list<ChatCommandHolder> delayed;
-    while (!chatCommands.empty())
+
+    std::queue<ChatCommandHolder> pendingCommands;
     {
-        ChatCommandHolder holder = chatCommands.front();
+        std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+        pendingCommands.swap(chatCommands);
+    }
+
+    std::list<ChatCommandHolder> delayed;
+    while (!pendingCommands.empty())
+    {
+        ChatCommandHolder holder = pendingCommands.front();
+        pendingCommands.pop();
+
         time_t checkTime = holder.GetTime();
         if (checkTime && time(0) < checkTime)
         {
             delayed.push_back(holder);
-            chatCommands.pop();
             continue;
         }
 
         std::string command = holder.GetCommand();
         Player* owner = holder.GetOwner();
+
+        if (command.compare(0, 8, "__pb_do ") == 0)
+        {
+            std::string action = command.substr(8);
+
+            if (owner)
+            {
+                Event event("do", "", owner);
+                DoSpecificAction(action, event);
+            }
+            else
+            {
+                DoSpecificAction(action);
+            }
+
+            continue;
+        }
+
         if (!helper.ParseChatCommand(command, owner) && holder.GetType() == CHAT_MSG_WHISPER)
         {
             //ostringstream out; out << "Unknown command " << command;
             //TellPlayer(out);
             //helper.ParseChatCommand("help");
         }
-
-        chatCommands.pop();
     }
 
-    for (std::list<ChatCommandHolder>::iterator i = delayed.begin(); i != delayed.end(); ++i)
+    if (!delayed.empty())
     {
-        chatCommands.push(*i);
+        std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+        for (std::list<ChatCommandHolder>::iterator i = delayed.begin(); i != delayed.end(); ++i)
+        {
+            chatCommands.push(*i);
+        }
     }
 }
 
@@ -1608,22 +1636,68 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
     if (type == CHAT_MSG_RAID_WARNING && filtered.find(bot->GetName()) != std::string::npos && filtered.find("award") == std::string::npos)
     {
         ChatCommandHolder cmd("warning", &fromPlayer, type);
-        chatCommands.push(cmd);
+        {
+            std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+            chatCommands.push(cmd);
+        }
         return;
     }
 
     if ((filtered.size() > 2 && filtered.substr(0, 2) == "d ") || (filtered.size() > 3 && filtered.substr(0, 3) == "do "))
     {
-        Event event("do", "", &fromPlayer);
         std::string action = filtered.substr(filtered.find(" ") + 1);
-        DoSpecificAction(action, event);
+
+        time_t executeTime = 0;
+
+        if (action == "equip upgrades" && type != CHAT_MSG_WHISPER && bot->GetGroup())
+        {
+            uint32 index = 1;
+
+            Group* group = bot->GetGroup();
+
+            for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+            {
+                Player* member = ref->getSource();
+
+                if (member == master)
+                    continue;
+
+                if (member == bot)
+                    break;
+
+                ++index;
+            }
+
+            static constexpr uint32 EQUIP_UPGRADES_BATCH_SIZE = 4;
+
+            uint32 delaySeconds = 1 + ((index - 1) / EQUIP_UPGRADES_BATCH_SIZE);
+
+            executeTime = time(0) + delaySeconds;
+        }
+
+        ChatCommandHolder cmd("__pb_do " + action, &fromPlayer, type, executeTime);
+
+        {
+            std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+            chatCommands.push(cmd);
+        }
+
+        return;
     }
+
     if (ChatHelper::parseValue("command", filtered).substr(0, 3) == "do ")
     {
-        Event event("do", "", &fromPlayer);
         std::string action = ChatHelper::parseValue("command", filtered);
         action = action.substr(3);
-        DoSpecificAction(action, event);
+
+        ChatCommandHolder cmd("__pb_do " + action, &fromPlayer, type);
+
+        {
+            std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+            chatCommands.push(cmd);
+        }
+
+        return;
     }
     else if (type != CHAT_MSG_WHISPER && filtered.size() > 6 && filtered.substr(0, 6) == "queue ")
     {
@@ -1644,7 +1718,11 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
             }
         }
         ChatCommandHolder cmd(remaining, &fromPlayer, type, time(0) + index);
-        chatCommands.push(cmd);
+
+        {
+            std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+            chatCommands.push(cmd);
+        }
     }
     else if (filtered == "reset")
     {
@@ -1696,7 +1774,10 @@ void PlayerbotAI::HandleCommand(uint32 type, const std::string& text, Player& fr
                (unsigned)type,
                filtered.c_str());
         ChatCommandHolder cmd(filtered, &fromPlayer, type);
-        chatCommands.push(cmd);
+        {
+            std::lock_guard<std::mutex> lock(m_chatQueuesMutex);
+            chatCommands.push(cmd);
+        }
     }
 }
 

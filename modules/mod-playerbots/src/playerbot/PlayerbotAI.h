@@ -835,6 +835,7 @@ protected:
     Engine* engines[(uint8)BotState::BOT_STATE_ALL];
     BotState currentState;
     ChatHelper chatHelper;
+    std::mutex m_chatQueuesMutex;
     std::queue<ChatCommandHolder> chatCommands;
     std::queue<ChatQueuedReply> chatReplies;
     std::mutex chatRepliesMutex;
