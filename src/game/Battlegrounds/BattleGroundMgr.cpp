@@ -1643,6 +1643,13 @@ void BattleGroundMgr::ScheduleQueueBracketCleanup(ObjectGuid playerGuid, BattleG
     ScheduleQueueRequest({QueueRequestType::BracketCleanup, playerGuid, 0, bgTypeId, bgQueueTypeId, 0, oldBracketId});
 }
 
+void BattleGroundMgr::ScheduleArenaQueueJoin(ObjectGuid playerGuid, bool queuedAsGroup)
+{
+    QueueRequest request{QueueRequestType::ArenaJoin, playerGuid, 0, BATTLEGROUND_TYPE_NONE, BATTLEGROUND_QUEUE_NONE, 0, BG_BRACKET_ID_NONE};
+    request.QueuedAsGroup = queuedAsGroup;
+    ScheduleQueueRequest(request);
+}
+
 void BattleGroundMgr::ProcessQueueRequest(QueueRequest const& request)
 {
     switch (request.Type)
@@ -1658,6 +1665,9 @@ void BattleGroundMgr::ProcessQueueRequest(QueueRequest const& request)
             break;
         case QueueRequestType::BracketCleanup:
             ProcessQueueBracketCleanup(request);
+            break;
+        case QueueRequestType::ArenaJoin:
+            ProcessQueueArenaJoin(request);
             break;
     }
 }
@@ -1740,6 +1750,105 @@ void BattleGroundMgr::ProcessQueueBracketCleanup(QueueRequest const& request)
 
     bgQueue.RemovePlayer(request.PlayerGuid, true);
     ScheduleQueueUpdate(request.BgQueueTypeId, request.BgTypeId, request.BracketId);
+}
+
+void BattleGroundMgr::ProcessQueueArenaJoin(QueueRequest const& request)
+{
+    Player* player = ObjectAccessor::FindPlayerNotInWorld(request.PlayerGuid);
+    if (!player || !player->IsInWorld() || !player->IsAlive())
+        return;
+
+    // only max level
+    if (player->GetLevel() < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
+        return;
+
+    /* // check if in other queues
+    if (player->InBattleGroundQueue())
+    {
+        player->GetSession()->SendNotification("Unable to queue while currently in another queue.");
+        return;
+    } */
+
+    // is deserter?
+    if (!player->CanJoinToBattleground())
+    {
+        player->GetSession()->SendNotification("Unable to queue while you are marked as Deserter");
+        return;
+    }
+
+    // check existence
+    BattleGround* bg = nullptr;
+    if (!(bg = GetBattleGroundTemplate(BATTLEGROUND_BR)))
+    {
+        sLog.outError("Battleground: template BG (all arenas) not found");
+        return;
+    }
+
+    BattleGroundQueueTypeId bgQueueTypeId = BGQueueTypeId(bg->GetTypeID());
+    BattleGroundTypeId bgTypeId = GetBattleGroundTypeIdByMapId(bg->GetMapId());
+    BattleGroundBracketId const bgBracketId = player->GetBattleGroundBracketIdFromLevel(bgTypeId);
+    uint32 arenaRating = 0;
+
+    // You can't queue as group
+    Group* grp = player->GetGroup();
+    if (grp)
+    {
+        uint32 err = grp->CanJoinArenaQueue(bgQueueTypeId, 3, 3, sObjectMgr.GetPlayer(grp->GetLeaderGuid()));
+        if (err == BG_JOIN_ERR_GROUP_DESERTER)
+        {
+            WorldPacket data;
+            BuildGroupJoinedBattlegroundPacket(&data, BG_GROUPJOIN_DESERTERS);
+            player->GetSession()->SendPacket(&data);
+            player->GetSession()->SendBattleGroundJoinError(err);
+            return;
+        }
+        else if (err != BG_JOIN_ERR_OK)
+        {
+            player->GetSession()->SendBattleGroundJoinError(err);
+            return;
+        }
+    }
+
+    BattleGroundQueue& bgQueue = m_BattleGroundQueues[bgQueueTypeId];
+    GroupQueueInfo* ginfo = bgQueue.AddGroup(player, grp ? grp : nullptr, bgTypeId, bgBracketId, false, 0, nullptr);
+    uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bgBracketId);
+
+    if (grp && request.QueuedAsGroup)
+    {
+        for (GroupReference* itr = grp->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->getSource();
+            if (!member)
+                continue;  // this should never happen
+
+            uint32 queueSlot = member->AddBattleGroundQueueId(bgQueueTypeId); // add to queue
+            member->SetBattleGroundEntryPoint(player, false); // store entry point coords
+
+            WorldPacket data;
+            // send status packet (in queue)
+            BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0);
+            member->GetSession()->SendPacket(&data);
+
+            if (grp->GetMembersCount() > 1)
+            {
+                BuildGroupJoinedBattlegroundPacket(&data, bg->GetMapId());
+                member->GetSession()->SendPacket(&data);
+            }
+        }
+    }
+    else // solo
+    {
+        // already checked if queueSlot is valid, now just get it
+        uint32 queueSlot = player->AddBattleGroundQueueId(bgQueueTypeId);
+
+        player->SetBattleGroundEntryPoint(player, false);
+
+        WorldPacket data;
+        BuildBattleGroundStatusPacket(&data, bg, queueSlot, STATUS_WAIT_QUEUE, avgTime, 0);
+        player->GetSession()->SendPacket(&data);
+    }
+
+    ScheduleQueueUpdate(bgQueueTypeId, bgTypeId, bgBracketId);
 }
 
 uint32 BattleGroundMgr::GetPrematureFinishTime() const

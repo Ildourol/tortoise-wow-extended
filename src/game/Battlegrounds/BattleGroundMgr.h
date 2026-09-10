@@ -254,6 +254,7 @@ class BattleGroundMgr
         void ScheduleQueueInviteReminder(ObjectGuid playerGuid, uint32 bgInstanceGuid, BattleGroundTypeId bgTypeId, uint32 removeTime);
         void ScheduleQueueInviteRemoval(ObjectGuid playerGuid, uint32 bgInstanceGuid, BattleGroundTypeId bgTypeId, BattleGroundQueueTypeId bgQueueTypeId, uint32 removeTime);
         void ScheduleQueueBracketCleanup(ObjectGuid playerGuid, BattleGroundQueueTypeId bgQueueTypeId, BattleGroundTypeId bgTypeId, BattleGroundBracketId oldBracketId);
+        void ScheduleArenaQueueJoin(ObjectGuid playerGuid, bool queuedAsGroup);
         uint32 GetPrematureFinishTime() const;
 
         void ToggleTesting();
@@ -317,7 +318,8 @@ class BattleGroundMgr
             InviteReminder,
             InviteRemoval,
             PlayerLogout,
-            BracketCleanup
+            BracketCleanup,
+            ArenaJoin
         };
 
         struct QueueRequest
@@ -329,6 +331,7 @@ class BattleGroundMgr
             BattleGroundQueueTypeId BgQueueTypeId;
             uint32 RemoveTime;
             BattleGroundBracketId BracketId;
+            bool QueuedAsGroup = false;
         };
 
         void ScheduleQueueRequest(QueueRequest const& request);
@@ -337,6 +340,7 @@ class BattleGroundMgr
         void ProcessQueueInviteRemoval(QueueRequest const& request);
         void ProcessQueuePlayerLogout(QueueRequest const& request);
         void ProcessQueueBracketCleanup(QueueRequest const& request);
+        void ProcessQueueArenaJoin(QueueRequest const& request);
 
         // Protects only the cross-thread request mailboxes, never queue state.
         std::mutex m_QueueMailboxMutex;
