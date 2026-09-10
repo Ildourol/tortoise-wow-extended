@@ -51,6 +51,7 @@
 #include "miscellaneous/feature_transmog.h"
 #include "Config.hpp"
 #include "Logging/DatabaseLogger.hpp"
+#include "MapManager.h"
 #ifdef ENABLE_ELUNA
 #include "LuaEngine.h"
 #endif
@@ -645,6 +646,15 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         // Hacking attempt
         if (pCurrChar->GetSession()->GetAccountId() != GetAccountId())
         {
+            KickPlayer();
+            delete holder;
+            m_playerLoading = false;
+            return;
+        }
+
+        if (pCurrChar->FindMap() != sMapMgr.FindMap(pCurrChar->GetMapId(), pCurrChar->GetInstanceId()))
+        {
+            sLog.outError("[CRASH] Dangling map pointer during login on character guid %u", playerGuid.GetCounter());
             KickPlayer();
             delete holder;
             m_playerLoading = false;
