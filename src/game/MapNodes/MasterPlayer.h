@@ -149,9 +149,9 @@ protected:
     ActionButtonList m_actionButtons;
     WorldSession* m_session;
 
-    bool m_mailsUpdated;
-    uint8 unReadMails;
-    time_t m_nextMailDelivereTime;
+    bool m_mailsUpdated = false;
+    uint8 unReadMails = 0;
+    time_t m_nextMailDelivereTime = 0;
     PlayerMails m_mail;
     ItemMap mMitems;
 };
