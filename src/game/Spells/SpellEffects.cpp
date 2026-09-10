@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -2304,8 +2304,9 @@ void Spell::EffectDispel(SpellEffectIndex eff_idx)
                     {
                         if (CharmInfo *charm = unitTarget->GetCharmInfo())
                             if (FactionTemplateEntry const* ft = charm->GetOriginalFactionTemplate())
-                                if (ft->IsFriendlyTo(*m_caster->GetFactionTemplateEntry()))
-                                    priority_dispel = dispel_list.size();
+                                if (FactionTemplateEntry const* ft2 = m_caster->GetFactionTemplateEntry())
+                                    if (ft->IsFriendlyTo(*ft2))
+                                        priority_dispel = dispel_list.size();
                     }
                     else if (positive == friendly)
                         continue;
