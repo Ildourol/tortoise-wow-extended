@@ -289,7 +289,8 @@ bool ThornObjectiveTravel::IsActive()
     // Fight nearby opponents around the assignment. Once a chase has taken us
     // more than 45 yards away, resume the assignment; survival still outranks us.
     Unit* victim = bot->GetVictim();
-    if (bot->IsInCombat() && victim && bot->IsWithinDistInMap(victim,12.0f) &&
+    if (!victim) victim = AI_VALUE(Unit*, "enemy player target");
+    if (victim && bot->IsWithinDistInMap(victim,12.0f) && bot->IsWithinLOSInMap(victim) &&
         bot->IsWithinDist3d(x,y,z,45.0f)) return false;
     return true;
 }

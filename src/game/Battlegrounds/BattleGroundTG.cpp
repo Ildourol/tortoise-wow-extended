@@ -24,9 +24,10 @@ constexpr float HordeDoorX = 1819.945801f, HordeDoorY = 1542.085083f;
 constexpr float HordeGateX = 1820.489685f, HordeGateY = 1541.711961f;
 constexpr float HordeDoorZ = 1264.204346f, HordeDoorO = 3.357578f;
 // Exterior arch in Mediumtunnelshortpvp.wmo instance 4004: local
-// (0.075, 4.5, 1.08). Scale 1.65 covers the 5.1-yard opening below its crown.
+// Floor ray at (0.075,4.5) is -1.080931, not +1.08. The next ceiling
+// surface is +7.329544. Scale 2.25 covers this 8.410475-yard opening.
 constexpr float AllianceDoorX = 2511.224335f, AllianceDoorY = 1599.020825f;
-constexpr float AllianceDoorZ = 1269.936689f, AllianceDoorO = -0.040724396f;
+constexpr float AllianceDoorZ = 1267.775758f, AllianceDoorO = -0.040724396f;
 constexpr uint32 NodeLocations[4] = {161, 162, 163, 164};
 constexpr uint32 GraveLocations[4] = {167, 168, 169, 170};
 constexpr uint32 StartLocations[2] = {165, 166};
@@ -144,7 +145,7 @@ bool BattleGroundTG::SetupBattleGround()
     gate->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NO_INTERACT);
     if (!AddObject(AllianceGateObject, 2020407, AllianceDoorX, AllianceDoorY,
         AllianceDoorZ, AllianceDoorO, 0, 0,
-        std::sin(AllianceDoorO / 2), std::cos(AllianceDoorO / 2), 1.65f))
+        std::sin(AllianceDoorO / 2), std::cos(AllianceDoorO / 2), 2.25f))
     { Trace("setup_failed", nullptr, AllianceGateObject, "alliance_gate", true); return false; }
     gate = GetBgMap()->GetGameObject(m_BgObjects[AllianceGateObject]);
     if (!gate || !gate->m_model)

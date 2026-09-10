@@ -116,3 +116,52 @@ connectivity gap rather than hide it. Keep movement logging enabled for the next
 run. Human Yes was still using a GM5x speed override (35vsnormal7) in this log;
 use `.modify speed 1` for normal-speed comparisons. GM kill/invisibility actions
 also make this match unsuitable as a normal PvP balance benchmark.
+
+
+## Follow-up: match104 gate, mounting and pickup presentation
+
+Captured the complete17:20–17:28 server-clock instance104 from the latest bg.log.
+Result Alliance1600/Horde119,404051ms active,30join/leave events,20deaths,
+5pickups,4deliveries/returns and7rejected pickup completions. There were2870
+movement samples:407mounted and2463unmounted, including the human. The bounded
+AI history contains50successful mount-action records,119failed and24useless
+records; histories overlap and these are not unique attempts. Mounting was not
+entirely absent.17:20:20 countdown was60seconds, and screenshots show10second
+returns. The server still used the pre-2aa82994 behavior; deployment replaces
+files for next launch and does not restart a running world process.
+
+Independent corrections made from these reports:
+- Alliance gate base previously used tunnel localZ+1.08. Ray/triangle intersection
+  at local(.075,4.5) finds floor-1.080931 and ceiling7.329544. Correct world base
+  to1267.775758 and scale native portcullis to2.25: height3.75785184*2.25 covers
+  the8.410475-yard opening, with extra width hidden behind the stone sides.
+  Native GO_STATE_READY creation and DoorClose/DoorOpen remain unchanged.
+- Long ground travel now consults the existing native mount action before
+  dispatching movement, regardless of destination/map. High objective priority
+  no longer starves idle mount maintenance. Reuse Engine::ExecuteAction through
+  DoSpecificAction, retaining usefulness, possibility and action listeners.
+  Propagate the mount action's actual cast duration to the outer travel action.
+  Exclude short(<=40yard), idle/reaction/direct requests, combat, existing mounts,
+  flight/fall/jump, transport/taxi and casts. Native eligibility retains outdoors,
+  mount list, flag, class-form, map and threat restrictions. A refusal continues
+  travel; it does not force a mount or block movement. This shared mechanism
+  applies to qualifying quest, grinding, instance and PvP travel requests.
+- Noncarrier Thorn objective travel now yields to a nearby native enemy target
+  around its assignment even before combat begins, with line of sight. Requiring
+  an existing combat victim created a circular dependency: objective priority
+  prevented the attack that would have allowed combat to outrank the objective.
+  Carrier delivery and the45yard assignment leash remain. Bots may legitimately
+  pass enemies while traveling to a different assignment; no arbitrary fight-on-
+  sight probability or global PvP target rewrite was added.
+- Client spell59011 has zero SpellVisual. Copy the existing Opening21651 visual
+  6139 into that single field of the full1.12 Spell.dbc. Reproducible patch script
+  checks record layout, localized name anchors and byte-for-byte preservation
+  outside this4byte field. Native pickup cast/interrupt/completion logic stays
+  unchanged. This is the native opening animation, not a class crafting spell.
+
+Validation:68architecture tests pass, including new shared travel mount guards,
+failed native eligibility and1.5/3second cast-duration propagation, plus enemy
+acquisition/LOS/assignment-leash cases. Client MPQ roundtrip extracts the exact
+patched Spell.dbc; all five earlier geometry/map members are retained unchanged.
+Client and world restart are required for acceptance. Visual gate fit and animation,
+mounting on clear paths, and mixed-team objective encounters still need live checks.

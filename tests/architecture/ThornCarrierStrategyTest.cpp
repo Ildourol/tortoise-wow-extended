@@ -6,7 +6,7 @@ void Check(bool b,char const* m){if(!b)throw std::runtime_error(m);}
 constexpr unsigned BATTLEGROUND_TG=6,STATUS_IN_PROGRESS=3;
 constexpr float ACTION_EMERGENCY=90;
 struct BattleGround{unsigned type=6,status=3,carrier=7;unsigned GetTypeId(){return type;}unsigned GetStatus(){return status;}unsigned GetFlagCarrierGuid(){return carrier;}};
-struct Player{BattleGround* bg=nullptr;Player* victim=nullptr;Player* enemy=nullptr;bool aura=true,casting=false,near=false,combat=false;float distance=100,victimDistance=5;unsigned GetObjectGuid(){return 7;}BattleGround* GetBattleGround(){return bg;}bool HasAura(unsigned){return aura;}bool IsNonMeleeSpellCasted(bool){return casting;}bool IsWithinDist3d(float,float,float,float r){return near||distance<=r;}Player* GetVictim(){return victim;}bool IsInCombat(){return combat;}bool IsWithinDistInMap(Player*,float r){return victimDistance<=r;}};
+struct Player{BattleGround* bg=nullptr;Player* victim=nullptr;Player* enemy=nullptr;bool aura=true,casting=false,near=false,combat=false;float distance=100,victimDistance=5;unsigned GetObjectGuid(){return 7;}BattleGround* GetBattleGround(){return bg;}bool HasAura(unsigned){return aura;}bool IsNonMeleeSpellCasted(bool){return casting;}bool IsWithinDist3d(float,float,float,float r){return near||distance<=r;}Player* GetVictim(){return victim;}bool IsInCombat(){return combat;}bool los=true;bool IsWithinLOSInMap(Player*){return los;}bool IsWithinDistInMap(Player*,float r){return victimDistance<=r;}};
 using Unit=Player;
 struct BattleGroundTG:BattleGround {bool eligible=true;bool GetObjective(Player*,float&,float&,float&){return eligible;}};
 struct ThornFlagDelivery{Player* bot;bool IsActive();};
@@ -33,6 +33,8 @@ int main(){
  Check(nodes.size()==3,"unexpected trigger count");auto n=nodes.front();Check(n->name=="thorn flag delivery"&&n->action->name=="bg move to objective"&&n->action->priority>90&&n->action->priority<100,"carrier/survival priorities");for(auto node:nodes)delete node;}
  p.bg=&bg;bg.carrier=99;ThornObjectiveTravel travel{&p};Check(travel.IsActive(),"assignment travel lost");
  p.combat=true;p.victim=&p;p.distance=30;Check(!travel.IsActive(),"nearby objective combat suppressed");
+ p.combat=false;p.victim=nullptr;p.enemy=&p;Check(!travel.IsActive(),"unengaged nearby defender suppressed");
+ p.los=false;Check(travel.IsActive(),"enemy behind wall interrupted objective");p.los=true;p.enemy=nullptr;p.victim=&p;
  p.distance=46;Check(travel.IsActive(),"chase escaped assignment leash");
  p.distance=30;p.victimDistance=20;Check(travel.IsActive(),"distant target chase outranks objective");
  p.distance=10;Check(!travel.IsActive(),"arrived defender cannot fight");

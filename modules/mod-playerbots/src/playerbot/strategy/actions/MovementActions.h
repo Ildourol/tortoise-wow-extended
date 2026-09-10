@@ -47,6 +47,7 @@ namespace ai
 
 
         bool WaitForTransport();
+        bool TryMountForTravel(float distance, bool idle, bool react, bool noPath);
 
 
         TravelPath ResolveMovePath(const WorldPosition& startPosition,

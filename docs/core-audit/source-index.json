@@ -2090,7 +2090,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "3E6DD9B4274280DBB2493CAB4EBA0FFEF00F76B07B572F480246698371582E25"
+    "sha256": "C334911D1782617C6B0D1C07BC1280F4C8FAAE16A7D3F599BBEBE07ACEEFCC1D"
   },
   {
     "file": "src/shared/PosixDaemon.h",
@@ -19643,7 +19643,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "50E2FA2D41E00B9972BE4B2AB18335F6364EE30C4363BD09F7BAC52A50156BCC"
+    "sha256": "4B1802CC13194FEF62DEE465ED0AD3E349E6CEA1901064BDB0B913BB3B0FBF56"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/triggers/PullTriggers.h",
@@ -22658,7 +22658,7 @@
     "addsc": [],
     "loader_calls": [],
     "dependency_signals": [],
-    "sha256": "3A74638D7B1D0133FB58817FB58600D71EFA387838862691193C0117FA1EA297"
+    "sha256": "7663410B897030141E187B016F6AC4E367AB3470FE803A9D5251D59FC3306A78"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/MovementActions.cpp",
@@ -22671,7 +22671,7 @@
       "death_reset",
       "threat"
     ],
-    "sha256": "078FEBFFF33ACACD4B6F03E503737DF712E62081701754ABDB61875BC3A22A43"
+    "sha256": "B83E3AA2F8F8B00E525AADD34AB76CA473499179759BF32AB4722DD8247110CA"
   },
   {
     "file": "modules/mod-playerbots/src/playerbot/strategy/actions/MoltenCoreDungeonActions.h",
@@ -24591,7 +24591,7 @@
       "spells",
       "death_reset"
     ],
-    "sha256": "C322FA0A9424387EEFA232498954E587109C82CDDCEF5DDD1BAAEF325721CCE3"
+    "sha256": "CFA159C5EF359D068D51FEF9BD4918DB6A4B19ADED459EC37449A945F337D2DA"
   },
   {
     "file": "src/game/Battlegrounds/BattleGroundTG.h",

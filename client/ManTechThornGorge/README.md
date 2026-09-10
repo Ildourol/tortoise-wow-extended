@@ -41,3 +41,10 @@ For rollback, remove this companion from the active client (retain a backup),
 restore the prior server binary/config, and select the previous complete data
 directory. Both client and server require restarting. Live visual fitting,
 short-character passage and bot traversal still need in-game acceptance.
+
+
+Pickup animation update: the matching patch-Z.MPQ also contains the full client
+Spell.dbc with only spell59011 SpellVisual copied from native Opening21651.
+Use patch_pickup_visual.py on the extracted full1.12 table to reproduce it. The
+script validates field115 and name anchors at120; server SQL SpellEntry indices
+are different. Do not substitute a reduced table. Fully restart the client.

@@ -474,3 +474,16 @@ attack target. Nearby target discovery alone must not create a zero-distance foe
 See StrictPathHandoffTest, GroundTraversalTest, PlayerWalkableFilterTest and
 MountTargetDecisionTest. Fixtures cover shared contracts; runtime acceptance and
 query cost under populated worlds remain required.
+
+
+### Long travel mounting preparation
+
+MoveTo2 calls TryMountForTravel after obtaining a valid route and handling native
+special transport/portal movement. A long ground journey can outrank idle mount
+maintenance; consult the existing check-mount-state action through DoSpecificAction,
+which preserves Engine usefulness/possibility/listener handling. Carry its cast
+duration into the outer movement action rather than immediately overwriting it
+with a walking delay. Idle/reaction/direct movement, combat and movement modes
+that cannot safely prepare a mount are excluded. Native mount refusal never makes
+the journey fail. TravelMountPreparationTest extracts this actual method; it does
+not mock an alternative mount selector. Live mixed-content validation remains.

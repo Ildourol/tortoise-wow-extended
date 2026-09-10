@@ -1141,6 +1141,22 @@ Unit* MovementAction::GetMover(Player* bot)
     return bot;
 }
 
+bool MovementAction::TryMountForTravel(float distance, bool idle, bool react, bool noPath)
+{
+    // Travel can outrank idle maintenance. Consult the native mount action
+    // before a long ground journey, regardless of its map or destination.
+    if (distance <= 40.0f || idle || react || noPath || bot->IsMounted() ||
+        bot->IsInCombat() || ai->IsStateActive(BotState::BOT_STATE_COMBAT) ||
+        bot->GetTransport() || bot->IsTaxiFlying() || bot->IsFlying() ||
+        bot->IsFalling() || ai->IsJumping() || bot->IsNonMeleeSpellCasted(false)) return false;
+    if (!ai->DoSpecificAction("check mount state", Event(), true)) return false;
+    // The nested native action owns cast duration; propagate it to the travel
+    // action so its successful return cannot schedule movement over the cast.
+    if (Action* mount = ai->GetAiObjectContext()->GetAction("check mount state"))
+        SetDuration(mount->GetDuration());
+    return true;
+}
+
 bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react, bool noPath, bool ignoreEnemyTargets)
 {
     if (!endPos.isValid() || !std::isfinite(endPos.getX()) || !std::isfinite(endPos.getY()) || !std::isfinite(endPos.getZ()))
@@ -1325,6 +1341,8 @@ bool MovementAction::MoveTo2(const WorldPosition& endPos, bool idle, bool react,
                 startPos.getAngleTo(teleportPosition));
         }
     }
+
+    if (TryMountForTravel(totalDistance, idle, react, noPath)) return true;
 
     bool masterWalking = false;
     if (sPlayerbotAIConfig.walkDistance)

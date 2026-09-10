@@ -639,3 +639,13 @@ foreach(test IN ITEMS StrictPathHandoffTest MountTargetDecisionTest)
     endif()
     add_test(NAME ${test} COMMAND ${test})
 endforeach()
+
+extract_native_fragment("${TRAVEL_ROOT}/strategy/actions/MovementActions.cpp"
+    "bool MovementAction::TryMountForTravel(" "bool MovementAction::MoveTo2(" TravelMountPreparationNative.inc)
+add_executable(TravelMountPreparationTest TravelMountPreparationTest.cpp)
+target_compile_features(TravelMountPreparationTest PRIVATE cxx_std_17)
+target_include_directories(TravelMountPreparationTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+if(MSVC)
+    target_compile_options(TravelMountPreparationTest PRIVATE /EHsc)
+endif()
+add_test(NAME TravelMountPreparationTest COMMAND TravelMountPreparationTest)
