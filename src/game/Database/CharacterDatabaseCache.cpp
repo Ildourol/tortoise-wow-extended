@@ -341,12 +341,15 @@ void CharacterDatabaseCache::DeleteCharacterPetById(uint32 id)
     if (petStruct == m_petsByGuid.end())
         return;
     CharPetMap::iterator ownerPets = m_petsByCharacter.find(petStruct->second->owner);
-    for (CharPetVector::iterator it = ownerPets->second.begin(); it != ownerPets->second.end(); ++it)
-        if ((*it)->id == id)
-        {
-            ownerPets->second.erase(it);
-            break;
-        }
+    if (ownerPets != m_petsByCharacter.end())
+    {
+        for (CharPetVector::iterator it = ownerPets->second.begin(); it != ownerPets->second.end(); ++it)
+            if ((*it)->id == id)
+            {
+                ownerPets->second.erase(it);
+                break;
+            }
+    }
     delete petStruct->second;
     m_petsByGuid.erase(petStruct);
 }
