@@ -49,6 +49,7 @@
 #include "miscellaneous/feature_transmog.h"
 #include "Config.hpp"
 #include "Logging/DatabaseLogger.hpp"
+#include "MapManager.h"
 
 // config option SkipCinematics supported values
 enum CinematicsSkipMode
@@ -597,6 +598,16 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
             m_playerLoading = false;
             return;
         }
+
+        if (pCurrChar->FindMap() != sMapMgr.FindMap(pCurrChar->GetMapId(), pCurrChar->GetInstanceId()))
+        {
+            sLog.outError("[CRASH] Dangling map pointer during login on character guid %u", playerGuid.GetCounter());
+            KickPlayer();
+            delete holder;
+            m_playerLoading = false;
+            return;
+        }
+
         pCurrChar->GetSession()->SetPlayer(nullptr);
         pCurrChar->SetSession(this);
 
