@@ -56,6 +56,9 @@ class TargetedMovementGeneratorMedium : public MovementGeneratorMedium< T, D >, 
 
         Unit* GetTarget() const { return i_target.getTarget(); }
 
+        float GetOffset() const { return m_fOffset; }
+        float GetAngle() const { return m_fAngle; }
+
         void UnitSpeedChanged() { m_bRecalculateTravel=true; }
         void UpdateFinalDistance(float fDistance);
 
