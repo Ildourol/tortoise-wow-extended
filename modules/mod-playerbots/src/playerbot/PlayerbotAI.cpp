@@ -8492,14 +8492,28 @@ std::list<Unit*> PlayerbotAI::GetAllHostileNPCNonPetUnitsAroundWO(WorldObject* w
 
 void PlayerbotAI::SendDelayedPacket(WorldSession* session, futurePackets futPackets)
 {
-    std::thread t([session, futPacket = std::move(futPackets)]() mutable {
+    if (!session || !session->GetPlayer())
+        return;
+
+    uint32 accountId = session->GetAccountId();
+    ObjectGuid playerGuid = session->GetPlayer()->GetObjectGuid();
+
+    std::thread t([accountId, playerGuid, futPacket = std::move(futPackets)]() mutable {
         for (auto& delayedPacket : futPacket.get())
         {
             if (delayedPacket.second)
                 std::this_thread::sleep_for(std::chrono::milliseconds(delayedPacket.second));
 
+            WorldSession* currentSession = sWorld.FindSession(accountId);
+            if (!currentSession)
+                return;
+
+            Player* currentPlayer = currentSession->GetPlayer();
+            if (!currentPlayer || currentPlayer->GetObjectGuid() != playerGuid || !currentPlayer->IsInWorld())
+                return;
+
             std::unique_ptr<WorldPacket> packetPtr(new WorldPacket(delayedPacket.first));
-            session->QueuePacket(std::move(packetPtr));
+            currentSession->QueuePacket(std::move(packetPtr));
         }
     });
 

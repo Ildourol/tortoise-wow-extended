@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  * Copyright (C) 2009-2011 MaNGOSZero <https://github.com/mangos/zero>
  * Copyright (C) 2011-2016 Nostalrius <https://nostalrius.org>
@@ -176,6 +176,9 @@ bool EnforceEnglish(WorldSession* session, const std::string& msg)
 
 void WorldSession::HandleMessagechatOpcode(WorldPacket & recv_data)
 {
+    if (!GetPlayer())
+        return;
+
     uint32 now = WorldTimer::getMSTime();
     uint32 type;
     uint32 lang;
