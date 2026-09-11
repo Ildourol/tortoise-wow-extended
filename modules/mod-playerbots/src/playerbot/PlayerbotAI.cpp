@@ -160,18 +160,8 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     engines[(uint8)BotState::BOT_STATE_DEAD] = AiFactory::createDeadEngine(bot, this, aiObjectContext);
     engines[(uint8)BotState::BOT_STATE_REACTION] = reactionEngine = AiFactory::createReactionEngine(bot, this, aiObjectContext);
 
-    // Assign default combat stance from the bot's actual role/spec.
-    StanceValue* stanceValue = (StanceValue*)aiObjectContext->GetValue<Stance*>("stance");
-
-    if (stanceValue)
-    {
-        if (IsTank(bot))
-            stanceValue->Load("turnback");
-        else if (!IsRanged(bot))
-            stanceValue->Load("behind");
-        else
-            stanceValue->Load("near");
-    }
+    // Assign default combat stance from the bot's combat role.
+    UpdateStanceForCombatRole();
 
     for (uint8 e = 0; e < (uint8)BotState::BOT_STATE_ALL; e++)
     {
@@ -2793,9 +2783,66 @@ void PlayerbotAI::ReInitCurrentEngine()
     currentEngine->Init();
 }
 
+std::string PlayerbotAI::GetCombatRoleStance()
+{
+    Engine* combatEngine = engines[(uint8)BotState::BOT_STATE_COMBAT];
+    if (!combatEngine)
+        return "";
+
+    bool meleeDps = false;
+
+    for (std::string_view name : combatEngine->GetStrategies())
+    {
+        Strategy* strategy = combatEngine->GetStrategy(std::string(name));
+        if (!strategy)
+            continue;
+
+        int type = strategy->GetType();
+
+        if (type & STRATEGY_TYPE_TANK)
+            return "turnback";
+
+        if ((type & STRATEGY_TYPE_DPS) && (type & STRATEGY_TYPE_MELEE))
+            meleeDps = true;
+    }
+
+    if (meleeDps)
+        return "behind";
+
+    return "near";
+}
+
+void PlayerbotAI::UpdateStanceForCombatRole()
+{
+    if (!aiObjectContext)
+        return;
+
+    std::string stance = GetCombatRoleStance();
+    if (stance.empty())
+        return;
+
+    StanceValue* stanceValue = (StanceValue*)aiObjectContext->GetValue<Stance*>("stance");
+    if (!stanceValue)
+        return;
+
+    Stance* currentStance = stanceValue->Get();
+
+    if (currentStance && currentStance->getName() == stance)
+        return;
+
+    stanceValue->Load(stance);
+}
+
 void PlayerbotAI::ChangeStrategy(const std::string& names, BotState type)
 {
-    if(type == BotState::BOT_STATE_ALL)
+    bool combatStrategiesChanged = type == BotState::BOT_STATE_COMBAT || type == BotState::BOT_STATE_ALL;
+
+    std::string oldRoleStance;
+
+    if (combatStrategiesChanged)
+        oldRoleStance = GetCombatRoleStance();
+
+    if (type == BotState::BOT_STATE_ALL)
     {
         for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; i++)
         {
@@ -2813,6 +2860,14 @@ void PlayerbotAI::ChangeStrategy(const std::string& names, BotState type)
         {
             engine->ChangeStrategy(names);
         }
+    }
+
+    if (combatStrategiesChanged)
+    {
+        std::string newRoleStance = GetCombatRoleStance();
+
+        if (newRoleStance != oldRoleStance)
+            UpdateStanceForCombatRole();
     }
 }
 
@@ -3060,17 +3115,7 @@ void PlayerbotAI::ResetStrategies(bool autoLoad)
     }
 
     // Reassign the default stance after rebuilding the bot's role strategies.
-    StanceValue* stanceValue = (StanceValue*)aiObjectContext->GetValue<Stance*>("stance");
-
-    if (stanceValue)
-    {
-        if (IsTank(bot))
-            stanceValue->Load("turnback");
-        else if (!IsRanged(bot))
-            stanceValue->Load("behind");
-        else
-            stanceValue->Load("near");
-    }
+    UpdateStanceForCombatRole();
 
     for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; i++)
     {
