@@ -5,6 +5,7 @@
 #include "playerbot/strategy/generic/CombatStrategy.h"
 #include "playerbot/strategy/values/PossibleAttackTargetsValue.h"
 #include "playerbot/strategy/values/Formations.h"
+#include "playerbot/strategy/values/Stances.h"
 
 namespace ai
 {
@@ -259,6 +260,39 @@ namespace ai
         }
     };
 
+    class SpreadPositionTrigger : public Trigger
+    {
+    public:
+        SpreadPositionTrigger(PlayerbotAI* ai) : Trigger(ai, "spread position", 1) {}
+
+        bool IsActive() override
+        {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (!stance || stance->getName() != "spread")
+                return false;
+
+            Unit* target = AI_VALUE(Unit*, "current target");
+
+            if (!target || !target->IsInWorld())
+                return false;
+
+            if (!sServerFacade.IsHostileTo(bot, target))
+                return false;
+
+            WorldLocation loc = stance->GetLocation();
+
+            if (Formation::IsNullLocation(loc) || loc.mapId == uint32(-1))
+            {
+                return false;
+            }
+
+            const float distanceToSpreadPosition = sServerFacade.GetDistance2d(bot, loc.coord_x, loc.coord_y);
+
+            return sServerFacade.IsDistanceGreaterThan(distanceToSpreadPosition, sPlayerbotAIConfig.targetPosRecalcDistance);
+        }
+    };
+
     class EnemyOutOfMeleeTrigger : public OutOfRangeTrigger
     {
     public:
@@ -352,6 +386,13 @@ namespace ai
 
         virtual bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return false;
+            }
+
             Unit* followTarget = AI_VALUE(Unit*, "follow target");
 
             if (!followTarget || !ai->IsSafe(followTarget))
@@ -397,6 +438,16 @@ namespace ai
 
         virtual bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE;
+            }
+
+            if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
+                return false;
+
             Unit* followTarget = AI_VALUE(Unit*, "follow target");
 
             if (!followTarget)
@@ -422,6 +473,13 @@ namespace ai
 
         bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return false;
+            }
+
             return !AI_VALUE2(bool, "can free move", "wandermax");
         }
     };
@@ -433,6 +491,13 @@ namespace ai
 
         bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return false;
+            }
+
             return !AI_VALUE2(bool, "can free move", "wandermin") && AI_VALUE2(bool, "can free move", "wandermax");
         }
     };
@@ -444,6 +509,13 @@ namespace ai
 
         bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return false;
+            }
+
             if (StopFollowTrigger::IsActive())
                 return true;
 
@@ -491,6 +563,13 @@ namespace ai
 
         virtual bool IsActive() override
         {
+            Stance* stance = AI_VALUE(Stance*, "stance");
+
+            if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && stance && stance->getName() == "spread")
+            {
+                return false;
+            }
+
             return !AI_VALUE(bool, "can free move");
         };
     };
