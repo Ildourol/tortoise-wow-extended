@@ -2271,6 +2271,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
 		if (packet.GetOpcode() == SMSG_GROUP_INVITE) {
 			SC_LOG("bot=%s received SMSG_GROUP_INVITE — queued for 'group invite' trigger",
 			       bot ? bot->GetName() : "(null)");
+			ResetAIInternalUpdateDelay();
 		}
 		botOutgoingPacketHandlers.AddPacket(packet);
 	}
