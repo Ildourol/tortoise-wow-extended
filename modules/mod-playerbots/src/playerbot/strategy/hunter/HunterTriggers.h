@@ -13,6 +13,10 @@ namespace ai
     {
     public:
         AspectOfTheHawkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the hawk") {}
+        virtual bool IsActive() override
+        {
+            return BuffTrigger::IsActive() && (!bot->HasSpell(34074) || AI_VALUE2(uint8, "mana", "self target") > 50);
+        }
     };
 
     class AspectOfTheWildTrigger : public BuffTrigger
@@ -25,6 +29,10 @@ namespace ai
     {
     public:
         AspectOfTheViperTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the viper") {}
+        virtual bool IsActive() override
+        {
+            return BuffTrigger::IsActive() && AI_VALUE2(uint8, "mana", "self target") <= 25;
+        }
     };
 
     class AspectOfThePackTrigger : public BuffTrigger

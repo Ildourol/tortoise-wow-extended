@@ -12,6 +12,8 @@ void SurvivalHunterStrategy::InitCombatTriggers(std::list<TriggerNode*>& trigger
     HunterStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode("carve", NextAction::array(0, new NextAction("carve", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode("immolation trap", NextAction::array(0, new NextAction("immolation trap on target", ACTION_NORMAL + 1), NULL)));
 }
 
 void SurvivalHunterStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
