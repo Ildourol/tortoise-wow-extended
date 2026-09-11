@@ -678,20 +678,17 @@ namespace ai
                     return false;
                 }
 
-                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                bot->SetStandState(UNIT_STAND_STATE_SIT);
                 ai->InterruptSpell();
 
                 float drinkDuration = AI_VALUE(float, "drink duration");
 
-                const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24355);
-                if (!pSpellInfo)
-                    return false;
-
                 ai->Unmount();
 
-                ai->CastSpell(24355, bot);
+                if (!ai->AddAura(bot, 24355))
+                    return false;
+
                 SetDuration(drinkDuration);
-                bot->RemoveSpellCooldown(*pSpellInfo);
 
                 // Eat and drink at the same time
 
@@ -755,20 +752,17 @@ namespace ai
                     return false;
                 }
 
-                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                bot->SetStandState(UNIT_STAND_STATE_SIT);
                 ai->InterruptSpell();
 
                 float eatDuration = AI_VALUE(float, "eat duration");
 
-                const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24005);
-                if (!pSpellInfo)
-                    return false;
-
                 ai->Unmount();
 
-                ai->CastSpell(24005, bot);
+                if (!ai->AddAura(bot, 24005))
+                    return false;
+
                 SetDuration(eatDuration);
-                bot->RemoveSpellCooldown(*pSpellInfo);
 
                 // Eat and drink at the same time
                 if (AI_VALUE(bool, "should drink"))

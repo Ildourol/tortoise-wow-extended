@@ -497,6 +497,36 @@ bool UseAction::UseItemInternal(Player* requester, uint32 itemId, Unit* unit, Ga
         return false;
     }
 
+    // Interrupt any existing generic spell so the item use isn't blocked by SPELL_FAILED_SPELL_IN_PROGRESS
+    // (the real client prevents this via UI, but bots can have a pending spell from a prior AI action)
+    bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+
+    if (itemUsed && (IsFood(proto) || IsDrink(proto)))
+    {
+        if (bot->IsInCombat())
+            return false;
+
+        bot->clearUnitState(UNIT_STAT_CHASE);
+        bot->clearUnitState(UNIT_STAT_FOLLOW);
+
+        if (sServerFacade.isMoving(bot))
+            ai->StopMoving();
+
+        ai->Unmount();
+
+        bot->SetStandState(UNIT_STAND_STATE_SIT);
+
+        SpellCastTargets targets;
+        targets.setUnitTarget(bot);
+
+        bot->CastItemUseSpell(itemUsed, targets);
+
+        SetDuration(24000);
+
+        RESET_AI_VALUE2(uint32, "item count", itemId);
+        return true;
+    }
+
     Unit* unitTarget = nullptr;
     Item* itemTarget = nullptr;
     GameObject* gameObjectTarget = nullptr;
