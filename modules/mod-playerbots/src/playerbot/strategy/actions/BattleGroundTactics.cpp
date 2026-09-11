@@ -3253,6 +3253,68 @@ bool BGTactics::selectObjective(bool reset)
             }
         }
 
+        if (!defender && uniqueObjectives.empty())
+        {
+            std::set<GameObject*> friendlyContestedObjectives;
+            std::set<GameObject*> friendlyOccupiedObjectives;
+
+            for (const auto& objective : AB_AttackObjectives)
+            {
+                bool isFriendlyContested = (bot->GetTeam() == HORDE) ? bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_HORDE_CONTESTED) : bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_ALLY_CONTESTED);
+
+                bool isFriendlyOccupied = (bot->GetTeam() == HORDE) ? bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_HORDE_OCCUPIED) : bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_ALLY_OCCUPIED);
+
+                if (GameObject* pGO = bot->GetMap()->GetGameObject(bg->GetSingleGameObjectGuid(objective.first, BG_AB_NODE_STATUS_NEUTRAL)))
+                {
+                    if (isFriendlyContested)
+                        friendlyContestedObjectives.insert(pGO);
+                    else if (isFriendlyOccupied)
+                        friendlyOccupiedObjectives.insert(pGO);
+                }
+            }
+
+            if (!friendlyContestedObjectives.empty())
+            {
+                uniqueObjectives.insert(friendlyContestedObjectives.begin(), friendlyContestedObjectives.end());
+            }
+            else
+            {
+                uniqueObjectives.insert(friendlyOccupiedObjectives.begin(), friendlyOccupiedObjectives.end());
+            }
+        }
+
+        if (defender && uniqueObjectives.empty())
+        {
+            std::set<GameObject*> enemyObjectives;
+            std::set<GameObject*> neutralObjectives;
+
+            for (const auto& objective : AB_AttackObjectives)
+            {
+                bool isNeutral = bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_NEUTRAL);
+
+                bool isEnemyContested = (bot->GetTeam() == HORDE) ? bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_ALLY_CONTESTED) : bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_HORDE_CONTESTED);
+
+                bool isEnemyOccupied = (bot->GetTeam() == HORDE) ? bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_ALLY_OCCUPIED) : bg->IsActiveEvent(objective.first, BG_AB_NODE_STATUS_HORDE_OCCUPIED);
+
+                if (GameObject* pGO = bot->GetMap()->GetGameObject(bg->GetSingleGameObjectGuid(objective.first, BG_AB_NODE_STATUS_NEUTRAL)))
+                {
+                    if (isEnemyContested || isEnemyOccupied)
+                        enemyObjectives.insert(pGO);
+                    else if (isNeutral)
+                        neutralObjectives.insert(pGO);
+                }
+            }
+
+            if (!enemyObjectives.empty())
+            {
+                uniqueObjectives.insert(enemyObjectives.begin(), enemyObjectives.end());
+            }
+            else
+            {
+                uniqueObjectives.insert(neutralObjectives.begin(), neutralObjectives.end());
+            }
+        }
+
         GameObject* BgObjective = nullptr;
 
 
