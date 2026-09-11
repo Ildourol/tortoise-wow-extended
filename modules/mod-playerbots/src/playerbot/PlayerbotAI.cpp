@@ -249,6 +249,23 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     {
         DoSpecificAction("auto talents");
     }
+
+    if (!IsRealPlayer() && !sPlayerbotAIConfig.IsFreeAltBot(bot) && sRandomPlayerbotMgr.IsRandomBot(bot) && !sPlayerbotAIConfig.randomGearBlacklist.empty())
+    {
+        for (uint32 itemId : sPlayerbotAIConfig.randomGearBlacklist)
+        {
+            if (!itemId)
+                continue;
+
+            uint32 count = bot->GetItemCount(itemId, true);
+            if (!count)
+                continue;
+
+            sLog.outDetail("RNDBOT %s: destroying blacklisted item %u x%u on login", bot->GetName(), itemId, count);
+
+            bot->DestroyItemCount(itemId, count, true, false, true);
+        }
+    }
 }
 
 PlayerbotAI::~PlayerbotAI()
