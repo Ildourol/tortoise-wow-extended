@@ -18,8 +18,42 @@ CastSpellAction::CastSpellAction(PlayerbotAI* ai, std::string spell)
     }
 }
 
+bool CastSpellAction::IsStrictFocusHealCastAllowed()
+{
+    if (!AI_VALUE(bool, "strict focus heal"))
+        return true;
+
+    const uint32 spellId = GetSpellID();
+
+    if (!spellId)
+        return true;
+
+    const SpellEntry* spellInfo = sServerFacade.LookupSpellInfo(spellId);
+
+    if (!spellInfo)
+        return true;
+
+    if (!PlayerbotAI::IsHealSpell(spellInfo))
+        return true;
+
+    Unit* target = GetTarget();
+
+    if (!target)
+        return false;
+
+    const std::list<ObjectGuid> focusHealTargets = AI_VALUE(std::list<ObjectGuid>, "focus heal targets");
+
+    if (focusHealTargets.empty())
+        return false;
+
+    return std::find(focusHealTargets.begin(), focusHealTargets.end(), target->GetObjectGuid()) != focusHealTargets.end();
+}
+
 bool CastSpellAction::Execute(Event& event)
 {
+    if (!IsStrictFocusHealCastAllowed())
+        return false;
+
     bool executed = false;
     uint32 spellDuration = sPlayerbotAIConfig.globalCoolDown;
     if (spellName == "conjure food" || spellName == "conjure water")
@@ -156,6 +190,9 @@ bool CastSpellAction::isUseful()
     if (ai->IsInVehicle() && !ai->IsInVehicle(false, false, true))
         return false;
 
+    if (!IsStrictFocusHealCastAllowed())
+        return false;
+
     if(!AI_VALUE2(bool, "spell cast useful", spellName))
         return false;
 
@@ -273,9 +310,6 @@ bool CastHealingSpellAction::isUseful()
     if (!CastAuraSpellAction::isUseful())
         return false;
 
-    if (!IsStrictFocusHealTargetAllowed())
-        return false;
-
     if (bot->InBattleGround())
         return true;
 
@@ -332,10 +366,10 @@ bool CastEnchantItemAction::isPossible()
 
 bool CastAoeHealSpellAction::isUseful()
 {
-    if (!CastSpellAction::isUseful())
+    if (AI_VALUE(bool, "strict focus heal"))
         return false;
 
-    return IsStrictFocusHealTargetAllowed();
+    return CastSpellAction::isUseful();
 }
 
 bool HealHotPartyMemberAction::isUseful()
@@ -846,23 +880,5 @@ bool CurePartyMemberAction::Execute(Event& event)
         targetValue->Reset();
 
     return result;
-}
-
-bool CastHealingSpellAction::IsStrictFocusHealTargetAllowed()
-{
-    if (!AI_VALUE(bool, "strict focus heal"))
-        return true;
-
-    Unit* target = GetTarget();
-
-    if (!target)
-        return false;
-
-    const std::list<ObjectGuid> focusHealTargets = AI_VALUE(std::list<ObjectGuid>, "focus heal targets");
-
-    if (focusHealTargets.empty())
-        return false;
-
-    return std::find(focusHealTargets.begin(), focusHealTargets.end(), target->GetObjectGuid()) != focusHealTargets.end();
 }
 
