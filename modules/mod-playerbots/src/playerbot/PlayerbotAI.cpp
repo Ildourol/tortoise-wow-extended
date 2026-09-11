@@ -5,6 +5,8 @@
 #include "playerbot/PerformanceMonitor.h"
 #include <stdarg.h>
 #include <iomanip>
+#include <chrono>
+#include <mutex>
 
 #include "playerbot/AiFactory.h"
 
@@ -2598,7 +2600,7 @@ void PlayerbotAI::DoNextAction(bool min)
 
     if (minimal)
     {
-        MovementAction::MinimalMove(this);
+        TryMinimalMove();
 
         SetAIInternalUpdateDelay(sPlayerbotAIConfig.passiveDelay);
         return;
@@ -9411,4 +9413,201 @@ std::vector<Player*> PlayerbotAI::GetRealPlayersInGroup()
             out.push_back(member);
     }
     return out;
+}
+
+bool PlayerbotAI::TryMinimalMove()
+{
+    if (!sPlayerbotAIConfig.enableMinimalMove)
+        return false;
+
+    if (!bot || !bot->IsInWorld() || bot->IsBeingTeleported())
+        return false;
+
+    if (IsRealPlayer() || HasRealPlayerMaster())
+        return false;
+
+    if (bot->InBattleGround() || bot->IsTaxiFlying())
+        return false;
+
+    LastMovement& lastMove = aiObjectContext->GetValue<LastMovement&>("last movement")->Get();
+
+    if (!lastMove.lastPath.empty())
+        return MovementAction::MinimalMove(this);
+
+    if (!currentEngine || currentState != BotState::BOT_STATE_NON_COMBAT)
+        return false;
+
+    time_t const now = time(nullptr);
+
+    if (lastMove.nextMinimalRepath > now)
+        return false;
+
+    TravelTarget* target = aiObjectContext->GetValue<TravelTarget*>("travel target")->Get();
+
+    if (!target)
+    {
+        lastMove.nextMinimalRepath = now + 30;
+        return false;
+    }
+
+    auto executeTravelAction = [&](char const* action)
+    {
+        bool const oldTravelAllowed = allowActive[TRAVEL_ACTIVITY];
+        time_t const oldTravelCheck = allowActiveCheckTimer[TRAVEL_ACTIVITY];
+
+        allowActive[TRAVEL_ACTIVITY] = true;
+        allowActiveCheckTimer[TRAVEL_ACTIVITY] = now;
+
+        Event event;
+        currentEngine->ExecuteAction(action, event);
+
+        allowActive[TRAVEL_ACTIVITY] = oldTravelAllowed;
+        allowActiveCheckTimer[TRAVEL_ACTIVITY] = oldTravelCheck;
+    };
+
+    auto allowHeavyMinimalTravelWork = [&](uint32 intervalMs, bool targetSelection) -> bool
+    {
+        using Clock = std::chrono::steady_clock;
+
+        static std::mutex gateMutex;
+        static std::map<uint64, Clock::time_point> nextTargetAllowed;
+        static std::map<uint64, Clock::time_point> nextPathAllowed;
+
+        uint64 const partitionKey = (static_cast<uint64>(bot->GetMapId()) << 32) | static_cast<uint64>(bot->GetInstanceId());
+
+        std::lock_guard<std::mutex> lock(gateMutex);
+
+        auto& gates = targetSelection ? nextTargetAllowed : nextPathAllowed;
+
+        Clock::time_point& nextAllowed = gates[partitionKey];
+
+        Clock::time_point const current = Clock::now();
+
+        if (current < nextAllowed)
+            return false;
+
+        nextAllowed = current + std::chrono::milliseconds(intervalMs);
+
+        return true;
+    };
+
+    TravelStatus status = target->GetStatus();
+
+    if (status == TravelStatus::TRAVEL_STATUS_TRAVEL || status == TravelStatus::TRAVEL_STATUS_WORK || status == TravelStatus::TRAVEL_STATUS_COOLDOWN)
+    {
+        target->CheckStatus();
+        status = target->GetStatus();
+    }
+
+    switch (status)
+    {
+    case TravelStatus::TRAVEL_STATUS_PREPARE:
+        {
+            lastMove.nextMinimalRepath = now + 2;
+
+            executeTravelAction("choose travel target");
+
+            if (target->GetStatus() == TravelStatus::TRAVEL_STATUS_READY)
+                lastMove.nextMinimalRepath = now + 1;
+
+            return false;
+        }
+
+    case TravelStatus::TRAVEL_STATUS_READY:
+        {
+            if (!allowHeavyMinimalTravelWork(100, false))
+            {
+                lastMove.nextMinimalRepath = now + 1 + (bot->GetGUIDLow() % 3);
+
+                return false;
+            }
+
+            executeTravelAction("move to travel target");
+
+            if (!lastMove.lastPath.empty())
+            {
+                lastMove.nextMinimalRepath = 0;
+                return MovementAction::MinimalMove(this);
+            }
+
+            lastMove.nextMinimalRepath = now + 120 + (bot->GetGUIDLow() % 120);
+
+            return false;
+        }
+
+    case TravelStatus::TRAVEL_STATUS_TRAVEL:
+        {
+            if (!allowHeavyMinimalTravelWork(100, false))
+            {
+                lastMove.nextMinimalRepath = now + 1 + (bot->GetGUIDLow() % 3);
+
+                return false;
+            }
+
+            executeTravelAction("move to travel target");
+
+            if (!lastMove.lastPath.empty())
+            {
+                lastMove.nextMinimalRepath = 0;
+                return MovementAction::MinimalMove(this);
+            }
+
+            lastMove.nextMinimalRepath = now + 180 + (bot->GetGUIDLow() % 180);
+
+            return false;
+        }
+
+    case TravelStatus::TRAVEL_STATUS_WORK:
+    case TravelStatus::TRAVEL_STATUS_COOLDOWN:
+        {
+            lastMove.nextMinimalRepath = now + 10 + (bot->GetGUIDLow() % 5);
+
+            return false;
+        }
+
+    case TravelStatus::TRAVEL_STATUS_NONE:
+    case TravelStatus::TRAVEL_STATUS_EXPIRED:
+        {
+            if (!allowHeavyMinimalTravelWork(50, true))
+            {
+                lastMove.nextMinimalRepath = now + 1 + (bot->GetGUIDLow() % 3);
+
+                return false;
+            }
+
+            bool const oldTravelAllowed = allowActive[TRAVEL_ACTIVITY];
+            time_t const oldTravelCheck = allowActiveCheckTimer[TRAVEL_ACTIVITY];
+
+            allowActive[TRAVEL_ACTIVITY] = true;
+            allowActiveCheckTimer[TRAVEL_ACTIVITY] = now;
+
+            currentEngine->DoNextAction(NULL, 0, false, bot->IsTaxiFlying());
+
+            allowActive[TRAVEL_ACTIVITY] = oldTravelAllowed;
+            allowActiveCheckTimer[TRAVEL_ACTIVITY] = oldTravelCheck;
+
+            TravelStatus const newStatus = target->GetStatus();
+
+            if (newStatus == TravelStatus::TRAVEL_STATUS_PREPARE)
+            {
+                lastMove.nextMinimalRepath = now + 2;
+            }
+            else if (newStatus == TravelStatus::TRAVEL_STATUS_READY)
+            {
+                lastMove.nextMinimalRepath = now + 1;
+            }
+            else
+            {
+                lastMove.nextMinimalRepath = now + 30 + (bot->GetGUIDLow() % 30);
+            }
+
+            return false;
+        }
+
+    default:
+        {
+            lastMove.nextMinimalRepath = now + 10;
+            return false;
+        }
+    }
 }

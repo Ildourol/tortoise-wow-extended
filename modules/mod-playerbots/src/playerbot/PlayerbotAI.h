@@ -703,6 +703,7 @@ public:
     bool AllowActive(ActivityType activityType);
     bool AllowActivity(ActivityType activityType = ALL_ACTIVITY, bool checkNow = false);
     bool CachedActivity(ActivityType type) const { return allowActive[type]; }
+    bool TryMinimalMove();
 
     bool HasCheat(BotCheatMask mask) const;
     BotCheatMask GetCheat() { return cheatMask; }

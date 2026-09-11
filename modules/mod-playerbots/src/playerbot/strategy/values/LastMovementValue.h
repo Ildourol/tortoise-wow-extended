@@ -32,6 +32,7 @@ namespace ai
             failedPathGeneration = other.failedPathGeneration; failedPathRetryUntil = other.failedPathRetryUntil;
             fleeCount = other.fleeCount;
             lastFleeAttempt = other.lastFleeAttempt;
+            nextMinimalRepath = other.nextMinimalRepath;
             moveEvent = Event();
         }
 
@@ -46,6 +47,7 @@ namespace ai
             lastFleeAttempt = 0;
             lastMoveShort = WorldPosition();
             nextTeleport = 0;
+            nextMinimalRepath = 0;
             clearPathFailure();
             moveEvent = Event();
         }
@@ -94,6 +96,7 @@ namespace ai
         uint32 failedPathMap = UINT32_MAX, failedPathInstance = 0;
         int32 failedPathCellX = 0, failedPathCellY = 0, failedPathCellZ = 0;
         uint32 failedPathGeneration = 0, failedPathRetryUntil = 0;
+        time_t nextMinimalRepath = 0;
         Event moveEvent;
     };
 
