@@ -19,6 +19,13 @@ namespace ai
         virtual bool IsActive() override;
     };
 
+    class FirestoneTrigger : public BuffTrigger
+    {
+    public:
+        FirestoneTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "firestone") {}
+        virtual bool IsActive() override;
+    };
+
     class NoCurseTrigger : public Trigger
     {
     public:

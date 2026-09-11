@@ -18,6 +18,11 @@ bool SpellstoneTrigger::IsActive()
     return BuffTrigger::IsActive() && AI_VALUE2(uint32, "item count", getName()) > 0;
 }
 
+bool FirestoneTrigger::IsActive() 
+{
+    return BuffTrigger::IsActive() && AI_VALUE2(uint32, "item count", getName()) > 0;
+}
+
 bool InfernoTrigger::IsActive()
 {
 	return AI_VALUE(uint8, "attackers count") > 1 && bot->HasSpell(1122) && bot->HasItemCount(5565, 1) && !urand(0, 2);
@@ -46,7 +51,18 @@ bool LifeTapTrigger::IsActive()
 
 bool DrainSoulTrigger::IsActive()
 {
-	// If no item cheats enabled
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target)
+        return false;
+
+    // Turtle WoW: Drain Soul scales with 16.7% SP per tick and acts as primary execute under 25% health
+    const uint32 targetHealth = AI_VALUE2(uint8, "health", "current target");
+    if (targetHealth <= 25 && bot->HasSpell(1120))
+    {
+        return true;
+    }
+
+	// Shard farming logic
     if (!ai->HasCheat(BotCheatMask::item))
     {
 		// Check if it has less than 5 soul shards
@@ -55,8 +71,6 @@ bool DrainSoulTrigger::IsActive()
 			// Check if it has enough bag space
 			if (AI_VALUE(uint8, "bag space") > 0)
 			{
-                // Check if target health is less than 15%
-                const uint32 targetHealth = AI_VALUE2(uint8, "health", "current target");
                 if (targetHealth <= 15)
                 {
                     return true;
