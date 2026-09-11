@@ -1398,6 +1398,8 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
                 reactionEngine->addStrategy("enhancement");
             }
 
+            reactionEngine->addStrategy("cure");
+
             break;
         }
 
@@ -1452,6 +1454,8 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
                 reactionEngine->addStrategy("frost");
             }
 
+            reactionEngine->addStrategy("cure");
+
             break;
         }
 
@@ -1469,6 +1473,8 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
             {
                 reactionEngine->addStrategy("retribution");
             }
+
+            reactionEngine->addStrategy("cure");
 
             break;
         }
@@ -1519,6 +1525,8 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
                 reactionEngine->addStrategy("balance");
             }
 
+            reactionEngine->addStrategy("cure");
+
             break;
         }
 
@@ -1554,6 +1562,8 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
             {
                 reactionEngine->addStrategy("shadow");
             }
+
+            reactionEngine->addStrategy("cure");
 
             break;
         }

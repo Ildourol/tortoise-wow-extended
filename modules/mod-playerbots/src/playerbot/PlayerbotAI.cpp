@@ -6091,7 +6091,7 @@ bool PlayerbotAI::HasAuraToDispel(Unit* target, uint32 dispelType)
 				continue;
 
 			if (sPlayerbotAIConfig.dispelAuraDuration && aura->GetAuraDuration() && aura->GetAuraDuration() < (int32)sPlayerbotAIConfig.dispelAuraDuration)
-			    return false;
+			    continue;
 
 			if (canDispel(entry, dispelType))
 				return true;

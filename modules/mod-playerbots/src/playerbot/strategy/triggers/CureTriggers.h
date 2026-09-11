@@ -26,7 +26,7 @@ namespace ai
     class PartyMemberNeedCureTrigger : public NeedCureTrigger 
     {
     public:
-        PartyMemberNeedCureTrigger(PlayerbotAI* ai, std::string spell, uint32 dispelType) : NeedCureTrigger(ai, spell, dispelType) {}
+        PartyMemberNeedCureTrigger(PlayerbotAI* ai, std::string spell, uint32 dispelType) : NeedCureTrigger(ai, spell, dispelType, 1) {}
 		virtual Value<Unit*>* GetTargetValue() override;
     };
 
