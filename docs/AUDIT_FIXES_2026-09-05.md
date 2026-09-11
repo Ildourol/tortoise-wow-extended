@@ -1,6 +1,6 @@
 # System audit: corrections and remaining evidence gaps
 
-Date: 2026-09-05. Local working changes on `mantech-turtle` above
+Date: 2026-09-05. Local working changes on `playerbots` above
 `b2d5a8549194f7ffa38e324dcb7a82ccc0ba2132`; not a new committed revision.
 Production reads were sequential SELECTs, not a transaction-consistent snapshot.
 No production SQL, binary/config overwrite, server start, or server smoke test

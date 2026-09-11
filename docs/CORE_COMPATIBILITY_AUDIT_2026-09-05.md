@@ -1,6 +1,6 @@
 # Core compatibility and encounter inventory audit
 
-Date: 2026-09-05. Source: `mantech-turtle`, `b2d5a8549194f7ffa38e324dcb7a82ccc0ba2132`. Database: read-only `tw_world` snapshot captured 19:53:42 UTC; sequential queries, not an atomic snapshot. No account/character data was collected.
+Date: 2026-09-05. Source: `playerbots`, `b2d5a8549194f7ffa38e324dcb7a82ccc0ba2132`. Database: read-only `tw_world` snapshot captured 19:53:42 UTC; sequential queries, not an atomic snapshot. No account/character data was collected.
 
 ## Outcome and scope
 

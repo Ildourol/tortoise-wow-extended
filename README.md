@@ -1,7 +1,7 @@
 
 # Tortoise-WoW
 
-> **ManTech fork:** development continues on `mantech-turtle`.
+> **ManTech fork:** development continues on `playerbots`.
 > Our upstream [Shyalya/tortoise-wow](https://github.com/Shyalya/tortoise-wow) has announced archival after 30 September 2026. That announcement applies to Shyalya's fork.
 > Its 16 branch tips and their history are preserved under `archive/shyalya/2026-09-09/*` in this repository.
 
