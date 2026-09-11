@@ -368,11 +368,19 @@ void ElementalShamanTotemsRaidStrategy::InitNonCombatTriggers(std::list<TriggerN
 void ElementalShamanBuffStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     ShamanBuffStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "water shield",
+        NextAction::array(0, new NextAction("water shield", ACTION_HIGH), NULL)));
 }
 
 void ElementalShamanBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     ShamanBuffStrategy::InitNonCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "water shield",
+        NextAction::array(0, new NextAction("water shield", ACTION_NORMAL), NULL)));
 
     triggers.push_back(new TriggerNode(
         "lightning shield",

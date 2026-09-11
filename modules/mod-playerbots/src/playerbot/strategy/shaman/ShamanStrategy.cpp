@@ -16,6 +16,7 @@ public:
         creators["lesser healing wave on party"] = &lesser_healing_wave_on_party;
         creators["earth shock"] = &earth_shock;
         creators["wind shear"] = &wind_shear;
+        creators["water shield"] = &water_shield;
     }
 
 private:
@@ -30,6 +31,8 @@ private:
     ACTION_NODE_A(lesser_healing_wave, "lesser healing wave", "healing wave");
 
     ACTION_NODE_A(lesser_healing_wave_on_party, "lesser healing wave on party", "healing wave on party");
+
+    ACTION_NODE_A(water_shield, "water shield", "lightning shield");
 };
 
 ShamanStrategy::ShamanStrategy(PlayerbotAI* ai) : ClassStrategy(ai)

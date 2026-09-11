@@ -417,17 +417,29 @@ void RestorationShamanTotemsRaidStrategy::InitNonCombatTriggers(std::list<Trigge
 void RestorationShamanBuffStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     ShamanBuffStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "water shield",
+        NextAction::array(0, new NextAction("water shield", ACTION_HIGH), NULL)));
 }
 
 void RestorationShamanBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     ShamanBuffStrategy::InitNonCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "water shield",
+        NextAction::array(0, new NextAction("water shield", ACTION_NORMAL), NULL)));
 }
 
 void RestorationShamanBuffPveStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     RestorationShamanBuffStrategy::InitCombatTriggers(triggers);
     ShamanBuffPveStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "earth shield on party tank",
+        NextAction::array(0, new NextAction("earth shield on party tank", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
         "shaman weapon",
@@ -438,6 +450,10 @@ void RestorationShamanBuffPveStrategy::InitNonCombatTriggers(std::list<TriggerNo
 {
     RestorationShamanBuffStrategy::InitNonCombatTriggers(triggers);
     ShamanBuffPveStrategy::InitNonCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "earth shield on party tank",
+        NextAction::array(0, new NextAction("earth shield on party tank", ACTION_NORMAL), NULL)));
 
     triggers.push_back(new TriggerNode(
         "shaman weapon",
@@ -468,12 +484,20 @@ void RestorationShamanBuffRaidStrategy::InitCombatTriggers(std::list<TriggerNode
 {
     RestorationShamanBuffStrategy::InitCombatTriggers(triggers);
     ShamanBuffRaidStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "earth shield on party tank",
+        NextAction::array(0, new NextAction("earth shield on party tank", ACTION_HIGH), NULL)));
 }
 
 void RestorationShamanBuffRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     RestorationShamanBuffStrategy::InitNonCombatTriggers(triggers);
     ShamanBuffRaidStrategy::InitNonCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "earth shield on party tank",
+        NextAction::array(0, new NextAction("earth shield on party tank", ACTION_NORMAL), NULL)));
 
     triggers.push_back(new TriggerNode(
         "often",
