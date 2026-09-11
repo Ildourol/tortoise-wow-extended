@@ -241,6 +241,24 @@ namespace ai
         float distance;
     };
 
+    class CombatStancePositionTrigger : public Trigger
+    {
+    public:
+        CombatStancePositionTrigger(PlayerbotAI* ai) : Trigger(ai, "combat stance position", 1) {}
+
+        virtual bool IsActive() override
+        {
+            Unit* target = AI_VALUE(Unit*, "current target");
+            if (!target || !target->IsInWorld())
+                return false;
+
+            if (!sServerFacade.IsHostileTo(bot, target))
+                return false;
+
+            return sServerFacade.IsDistanceGreaterThan(AI_VALUE2(float, "distance", "current target"), sPlayerbotAIConfig.targetPosRecalcDistance);
+        }
+    };
+
     class EnemyOutOfMeleeTrigger : public OutOfRangeTrigger
     {
     public:
@@ -252,7 +270,7 @@ namespace ai
             if (!target)
                 return false;
 
-            return !bot->CanReachWithMeleeAttack(target) || !bot->IsWithinLOSInMap(target, true);
+            return !bot->CanReachWithMeleeAttack(target) || !bot->IsWithinLOSInMap(target, true) || OutOfRangeTrigger::IsActive();
         }
     };
 
