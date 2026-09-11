@@ -19,6 +19,9 @@ bool DpsAssistAction::isUseful()
 
 bool AttackAnythingAction::isUseful()
 {
+    if (bot->InBattleGround() && bot->GetBattleGroundTypeId() == BATTLEGROUND_AV)
+        return false;
+
     if (!ai->AllowActivity(GRIND_ACTIVITY)) //Bot not allowed to be active
         return false;
 

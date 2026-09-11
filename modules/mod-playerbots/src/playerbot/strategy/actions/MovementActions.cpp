@@ -29,24 +29,38 @@ using namespace ai;
 
 namespace
 {
-    bool ShouldLockAvCaptainRoom(Player* bot)
+    Creature* GetAvCaptainCombatTarget(Player* bot)
     {
         if (!bot || !bot->InBattleGround())
-            return false;
+            return nullptr;
 
         BattleGround* bg = bot->GetBattleGround();
         if (!bg || bg->GetTypeId() != BATTLEGROUND_AV)
-            return false;
+            return nullptr;
 
         uint32 enemyCaptainSlot = bot->GetTeam() == ALLIANCE ? BG_AV_CAPTAIN_H : BG_AV_CAPTAIN_A;
 
         Creature* captain = bot->GetMap()->GetCreature(bg->GetSingleCreatureGuid(enemyCaptainSlot, 0));
 
-        if (!captain || captain->GetHealth() == 0)
-            return false;
+        if (!captain || !captain->IsInWorld() || captain->GetHealth() == 0 || !sServerFacade.IsInCombat(captain))
+        {
+            return nullptr;
+        }
 
-        return sServerFacade.GetDistance2d(bot, captain) <= 60.0f;
+        bool committed = sServerFacade.GetDistance2d(bot, captain) <= 60.0f || captain->GetThreatManager().getThreat(bot) > 0.0f || captain->GetVictim() == bot || bot->GetVictim() == captain;
+
+        if (!committed)
+        {
+            if (Pet* pet = bot->GetPet())
+            {
+                committed = captain->GetThreatManager().getThreat(pet) > 0.0f || captain->GetVictim() == pet || pet->GetVictim() == captain;
+            }
+        }
+
+        return committed ? captain : nullptr;
     }
+
+    bool ShouldLockAvCaptainRoom(Player* bot) { return GetAvCaptainCombatTarget(bot) != nullptr; }
 }
 
 void MovementAction::CreateWp(Player* wpOwner, float x, float y, float z, float o, uint32 entry, bool important)
@@ -2785,6 +2799,14 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     {
         sLog.outDetail("[BOT CHASE] %s: CanMove() blocked", bot->GetName());
         return false;
+    }
+
+    if (Creature* captain = GetAvCaptainCombatTarget(bot))
+    {
+        if (obj && obj->IsUnit() && obj != captain && sServerFacade.IsHostileTo(bot, static_cast<Unit*>(obj)))
+        {
+            obj = captain;
+        }
     }
 
     if (!ai->IsSafe(obj))
