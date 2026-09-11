@@ -9,6 +9,7 @@
 #include "playerbot/PlayerbotAIConfig.h"
 #include "AccountMgr.h"
 #include "Database/DBCStore.h"
+#include "Database/CharacterDatabaseCache.h"
 #include "SharedDefines.h"
 #include "RandomItemMgr.h"
 #include "RandomPlayerbotFactory.h"
@@ -583,6 +584,11 @@ void PlayerbotFactory::InitPet()
         return;
 
     Pet* pet = bot->GetPet();
+    if (!pet && (bot->GetTemporaryUnsummonedPetNumber() || sCharacterDatabaseCache.GetCharacterPetByOwner(bot->GetGUIDLow())))
+    {
+        return;
+    }
+
     if (!pet)
     {
         Map* map = bot->GetMap();
@@ -1222,7 +1228,30 @@ void PlayerbotFactory::InitPetSpells()
         auto it = hunterPetSpells.find(petType);
         if (it != hunterPetSpells.end())
         {
-            // Find Cower spells
+            std::vector<uint32> activeSpellsToRemove;
+
+            for (PetSpellMap::const_iterator spellItr = pet->m_petSpells.begin(); spellItr != pet->m_petSpells.end(); ++spellItr)
+            {
+                if (spellItr->second.state == PETSPELL_REMOVED)
+                    continue;
+
+                uint32 spellId = spellItr->first;
+
+                if (IsPassiveSpell(spellId))
+                    continue;
+
+                activeSpellsToRemove.push_back(spellId);
+            }
+
+            for (uint32 spellId : activeSpellsToRemove)
+            {
+                pet->ToggleAutocast(spellId, false);
+                pet->RemoveSpell(spellId, false, false);
+            }
+
+            pet->CleanupActionBar();
+
+            // Cower
             static const std::unordered_set<uint32> cowerSpellIds = {1742, 1753, 1754, 1755, 1756, 16697};
 
             for (const auto& pair : it->second)
@@ -1239,7 +1268,7 @@ void PlayerbotFactory::InitPetSpells()
 
                     if (!IsPassiveSpell(spellID))
                     {
-                        // Toggle Cower off by default
+                        // Cower should be available, but not autocast.
                         const bool autocast = (cowerSpellIds.find(spellID) == cowerSpellIds.end());
                         if (pet->HasSpell(spellID))
                         {
@@ -1271,9 +1300,17 @@ void PlayerbotFactory::InitPetSpells()
             if (pet->GetLevel() >= rank.minLevel)
                 growlSpellId = rank.spellId;
         }
-        if (growlSpellId && !pet->HasSpell(growlSpellId))
+        if (growlSpellId)
         {
-            pet->learnSpell(growlSpellId);
+            if (!pet->HasSpell(growlSpellId))
+            {
+                pet->learnSpell(growlSpellId);
+            }
+
+            if (pet->HasSpell(growlSpellId))
+            {
+                pet->ToggleAutocast(growlSpellId, true);
+            }
         }
 
         // Natural Armor
@@ -1348,6 +1385,9 @@ void PlayerbotFactory::InitPetSpells()
                     pet->learnSpell(res.spellId);
             }
         }
+
+        pet->CleanupActionBar();
+        bot->PetSpellInitialize();
     }
 #endif
 

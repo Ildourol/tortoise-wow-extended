@@ -55,6 +55,7 @@ void AutoLearnSpellAction::LearnSpells(std::ostringstream* out)
         if (!bot->HasSpell(982))  { bot->learnSpell(982, false);  if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(982);  if (s) *out << formatSpell(s) << ", "; } }
         if (!bot->HasSpell(6991)) { bot->learnSpell(6991, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(6991); if (s) *out << formatSpell(s) << ", "; } }
         if (!bot->HasSpell(1515)) { bot->learnSpell(1515, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(1515); if (s) *out << formatSpell(s) << ", "; } }
+        if (!bot->HasSpell(2641)) { bot->learnSpell(2641, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(2641); if (s) *out << formatSpell(s) << ", "; } }
     }
 }
 
@@ -186,50 +187,88 @@ void AutoLearnSpellAction::LearnQuestSpells(std::ostringstream* out)
     ObjectMgr::QuestMap const& questTemplates = sObjectMgr.GetQuestTemplates();
     for (ObjectMgr::QuestMap::const_iterator i = questTemplates.begin(); i != questTemplates.end(); ++i)
     {
-        uint32 questId = i->first;
         Quest const* quest = i->second.get();
+        LearnQuestSpell(quest, out);
+    }
+}
 
-        if (!quest->GetRequiredClasses() || quest->IsRepeatable())
+void AutoLearnSpellAction::RepairQuestSpells(const std::list<uint32>& questIds)
+{
+    std::ostringstream out;
+
+    // Generic class quest rewards for all classes.
+    for (uint32 questId : questIds)
+    {
+        Quest const* quest = sObjectMgr.GetQuestTemplate(questId);
+        if (!quest)
             continue;
 
-        if (!bot->SatisfyQuestClass(quest, false) ||
-            quest->GetMinLevel() > bot->GetLevel() ||
-            !bot->SatisfyQuestRace(quest, false))
-            continue;
+        LearnQuestSpell(quest, &out);
+    }
 
-        if (quest->GetRewSpellCast() > 0 &&
-            quest->GetRewSpellCast() != 12510) // Prevents mages from learning the Teleport to Azushara Tower spell.
+#ifdef MANGOSBOT_ZERO
+    // Hunter specific quest rewards
+    if (bot->getClass() == CLASS_HUNTER && bot->GetLevel() >= 10)
+    {
+        LearnSpell(1515, &out); // Tame Beast
+        LearnSpell(883, &out);  // Call Pet
+        LearnSpell(2641, &out); // Dismiss Pet
+        LearnSpell(982, &out);  // Revive Pet
+        LearnSpell(6991, &out); // Feed Pet
+        LearnSpell(5149, &out); // Beast Training
+    }
+#endif
+
+    if (!out.str().empty())
+    {
+        sLog.outDetail("Bot %s repaired missing class quest spells", bot->GetName());
+    }
+}
+
+void AutoLearnSpellAction::LearnQuestSpell(Quest const* quest, std::ostringstream* out)
+{
+    if (!quest)
+        return;
+
+    if (!quest->GetRequiredClasses() || quest->IsRepeatable())
+        return;
+
+    if (!bot->SatisfyQuestClass(quest, false) ||
+        quest->GetMinLevel() > bot->GetLevel() ||
+        !bot->SatisfyQuestRace(quest, false))
+        return;
+
+    if (quest->GetRewSpellCast() > 0 &&
+        quest->GetRewSpellCast() != 12510) // Prevents mages from learning the Teleport to Azushara Tower spell.
+    {
+        if (LearnSpellFromSpell(quest->GetRewSpellCast(), out))
         {
-            if (LearnSpellFromSpell(quest->GetRewSpellCast(), out))
+            GetClassQuestItem(quest, out);
+        }
+        // Shaman Call of Air Quest casts Swift Wind on player and rewards Air Totem, Swift Wind is not to be learned however it is a one time cast.
+        else if (quest->GetRewSpellCast() == 8385)
+        {
+            bool hasAirTotem = bot->HasItemCount(5178, 1, true);
+            if (!hasAirTotem)
             {
                 GetClassQuestItem(quest, out);
             }
-            // Shaman Call of Air Quest casts Swift Wind on player and rewards Air Totem, Swift Wind is not to be learned however it is a one time cast.
-            else if (quest->GetRewSpellCast() == 8385)
+        }
+    }
+    else if (quest->GetRewSpell() > 0)
+    {
+        if (IsTeachingSpellListedAsSpell(quest->GetRewSpell()))
+        {
+            if (LearnSpellFromSpell(quest->GetRewSpell(), out))
             {
-                bool hasAirTotem = false;
-                hasAirTotem = bot->HasItemCount(5178, 1, true);
-                if (!hasAirTotem)
-                {
-                    GetClassQuestItem(quest, out);
-                }
+                GetClassQuestItem(quest, out);
             }
         }
-        else if (quest->GetRewSpell() > 0)
+        else
         {
-            if (IsTeachingSpellListedAsSpell(quest->GetRewSpell()))
+            if (LearnSpell(quest->GetRewSpell(), out))
             {
-                if (LearnSpellFromSpell(quest->GetRewSpell(), out))
-                {
-                    GetClassQuestItem(quest, out);
-                }
-            }
-            else
-            {
-                if (LearnSpell(quest->GetRewSpell(), out))
-                {
-                    GetClassQuestItem(quest, out);
-                }
+                GetClassQuestItem(quest, out);
             }
         }
     }
@@ -356,6 +395,30 @@ bool AutoLearnSpellAction::LearnSpellFromSpell(uint32 spellId, std::ostringstrea
 
     if (!proto)
         return false;
+
+#ifdef MANGOSBOT_ZERO
+    if (spellId == 23356) // Taming Lesson
+    {
+        bool learned = false;
+
+        learned |= LearnSpell(1515, out); // Tame Beast
+        learned |= LearnSpell(883, out);  // Call Pet
+        learned |= LearnSpell(2641, out); // Dismiss Pet
+
+        return learned;
+    }
+
+    if (spellId == 23357) // Training Lesson
+    {
+        bool learned = false;
+
+        learned |= LearnSpell(5149, out); // Beast Training
+        learned |= LearnSpell(6991, out); // Feed Pet
+        learned |= LearnSpell(982, out);  // Revive Pet
+
+        return learned;
+    }
+#endif
 
     bool learned = false;
     for (int j = 0; j < 3; ++j)
