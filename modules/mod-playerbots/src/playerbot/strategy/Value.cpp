@@ -2,6 +2,7 @@
 #include "playerbot/playerbot.h"
 #include "Value.h"
 #include "playerbot/PerformanceMonitor.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #include "playerbot/ChatHelper.h"
 
 using namespace ai;
@@ -59,7 +60,10 @@ Unit* UnitCalculatedValue::Get()
     {
         lastCheckTime = now;
 
-        auto pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), ai);
+        std::unique_ptr<PerformanceMonitorOperation> pmo;
+        if (sPlayerbotAIConfig.perfMonEnabled)
+            pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), ai);
+
         value = Calculate();
         m_guid = value ? value->GetObjectGuid() : ObjectGuid();
         return value;

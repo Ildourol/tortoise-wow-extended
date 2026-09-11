@@ -2863,8 +2863,47 @@ bool RandomPlayerbotMgr::AdvanceTeleportPlan(TeleportPlan& plan, WorkSlice& slic
     {
         if (!permit()) return false;
         DetailedWork::Scope work(DetailedWork::TeleportShuffle, plan.guid);
-        // The indexed O(N log N) permutation is a single read-only operation.
-        tlocs = WorldPosition(bot).GetNextPoint(std::move(tlocs), 0);
+
+        std::map<std::pair<uint32, uint32>, std::vector<WorldPosition>> locationsByZone;
+        for (WorldPosition const& loc : tlocs)
+        {
+            auto const* area = GetTeleportArea(loc);
+            uint32 const zoneId = area ? area->zone : 0;
+            locationsByZone[std::make_pair(loc.getMapId(), zoneId)].push_back(loc);
+        }
+
+        std::vector<std::pair<uint32, uint32>> zoneOrder;
+        zoneOrder.reserve(locationsByZone.size());
+
+        for (auto& zone : locationsByZone)
+        {
+            zoneOrder.push_back(zone.first);
+            std::shuffle(zone.second.begin(), zone.second.end(), *GetRandomGenerator());
+        }
+
+        std::shuffle(zoneOrder.begin(), zoneOrder.end(), *GetRandomGenerator());
+
+        std::vector<WorldPosition> balancedLocations;
+        balancedLocations.reserve(tlocs.size());
+
+        for (size_t pointIndex = 0;; ++pointIndex)
+        {
+            bool added = false;
+            for (auto const& zoneKey : zoneOrder)
+            {
+                auto const& points = locationsByZone.find(zoneKey)->second;
+                if (pointIndex >= points.size())
+                    continue;
+
+                balancedLocations.push_back(points[pointIndex]);
+                added = true;
+            }
+
+            if (!added)
+                break;
+        }
+
+        tlocs.swap(balancedLocations);
         plan.stage = 3;
     }
     if (plan.stage == 3)
@@ -5008,7 +5047,7 @@ std::list<std::string> RandomPlayerbotMgr::HandleRandomTeleportForLevel(Player* 
         messages.push_back("Bot not found");
         return messages;
     }
-    RandomTeleportForLevel(bot);
+    RandomTeleport(bot, locsPerLevelCache[bot->GetLevel()], false, false);
     messages.push_back("teleport applied to " + std::string(bot->GetName()));
     return messages;
 }

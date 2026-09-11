@@ -424,11 +424,15 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
         {
             Action* action = InitializeAction(actionNode);
 
-            std::string actionName = (action ? action->getName() : "unknown");
-            if (!event.getSource().empty())
-                actionName += " <" + event.getSource() + ">";
-            
-            auto pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, actionName, ai);
+            std::unique_ptr<PerformanceMonitorOperation> pmo1;
+            if (sPlayerbotAIConfig.perfMonEnabled)
+            {
+                std::string actionName = (action ? action->getName() : "unknown");
+                if (!event.getSource().empty())
+                    actionName += " <" + event.getSource() + ">";
+
+                pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, actionName, ai);
+            }
 
             if(action)
                 action->setRelevance(relevance);
@@ -464,7 +468,9 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                 bool isUseful = false;
                 if (!isStunned || action->isUsefulWhenStunned())
                 {
-                    auto pmo2 = sPerformanceMonitor.start(PERF_MON_ACTION, "isUseful", ai);
+                    std::unique_ptr<PerformanceMonitorOperation> pmo2;
+                    if (sPlayerbotAIConfig.perfMonEnabled)
+                        pmo2 = sPerformanceMonitor.start(PERF_MON_ACTION, "isUseful", ai);
                     isUseful = action->isUseful();
                     pmo2.reset();
                 }
@@ -505,7 +511,9 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                         }
                     }
 
-                    auto pmo3 = sPerformanceMonitor.start(PERF_MON_ACTION, "isPossible", ai);
+                    std::unique_ptr<PerformanceMonitorOperation> pmo3;
+                    if (sPlayerbotAIConfig.perfMonEnabled)
+                        pmo3 = sPerformanceMonitor.start(PERF_MON_ACTION, "isPossible", ai);
                     bool isPossible = action->isPossible();
                     pmo3.reset();
 
@@ -524,7 +532,9 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                             delete actionNode;
                             continue;
                         }
-                        auto pmo4 = sPerformanceMonitor.start(PERF_MON_ACTION, "Execute", ai);
+                        std::unique_ptr<PerformanceMonitorOperation> pmo4;
+                        if (sPlayerbotAIConfig.perfMonEnabled)
+                            pmo4 = sPerformanceMonitor.start(PERF_MON_ACTION, "Execute", ai);
                         actionExecuted = ListenAndExecute(action, event);
                         pmo4.reset();
 
@@ -739,24 +749,32 @@ ActionResult Engine::ExecuteAction(const std::string& name, Event& event)
     ActionNode* actionNode = CreateActionNode(name);
     if (actionNode)
     {
-        auto pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, name, ai);
+        std::unique_ptr<PerformanceMonitorOperation> pmo1;
+        if (sPlayerbotAIConfig.perfMonEnabled)
+            pmo1 = sPerformanceMonitor.start(PERF_MON_ACTION, name, ai);
         Action* action = InitializeAction(actionNode);
         if (action)
         {
-            auto pmo2 = sPerformanceMonitor.start(PERF_MON_ACTION, "isUseful", ai);
+            std::unique_ptr<PerformanceMonitorOperation> pmo2;
+            if (sPlayerbotAIConfig.perfMonEnabled)
+                pmo2 = sPerformanceMonitor.start(PERF_MON_ACTION, "isUseful", ai);
             bool isUseful = action->isUseful();
             pmo2.reset();
             
             if (isUseful)
             {
-                auto pmo3 = sPerformanceMonitor.start(PERF_MON_ACTION, "isPossible", ai);
+                std::unique_ptr<PerformanceMonitorOperation> pmo3;
+                if (sPlayerbotAIConfig.perfMonEnabled)
+                    pmo3 = sPerformanceMonitor.start(PERF_MON_ACTION, "isPossible", ai);
                 bool isPossible = action->isPossible();
                 pmo3.reset();
 
                 if (isPossible)
                 {
                     action->MakeVerbose(event.getOwner() != nullptr);
-                    auto pmo4 = sPerformanceMonitor.start(PERF_MON_ACTION, "Execute", ai);
+                    std::unique_ptr<PerformanceMonitorOperation> pmo4;
+                    if (sPlayerbotAIConfig.perfMonEnabled)
+                        pmo4 = sPerformanceMonitor.start(PERF_MON_ACTION, "Execute", ai);
                     bool executionResult = ListenAndExecute(action, event);
                     pmo4.reset();
 
@@ -942,7 +960,9 @@ void Engine::ProcessTriggers(bool minimal)
         {
             if (minimal && node->getFirstRelevance() < 100)
                 continue;
-            auto pmo = sPerformanceMonitor.start(PERF_MON_TRIGGER, trigger->getName(), ai);
+            std::unique_ptr<PerformanceMonitorOperation> pmo;
+            if (sPlayerbotAIConfig.perfMonEnabled)
+                pmo = sPerformanceMonitor.start(PERF_MON_TRIGGER, trigger->getName(), ai);
             Event event = trigger->Check();
 
 #ifdef PLAYERBOT_ELUNA
@@ -1110,6 +1130,16 @@ bool Engine::ListenAndExecute(Action* action, Event& event)
 
 void Engine::LogAction(const char* format, ...)
 {
+    Player* bot = ai->GetBot();
+
+    // Do not spend time formatting/debug-tracking actions that will not
+    // be logged anyway. This is the normal case for ungrouped random bots.
+    if (!testMode && sPlayerbotAIConfig.logInGroupOnly && (!bot || !bot->GetGroup()) &&
+        !sPlayerbotAIConfig.behaviorTrace && !sPlayerbotAIConfig.enableActionLog)
+    {
+        return;
+    }
+
     char buf[1024];
 
     va_list ap;

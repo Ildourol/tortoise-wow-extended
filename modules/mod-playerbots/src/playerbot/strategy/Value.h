@@ -3,6 +3,7 @@
 #include "Event.h"
 #include "playerbot/PlayerbotAIAware.h"
 #include "playerbot/PerformanceMonitor.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #include "ObjectMgr.h"
 #include "AiObject.h"
 #include "playerbot/GuidPosition.h"
@@ -63,7 +64,10 @@ namespace ai
             {
                 lastCheckTime = now;
 
-                auto pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), this->ai);
+                std::unique_ptr<PerformanceMonitorOperation> pmo;
+                if (sPlayerbotAIConfig.perfMonEnabled)
+                    pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), this->ai);
+
                 value = Calculate();
             }
             return value;
@@ -100,7 +104,10 @@ namespace ai
             {
                 this->lastCheckTime = now;
 
-                auto pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), this->ai);
+                std::unique_ptr<PerformanceMonitorOperation> pmo;
+                if (sPlayerbotAIConfig.perfMonEnabled)
+                    pmo = sPerformanceMonitor.start(PERF_MON_VALUE, AiNamedObject::getName(), this->ai);
+
                 this->value = this->Calculate();
             }
             return this->value;
