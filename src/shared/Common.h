@@ -54,6 +54,23 @@
 
 #include "Platform/Define.h"
 
+// Game client builds
+#define CLIENT_BUILD_1_2_4  4222
+#define CLIENT_BUILD_1_3_1  4297
+#define CLIENT_BUILD_1_4_2  4375
+#define CLIENT_BUILD_1_5_1  4449
+#define CLIENT_BUILD_1_6_1  4544
+#define CLIENT_BUILD_1_7_1  4695
+#define CLIENT_BUILD_1_8_4  4878
+#define CLIENT_BUILD_1_9_4  5086
+#define CLIENT_BUILD_1_10_2 5302
+#define CLIENT_BUILD_1_11_2 5464
+#define CLIENT_BUILD_1_12_1 5875
+
+#ifndef SUPPORTED_CLIENT_BUILD
+#define SUPPORTED_CLIENT_BUILD CLIENT_BUILD_1_12_1
+#endif
+
 #if COMPILER == COMPILER_MICROSOFT
 #  pragma warning(disable:4996)                             // 'function': was declared deprecated
 #ifndef __SHOW_STUPID_WARNINGS__
