@@ -2598,14 +2598,11 @@ void PlayerbotAI::DoNextAction(bool min)
 
     if (minimal)
     {
-        if (!MovementAction::MinimalMove(this) && !bot->isAFK() && !bot->InBattleGround() && !HasRealPlayerMaster())
-            bot->ToggleAFK();
+        MovementAction::MinimalMove(this);
 
         SetAIInternalUpdateDelay(sPlayerbotAIConfig.passiveDelay);
         return;
     }
-    else if (bot->isAFK())
-        bot->ToggleAFK();
 
 
     Group *group = bot->GetGroup();
