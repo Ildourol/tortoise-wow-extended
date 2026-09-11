@@ -14,6 +14,7 @@ public:
         creators["seal of vengeance"] = &seal_of_vengeance;
         creators["seal of command"] = &seal_of_command;
         creators["crusader strike"] = &crusader_strike;
+        creators["holy strike"] = &holy_strike;
         creators["repentance"] = &repentance;
         creators["repentance on enemy healer"] = &repentance_on_enemy_healer;
         creators["repentance on snare target"] = &repentance_on_snare_target;
@@ -26,7 +27,9 @@ private:
 
     ACTION_NODE_A(seal_of_command, "seal of command", "seal of righteousness");
 
-    ACTION_NODE_A(crusader_strike, "crusader strike", "melee");
+    ACTION_NODE_A(crusader_strike, "crusader strike", "holy strike");
+
+    ACTION_NODE_A(holy_strike, "holy strike", "crusader strike");
 
     ACTION_NODE_A(repentance, "repentance", "hammer of justice");
 
@@ -96,6 +99,10 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
     triggers.push_back(new TriggerNode(
         "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "holy strike",
+        NextAction::array(0, new NextAction("holy strike", ACTION_NORMAL), NULL)));
 }
 
 void RetributionPaladinStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

@@ -13,6 +13,8 @@ public:
         creators["seal of vengeance"] = &seal_of_vengeance;
         creators["hand of reckoning"] = &hand_of_reckoning;
         creators["judgement"] = &judgement;
+        creators["holy strike"] = &holy_strike;
+        creators["crusader strike"] = &crusader_strike;
     }
 
 private:
@@ -21,6 +23,10 @@ private:
     ACTION_NODE_A(hand_of_reckoning, "hand of reckoning", "righteous defense");
 
     ACTION_NODE_A(judgement, "judgement", "exorcism");
+
+    ACTION_NODE_A(holy_strike, "holy strike", "crusader strike");
+
+    ACTION_NODE_A(crusader_strike, "crusader strike", "holy strike");
 };
 
 ProtectionPaladinStrategy::ProtectionPaladinStrategy(PlayerbotAI* ai) : PaladinStrategy(ai)
@@ -70,6 +76,14 @@ void ProtectionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& trig
     triggers.push_back(new TriggerNode(
         "judgement",
         NextAction::array(0, new NextAction("judgement", ACTION_NORMAL + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "holy strike",
+        NextAction::array(0, new NextAction("holy strike", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "crusader strike",
+        NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL + 1), NULL)));
 }
 
 void ProtectionPaladinStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

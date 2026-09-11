@@ -78,6 +78,10 @@ void HolyPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL + 4), NULL)));
 
+    triggers.push_back(new TriggerNode(
+        "holy strike",
+        NextAction::array(0, new NextAction("holy strike", ACTION_NORMAL + 3), NULL)));
+
     // Caster interrupt: Hammer of Justice (60-sec CD, 6-sec stun)
     triggers.push_back(new TriggerNode(
         "hammer of justice interrupt",

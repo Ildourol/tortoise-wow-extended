@@ -26,9 +26,14 @@ public:
         creators["greater blessing of might on party"] = &greater_blessing_of_might_on_party;
         creators["greater blessing of kings on party"] = &greater_blessing_of_kings_on_party;
         creators["greater blessing of wisdom on party"] = &greater_blessing_of_wisdom_on_party;
+        creators["crusader strike"] = &crusader_strike;
+        creators["holy strike"] = &holy_strike;
     }
 
 private:
+    ACTION_NODE_A(crusader_strike, "crusader strike", "holy strike");
+
+    ACTION_NODE_A(holy_strike, "holy strike", "crusader strike");
     ACTION_NODE_A(greater_blessing_of_might, "greater blessing of might", "blessing of might");
 
     ACTION_NODE_A(greater_blessing_of_kings, "greater blessing of kings", "blessing of kings");

@@ -86,6 +86,7 @@ namespace ai
     };
 
     CD_TRIGGER(CrusaderStrikeTrigger, "crusader strike");
+    CD_TRIGGER(HolyStrikeTrigger, "holy strike");
 
     // repentance triggers
     INTERRUPT_HEALER_TRIGGER(RepentanceOnHealerTrigger, "repentance on enemy healer");
