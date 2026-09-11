@@ -2717,8 +2717,31 @@ bool MovementAction::ChaseTo(WorldObject* obj, float distance, float angle)
     }
 #endif
 
+    /* Disabled by default. Bots can use proper 'combat stances' to position themselves behind targets.
+     
     if (ai->HasStrategy("behind", BotState::BOT_STATE_COMBAT))
         angle = GetFollowAngle() / 3 + obj->GetOrientation() + M_PI;
+    */
+
+    // Let the active combat stance determine melee chase positioning.
+    if (!ai->IsRanged(bot) && obj->IsUnit() && sServerFacade.IsHostileTo(bot, static_cast<Unit*>(obj)))
+    {
+        Unit* target = static_cast<Unit*>(obj);
+        Stance* stance = AI_VALUE(Stance*, "stance");
+
+        // Turnback has its own movement handling below.
+        if (stance && stance->getName() != "turnback")
+        {
+            WorldLocation stanceLoc = stance->GetLocation();
+
+            if (!Formation::IsNullLocation(stanceLoc) && stanceLoc.mapId != uint32(-1))
+            {
+                float absAngle = atan2(stanceLoc.y - target->GetPositionY(), stanceLoc.x - target->GetPositionX());
+
+                angle = absAngle - target->GetOrientation();
+            }
+        }
+    }
 
     UpdateMovementState();
 
@@ -3399,7 +3422,16 @@ bool MoveOutOfEnemyContactAction::Execute(Event& event)
     if (!target)
         return false;
 
-    return MoveTo(target, sPlayerbotAIConfig.contactDistance);
+    float angle = target->GetAngle(bot);
+    float distance = target->GetObjectBoundingRadius() + sPlayerbotAIConfig.contactDistance;
+
+    float x = target->GetPositionX() + cos(angle) * distance;
+    float y = target->GetPositionY() + sin(angle) * distance;
+    float z = target->GetPositionZ();
+
+    bot->UpdateGroundPositionZ(x, y, z);
+
+    return MoveTo(bot->GetMapId(), x, y, z);
 }
 
 bool MoveOutOfEnemyContactAction::isUseful()
