@@ -160,10 +160,12 @@ bool BGTactics::SelectAvObjectiveAlliance(WorldLocation& objectiveLocation)
             {
                 if (WorldLocation icebloodGarrison; sRandomPlayerbotMgr.GetNamedLocation("AV_ICEBLOOD_GARRISON_WAITING_ALLIANCE", icebloodGarrison))
                 {
-                    uint32 attackCount = getDefendersCount(Position(icebloodGarrison.coord_x, icebloodGarrison.coord_y, icebloodGarrison.coord_z, icebloodGarrison.orientation), 10.0f, false);
+                    uint32 attackCount = getDefendersCount(Position(icebloodGarrison.coord_x, icebloodGarrison.coord_y, icebloodGarrison.coord_z, icebloodGarrison.orientation), 30.0f, true);
+
+                    bool captainEngaged = sServerFacade.IsInCombat(pGalvangar);
 
                     // Prepare to attack Captain
-                    if (attackCount < 5 && !sServerFacade.IsInCombat(pGalvangar))
+                    if (attackCount < 5 && !captainEngaged)
                     {
                         objectiveLocation = icebloodGarrison;
                     }
@@ -321,10 +323,12 @@ bool BGTactics::SelectAvObjectiveHorde(WorldLocation& objectiveLocation)
             {
                 if (WorldLocation stoneheartOutpost; sRandomPlayerbotMgr.GetNamedLocation("AV_STONEHEART_OUTPOST_WAITING_HORDE", stoneheartOutpost))
                 {
-                    uint32 attackCount = getDefendersCount(Position(stoneheartOutpost.coord_x, stoneheartOutpost.coord_y, stoneheartOutpost.coord_z, stoneheartOutpost.orientation), 10.0f, false);
+                    uint32 attackCount = getDefendersCount(Position(stoneheartOutpost.coord_x, stoneheartOutpost.coord_y, stoneheartOutpost.coord_z, stoneheartOutpost.orientation), 30.0f, true);
+
+                    bool captainEngaged = sServerFacade.IsInCombat(pBalinda);
 
                     // Prepare to attack Captain
-                    if (attackCount < 5 && !sServerFacade.IsInCombat(pBalinda))
+                    if (attackCount < 5 && !captainEngaged)
                     {
                         objectiveLocation = stoneheartOutpost;
                     }
