@@ -87,7 +87,8 @@ void DpsFeralDruidStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers
 
     triggers.push_back(new TriggerNode(
         "critical health",
-        NextAction::array(0, new NextAction("regrowth", ACTION_CRITICAL_HEAL + 1),
+        NextAction::array(0, new NextAction("barkskin (feral)", ACTION_EMERGENCY + 1),
+                             new NextAction("regrowth", ACTION_CRITICAL_HEAL + 1),
                              new NextAction("healing touch", ACTION_CRITICAL_HEAL), NULL)));
 
     triggers.push_back(new TriggerNode(

@@ -557,6 +557,18 @@ namespace ai
         CastLacerateAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "lacerate") {}
     };
 
+    class CastBarkskinFeralAction : public CastBuffSpellAction
+    {
+    public:
+        CastBarkskinFeralAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "barkskin (feral)") {}
+    };
+
+    class CastSavageBiteAction : public CastMeleeSpellAction
+    {
+    public:
+        CastSavageBiteAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "savage bite") {}
+    };
+
     class CastBashOnEnemyHealerAction : public CastSpellOnEnemyHealerAction
     {
     public:

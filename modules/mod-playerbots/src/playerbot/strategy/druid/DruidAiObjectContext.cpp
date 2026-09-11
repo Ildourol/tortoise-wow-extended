@@ -248,6 +248,8 @@ namespace ai
                 creators["innervate"] = [](PlayerbotAI* ai) { return new InnervateTrigger(ai); };
                 creators["lifebloom"] = [](PlayerbotAI* ai) { return new LifebloomTankTrigger(ai); };
                 creators["clearcasting"] = [](PlayerbotAI* ai) { return new ClearcastingTrigger(ai); };
+                creators["barkskin (feral)"] = [](PlayerbotAI* ai) { return new BarkskinFeralTrigger(ai); };
+                creators["savage bite"] = [](PlayerbotAI* ai) { return new SavageBiteTrigger(ai); };
             }
         };
 
@@ -270,6 +272,8 @@ namespace ai
                 creators["aquatic form"] = [](PlayerbotAI* ai) { return new CastAquaticFormAction(ai); };
                 creators["caster form"] = [](PlayerbotAI* ai) { return new CastCasterFormAction(ai); };
                 creators["mangle (bear)"] = [](PlayerbotAI* ai) { return new CastMangleBearAction(ai); };
+                creators["savage bite"] = [](PlayerbotAI* ai) { return new CastSavageBiteAction(ai); };
+                creators["barkskin (feral)"] = [](PlayerbotAI* ai) { return new CastBarkskinFeralAction(ai); };
                 creators["maul"] = [](PlayerbotAI* ai) { return new CastMaulAction(ai); };
                 creators["bash"] = [](PlayerbotAI* ai) { return new CastBashAction(ai); };
                 creators["swipe"] = [](PlayerbotAI* ai) { return new CastSwipeAction(ai); };

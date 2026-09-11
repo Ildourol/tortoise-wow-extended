@@ -14,16 +14,22 @@ public:
         creators["omen of clarity"] = &omen_of_clarity;
         creators["feral charge - bear"] = &feral_charge_bear;
         creators["mangle (bear)"] = &mangle_bear;
+        creators["savage bite"] = &savage_bite;
+        creators["barkskin (feral)"] = &barkskin_feral;
     }
 
 private:
-    ACTION_NODE_A(survival_instincts, "survival instincts", "barskin");
+    ACTION_NODE_A(survival_instincts, "survival instincts", "barkskin (feral)");
 
     ACTION_NODE_P(omen_of_clarity, "omen of clarity", "caster form");
 
     ACTION_NODE_A(feral_charge_bear, "feral charge - bear", "reach melee");
 
     ACTION_NODE_A(mangle_bear, "mangle (bear)", "maul");
+
+    ACTION_NODE_A(savage_bite, "savage bite", "maul");
+
+    ACTION_NODE_A(barkskin_feral, "barkskin (feral)", "frenzied regeneration");
 };
 
 TankFeralDruidStrategy::TankFeralDruidStrategy(PlayerbotAI* ai) : DruidStrategy(ai)
@@ -51,8 +57,13 @@ void TankFeralDruidStrategy::InitCombatTriggers(std::list<TriggerNode*>& trigger
         NextAction::array(0, new NextAction("remove greater blessing of salvation", ACTION_EMERGENCY), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("barkskin (feral)", ACTION_EMERGENCY + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "low health",
-        NextAction::array(0, new NextAction("frenzied regeneration", ACTION_LIGHT_HEAL), NULL)));
+        NextAction::array(0, new NextAction("barkskin (feral)", ACTION_HIGH + 2),
+                             new NextAction("frenzied regeneration", ACTION_LIGHT_HEAL), NULL)));
 
     triggers.push_back(new TriggerNode(
         "enemy out of melee",
@@ -65,6 +76,10 @@ void TankFeralDruidStrategy::InitCombatTriggers(std::list<TriggerNode*>& trigger
     triggers.push_back(new TriggerNode(
         "faerie fire (feral)",
         NextAction::array(0, new NextAction("faerie fire (feral)", ACTION_HIGH), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "high rage available",
+        NextAction::array(0, new NextAction("savage bite", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
         "medium rage available",
