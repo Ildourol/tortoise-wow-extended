@@ -16,16 +16,15 @@ bool AutoLearnSpellAction::Execute(Event& event)
 
     LearnSpells(&out);
 
-    if (!out.str().empty())
+    std::string spells = out.str();
+    if (!spells.empty())
     {
-        const std::string& temp = out.str();
-        out.seekp(0);
-        out << temp;
-        out.seekp(-2, out.cur);
-        out << ".";
+        if (spells.size() >= 2 && spells.rfind(", ") == spells.size() - 2)
+            spells.erase(spells.size() - 2);
+        spells += ".";
 
         std::map<std::string, std::string> args;
-        args["%spells"] = out.str();
+        args["%spells"] = spells;
         ai->TellPlayer(requester, BOT_TEXT2("auto_learn_spell", args), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     }
 
@@ -46,18 +45,16 @@ void AutoLearnSpellAction::LearnSpells(std::ostringstream* out)
         LearnDroppedSpells(out);
 #endif
 
-    if (!ai->HasActivePlayerMaster()) //Hunter spells for pets.
+    // Hunter spells for pets
+    if (bot->getClass() == CLASS_HUNTER && bot->GetLevel() >= 10)
     {
-        if (bot->getClass() == CLASS_HUNTER && bot->GetLevel() >= 10)
-        {
 #if !defined(MANGOSBOT_TWO) // Beast training not available in WotLK 
-            bot->learnSpell(5149, false); //Beast training
+        if (!bot->HasSpell(5149)) { bot->learnSpell(5149, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(5149); if (s) *out << formatSpell(s) << ", "; } }
 #endif
-            bot->learnSpell(883, false); //Call pet
-            bot->learnSpell(982, false); //Revive pet
-            bot->learnSpell(6991, false); //Feed pet
-            bot->learnSpell(1515, false); //Tame beast
-        }
+        if (!bot->HasSpell(883))  { bot->learnSpell(883, false);  if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(883);  if (s) *out << formatSpell(s) << ", "; } }
+        if (!bot->HasSpell(982))  { bot->learnSpell(982, false);  if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(982);  if (s) *out << formatSpell(s) << ", "; } }
+        if (!bot->HasSpell(6991)) { bot->learnSpell(6991, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(6991); if (s) *out << formatSpell(s) << ", "; } }
+        if (!bot->HasSpell(1515)) { bot->learnSpell(1515, false); if (out) { SpellEntry const* s = sServerFacade.LookupSpellInfo(1515); if (s) *out << formatSpell(s) << ", "; } }
     }
 }
 
@@ -261,6 +258,8 @@ void AutoLearnSpellAction::LearnDroppedSpells(std::ostringstream* out)
                 if (!bot->HasSpell(spellId))
                 {
                     bot->learnSpell(spellId, false);
+                    SpellEntry const* spellInfo = sServerFacade.LookupSpellInfo(spellId);
+                    if (out && spellInfo) *out << formatSpell(spellInfo) << ", ";
                 }
             }
         }
@@ -277,31 +276,37 @@ void AutoLearnSpellAction::GetClassQuestItem(Quest const* quest, std::ostringstr
     {
         for (uint32 i = 0; i < quest->GetRewItemsCount(); i++)
         {
+            uint32 itemId = quest->RewItemId[i];
+            if (!itemId)
+                continue;
+
+            if (itemId == 8432 || itemId == 8095) // Stops Rogues from getting a quest reward item that is a quest item itself.
+                continue;
+
+            ItemPrototype const* itemP = sObjectMgr.GetItemPrototype(itemId);
+            if (!itemP)
+                continue;
+
+            if (bot->HasItemCount(itemId, 1, true))
+                continue;
+
             ItemPosCountVec itemVec;
-            ItemPrototype const* itemP = sObjectMgr.GetItemPrototype(quest->RewItemId[i]);
-            InventoryResult result = bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, itemVec, itemP->ItemId, quest->RewItemCount[i]);
+            InventoryResult result = bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, itemVec, itemId, quest->RewItemCount[i]);
             if (result == EQUIP_ERR_OK)
             {
-                if (quest->RewItemId[i] != 8432 && // Stops Rogues from getting a quest reward item that is a quest item itself.
-                    quest->RewItemId[i] != 8095)   // Stops Rogues from getting a quest reward item that is a quest item itself.
+                bot->StoreNewItemInInventorySlot(itemId, quest->RewItemCount[i]);
+                if (out) *out << "Got " << chat->formatItem(itemP, quest->RewItemCount[i]) << " from " << quest->GetTitle() << ", ";
+            }
+            else if (result == EQUIP_ERR_INVENTORY_FULL)
+            {
+                MailDraft draft("Item(s) from quest reward", quest->GetTitle());
+                Item* item = Item::CreateItem(itemId, quest->RewItemCount[i]);
+                if (item)
                 {
-                    ItemPosCountVec itemVec;
-                    ItemPrototype const* itemP = sObjectMgr.GetItemPrototype(quest->RewItemId[i]);
-                    InventoryResult result = bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, itemVec, itemP->ItemId, quest->RewItemCount[i]);
-                    if (result == EQUIP_ERR_OK)
-                    {
-                        bot->StoreNewItemInInventorySlot(itemP->ItemId, quest->RewItemCount[i]);
-                        *out << "Got " << chat->formatItem(itemP, 1, 1) << " from " << quest->GetTitle();
-                    }
-                    else if (result == EQUIP_ERR_INVENTORY_FULL)
-                    {
-                        MailDraft draft("Item(s) from quest reward", quest->GetTitle());
-                        Item* item = Item::CreateItem(itemP->ItemId, quest->RewItemCount[i]);
-                        draft.AddItem(item);
-                        draft.SendMailTo(MailReceiver(bot), MailSender(bot));
-                        *out << "Could not add item " << chat->formatItem(itemP) << " from " << quest->GetTitle() << ". " << bot->GetName() << "'s inventory is full.";
-                    }
+                    draft.AddItem(item);
+                    draft.SendMailTo(MailReceiver(bot), MailSender(bot));
                 }
+                if (out) *out << "Could not add item " << chat->formatItem(itemP) << " from " << quest->GetTitle() << ". " << bot->GetName() << "'s inventory is full., ";
             }
         }
     }
