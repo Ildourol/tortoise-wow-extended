@@ -226,6 +226,7 @@ namespace ai
                 creators["explosive shot"] = [](PlayerbotAI* ai) { return new ExplosiveShotCanCastTrigger(ai); };
                 creators["multi-shot"] = [](PlayerbotAI* ai) { return new MultishotCanCastTrigger(ai); };
                 creators["steady shot"] = [](PlayerbotAI* ai) { return new SteadyShotCanCastTrigger(ai); };
+                creators["arcane shot"] = [](PlayerbotAI* ai) { return new ArcaneShotCanCastTrigger(ai); };
                 creators["intimidation on snare target"] = [](PlayerbotAI* ai) { return new IntimidationSnareTrigger(ai); };
                 creators["counterattack"] = [](PlayerbotAI* ai) { return new CounterattackCanCastTrigger(ai); };
                 creators["wyvern sting"] = [](PlayerbotAI* ai) { return new WybernStingSnareTrigger(ai); };

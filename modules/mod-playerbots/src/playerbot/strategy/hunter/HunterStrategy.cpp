@@ -11,10 +11,14 @@ public:
     HunterStrategyActionNodeFactory()
     {
         creators["aimed shot"] = &aimed_shot;
+        creators["arcane shot"] = &arcane_shot;
+        creators["steady shot"] = &steady_shot;
         creators["rapid fire"] = &rapid_fire;
         creators["aspect of the pack"] = &aspect_of_the_pack;
         creators["aspect of the dragonhawk"] = &aspect_of_the_dragonhawk;
         creators["wing clip"] = &wing_clip;
+        creators["raptor strike"] = &raptor_strike;
+        creators["mongoose bite"] = &mongoose_bite;
         creators["intimidation"] = &intimidation;
         creators["scatter shot"] = &scatter_shot;
         creators["feign death threat"] = &feign_death_threat;
@@ -22,7 +26,11 @@ public:
     }
 
 private:
-    ACTION_NODE_A(aimed_shot, "aimed shot", "arcane shot");
+    ACTION_NODE_A(aimed_shot, "aimed shot", "steady shot");
+
+    ACTION_NODE_A(arcane_shot, "arcane shot", "steady shot");
+
+    ACTION_NODE_A(steady_shot, "steady shot", "auto shot");
 
     ACTION_NODE_A(rapid_fire, "rapid fire", "readiness");
 
@@ -31,6 +39,10 @@ private:
     ACTION_NODE_A(aspect_of_the_dragonhawk, "aspect of the dragonhawk", "aspect of the hawk");
 
     ACTION_NODE_A(wing_clip, "wing clip", "raptor strike");
+
+    ACTION_NODE_A(raptor_strike, "raptor strike", "mongoose bite");
+
+    ACTION_NODE_A(mongoose_bite, "mongoose bite", "raptor strike");
 
     ACTION_NODE_A(intimidation, "intimidation", "wing clip");
 
@@ -79,7 +91,19 @@ void HunterStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 
     triggers.push_back(new TriggerNode(
         "aimed shot",
-        NextAction::array(0, new NextAction("aimed shot", ACTION_NORMAL + 2), NULL)));
+        NextAction::array(0, new NextAction("aimed shot", ACTION_NORMAL + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "arcane shot",
+        NextAction::array(0, new NextAction("arcane shot", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "steady shot",
+        NextAction::array(0, new NextAction("steady shot", ACTION_NORMAL + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "mongoose bite",
+        NextAction::array(0, new NextAction("mongoose bite", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
         "enemy is close",
