@@ -536,6 +536,29 @@ if(WIN32)
     DESTINATION ${LIBS_DIR}
     CONFIGURATIONS Debug
   )
+
+  # Deploy OpenSSL 3.x DLLs if present (required by Windows MSVC builds using vcpkg / PR #486)
+  if(ACE_ROOT)
+    file(TO_CMAKE_PATH "${ACE_ROOT}" ACE_ROOT_NORMALIZED)
+    file(GLOB OPENSSL3_RELEASE_DLLS "${ACE_ROOT_NORMALIZED}/bin/libcrypto-3${OPENSSL_DLL_SUFFIX}.dll" "${ACE_ROOT_NORMALIZED}/bin/libssl-3${OPENSSL_DLL_SUFFIX}.dll")
+    file(GLOB OPENSSL3_DEBUG_DLLS   "${ACE_ROOT_NORMALIZED}/debug/bin/libcrypto-3${OPENSSL_DLL_SUFFIX}.dll" "${ACE_ROOT_NORMALIZED}/debug/bin/libssl-3${OPENSSL_DLL_SUFFIX}.dll")
+    if(OPENSSL3_RELEASE_DLLS)
+      install(FILES ${OPENSSL3_RELEASE_DLLS} DESTINATION ${LIBS_DIR} CONFIGURATIONS Release)
+    endif()
+    if(OPENSSL3_DEBUG_DLLS)
+      install(FILES ${OPENSSL3_DEBUG_DLLS} DESTINATION ${LIBS_DIR} CONFIGURATIONS Debug)
+    endif()
+  elseif(EXISTS "C:/vcpkg/installed/x64-windows/bin")
+    file(GLOB OPENSSL3_RELEASE_DLLS "C:/vcpkg/installed/x64-windows/bin/libcrypto-3${OPENSSL_DLL_SUFFIX}.dll" "C:/vcpkg/installed/x64-windows/bin/libssl-3${OPENSSL_DLL_SUFFIX}.dll")
+    file(GLOB OPENSSL3_DEBUG_DLLS   "C:/vcpkg/installed/x64-windows/debug/bin/libcrypto-3${OPENSSL_DLL_SUFFIX}.dll" "C:/vcpkg/installed/x64-windows/debug/bin/libssl-3${OPENSSL_DLL_SUFFIX}.dll")
+    if(OPENSSL3_RELEASE_DLLS)
+      install(FILES ${OPENSSL3_RELEASE_DLLS} DESTINATION ${LIBS_DIR} CONFIGURATIONS Release)
+    endif()
+    if(OPENSSL3_DEBUG_DLLS)
+      install(FILES ${OPENSSL3_DEBUG_DLLS} DESTINATION ${LIBS_DIR} CONFIGURATIONS Debug)
+    endif()
+  endif()
+
   if(PLATFORM MATCHES X86)
     # Copy dll's Windows needs
     install(
