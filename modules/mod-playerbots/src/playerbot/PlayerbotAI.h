@@ -377,8 +377,6 @@ public:
     void HandleCommands();
 private:
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
-    std::string GetCombatRoleStance();
-    void UpdateStanceForCombatRole();
 public:    
     static std::string BotStateToString(BotState state);
     std::string GetDefaultMovementStrategy();
