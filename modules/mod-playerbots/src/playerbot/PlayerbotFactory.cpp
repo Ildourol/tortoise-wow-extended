@@ -270,6 +270,8 @@ void PlayerbotFactory::Randomize(bool incremental, bool syncWithMaster)
     // ranks resolve; gated exactly like the level-up path.
     if (ai && sPlayerbotAIConfig.autoLearnTrainerSpells)
         AutoLearnSpellAction(ai).CatchUpTrainerSpells();
+    if (ai && sPlayerbotAIConfig.autoLearnQuestSpells)
+        AutoLearnSpellAction(ai).CatchUpQuestSpells();
     pmo.reset();
 
     if (isRealRandomBot)

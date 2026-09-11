@@ -13,8 +13,9 @@ namespace ai
     public:
         virtual bool Execute(Event& event) override;
         virtual bool isUsefulWhenStunned() override { return true; }
-        // Login/randomization must not rescan quests or broadcast a level-up.
+        // Login/randomization must not rescan quests or broadcast a level-up unless explicitly enabled.
         void CatchUpTrainerSpells(std::ostringstream* out = nullptr);
+        void CatchUpQuestSpells(std::ostringstream* out = nullptr);
 
     private: 
         void LearnSpells(std::ostringstream* out);

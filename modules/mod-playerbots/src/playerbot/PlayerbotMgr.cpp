@@ -1046,8 +1046,13 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         {
             ai->DoSpecificAction("auto learn spell");
         }
-        else if (sPlayerbotAIConfig.autoLearnTrainerSpells)
-            AutoLearnSpellAction(ai).CatchUpTrainerSpells();
+        else
+        {
+            if (sPlayerbotAIConfig.autoLearnTrainerSpells)
+                AutoLearnSpellAction(ai).CatchUpTrainerSpells();
+            if (sPlayerbotAIConfig.autoLearnQuestSpells)
+                AutoLearnSpellAction(ai).CatchUpQuestSpells();
+        }
     }
 
     if (!bot->HasItemCount(6948, 1)

@@ -75,6 +75,13 @@ void AutoLearnSpellAction::CatchUpTrainerSpells(std::ostringstream* out)
     }
 }
 
+void AutoLearnSpellAction::CatchUpQuestSpells(std::ostringstream* out)
+{
+    if (!sPlayerbotAIConfig.autoLearnQuestSpells)
+        return;
+    LearnQuestSpells(out);
+}
+
 void AutoLearnSpellAction::LearnTrainerSpells(std::ostringstream* out, std::vector<uint32> const& entries)
 {
     std::set<std::pair<uint32, uint32>> visited;
