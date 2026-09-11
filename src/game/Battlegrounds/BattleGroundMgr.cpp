@@ -1619,7 +1619,15 @@ void BattleGroundMgr::ScheduleArenaQueueJoin(ObjectGuid playerGuid, bool queuedA
 {
     QueueRequest request{QueueRequestType::ArenaJoin, playerGuid, 0, BATTLEGROUND_TYPE_NONE, BATTLEGROUND_QUEUE_NONE, 0, BG_BRACKET_ID_NONE};
     request.QueuedAsGroup = queuedAsGroup;
-    ScheduleQueueRequest(request);
+
+    std::lock_guard<std::mutex> guard(m_QueueMailboxMutex);
+    for (QueueRequest& pendingRequest : m_QueueRequests)
+    {
+        if (pendingRequest.Type == QueueRequestType::ArenaJoin && pendingRequest.PlayerGuid == playerGuid)
+            return;
+    }
+
+    m_QueueRequests.push_back(request);
 }
 
 void BattleGroundMgr::ProcessQueueRequest(QueueRequest const& request)
@@ -1759,10 +1767,20 @@ void BattleGroundMgr::ProcessQueueArenaJoin(QueueRequest const& request)
     BattleGroundQueueTypeId bgQueueTypeId = BGQueueTypeId(bg->GetTypeID());
     BattleGroundTypeId bgTypeId = GetBattleGroundTypeIdByMapId(bg->GetMapId());
     BattleGroundBracketId const bgBracketId = player->GetBattleGroundBracketIdFromLevel(bgTypeId);
-    uint32 arenaRating = 0;
 
-    // You can't queue as group
-    Group* grp = player->GetGroup();
+    if (player->InBattleGround())
+        return;
+
+    if (player->GetBattleGroundQueueIndex(bgQueueTypeId) < PLAYER_MAX_BATTLEGROUND_QUEUES)
+        return;
+
+    if (!player->HasFreeBattleGroundQueueId())
+    {
+        player->GetSession()->SendBattleGroundJoinError(BG_JOIN_ERR_ALL_QUEUES_USED);
+        return;
+    }
+
+    Group* grp = request.QueuedAsGroup ? player->GetGroup() : nullptr;
     if (grp)
     {
         uint32 err = grp->CanJoinArenaQueue(bgQueueTypeId, 3, 3, sObjectMgr.GetPlayer(grp->GetLeaderGuid()));
@@ -1782,7 +1800,7 @@ void BattleGroundMgr::ProcessQueueArenaJoin(QueueRequest const& request)
     }
 
     BattleGroundQueue& bgQueue = m_BattleGroundQueues[bgQueueTypeId];
-    GroupQueueInfo* ginfo = bgQueue.AddGroup(player, grp ? grp : nullptr, bgTypeId, bgBracketId, false, 0, nullptr);
+    GroupQueueInfo* ginfo = bgQueue.AddGroup(player, grp, bgTypeId, bgBracketId, false, 0, nullptr);
     uint32 avgTime = bgQueue.GetAverageQueueWaitTime(ginfo, bgBracketId);
 
     if (grp && request.QueuedAsGroup)
