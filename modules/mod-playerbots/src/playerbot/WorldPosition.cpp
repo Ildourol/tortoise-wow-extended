@@ -1020,6 +1020,9 @@ std::vector<WorldPosition> WorldPosition::getPathStepFrom(const WorldPosition& s
         end.CalculatePassengerOffset(bot->GetTransport());
     }
 
+    if (bot && bot->IsPlayer())
+        pathfinder->ExcludeSteepSlopes();
+
     pathfinder->calculate(start.getVector3(), end.getVector3(), false);
 
     points = pathfinder->getPath();

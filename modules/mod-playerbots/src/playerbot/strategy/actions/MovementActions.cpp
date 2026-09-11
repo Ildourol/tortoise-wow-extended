@@ -1076,7 +1076,7 @@ void MovementAction::DispatchMovement(TravelPath movePath, bool generatePath, bo
         // leave speed at its default so it is derived from the run/walk movement flags.
         uint32 moveOptions = (moveMode == FORCED_MOVEMENT_WALK) ? MOVE_WALK_MODE : MOVE_RUN_MODE;
         if (generatePath)
-            moveOptions |= MOVE_PATHFINDING;
+            moveOptions |= (MOVE_PATHFINDING | MOVE_EXCLUDE_STEEP_SLOPES);
         mm.MovePoint(movePosition.getMapId(),
             movePosition.getX(),
             movePosition.getY(),
@@ -1647,9 +1647,13 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         }
 
         PathFinder pathfinder(mover);
+        if (mover && mover->IsPlayer())
+            pathfinder.ExcludeSteepSlopes();
         //Use standard pathfinder to find a route.
         pathfinder.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
         PathType type = pathfinder.getPathType();
+        if (type & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH))
+            return false;
         PointsArray const& points = pathfinder.getPath();
 
         // DEBUG: After VMaps pathfinder - use TellDebug for debug move
@@ -2026,8 +2030,12 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
     if (movePosition.distance(startPosition) > maxDist && !bot->GetTransport())
     { //Use standard pathfinder to find a route.
         PathFinder path(mover);
+        if (mover && mover->IsPlayer())
+            path.ExcludeSteepSlopes();
         path.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
         PathType type = path.getPathType();
+        if (type & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH))
+            return false;
         PointsArray const& points = path.getPath();
         movePath.addPath(startPosition.fromPointsArray(points));
         TravelNodePathType pathType;
@@ -2045,6 +2053,8 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool idle, 
         if (!targets.empty() && movePosition)
         {
             PathFinder path(mover);
+            if (mover && mover->IsPlayer())
+                path.ExcludeSteepSlopes();
             path.calculate(movePosition.getX(), movePosition.getY(), movePosition.getZ(), false);
             PathType type = path.getPathType();
             PointsArray const& points = path.getPath();

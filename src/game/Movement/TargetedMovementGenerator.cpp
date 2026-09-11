@@ -115,9 +115,21 @@ void TargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
     bool petFollowing = (isPet && owner.HasUnitState(UNIT_STAT_FOLLOW));
     Movement::MoveSplineInit init(owner, "TargetedMovementGenerator");
     path.SetTransport(transport);
+
+    if (owner.IsPlayer())
+        path.ExcludeSteepSlopes();
+
     path.calculate(x, y, z, petFollowing);
 
     PathType pathType = path.getPathType();
+
+    if (owner.IsPlayer() && (pathType & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH)))
+    {
+        m_bReachable = false;
+        m_bRecalculateTravel = false;
+        return;
+    }
+
     m_bReachable = pathType & (PATHFIND_NORMAL | PATHFIND_DEST_FORCED);
 
     if (!petFollowing && pathType == PATHFIND_NOPATH)
