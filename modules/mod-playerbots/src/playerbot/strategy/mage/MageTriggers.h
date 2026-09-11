@@ -90,6 +90,9 @@ namespace ai
         ArcaneBlastTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "arcane blast") {}
     };
 
+    CD_TRIGGER(ArcaneSurgeTrigger, "arcane surge");
+    CD_TRIGGER(IciclesTrigger, "icicles");
+
     class CounterspellInterruptSpellTrigger : public InterruptSpellTrigger
     {
     public:

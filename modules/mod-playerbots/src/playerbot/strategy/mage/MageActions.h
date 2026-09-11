@@ -48,6 +48,18 @@ namespace ai
         CastArcaneMissilesAction(PlayerbotAI* ai) : CastSpellAction(ai, "arcane missiles") {}
     };
 
+    class CastArcaneSurgeAction : public CastSpellAction
+    {
+    public:
+        CastArcaneSurgeAction(PlayerbotAI* ai) : CastSpellAction(ai, "arcane surge") {}
+    };
+
+    class CastIciclesAction : public CastSpellAction
+    {
+    public:
+        CastIciclesAction(PlayerbotAI* ai) : CastSpellAction(ai, "icicles") {}
+    };
+
     class CastPyroblastAction : public CastSpellAction
     {
     public:

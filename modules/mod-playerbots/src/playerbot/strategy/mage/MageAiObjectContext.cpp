@@ -195,6 +195,8 @@ namespace ai
                 creators["no food"] = [](PlayerbotAI* ai) { return new NoFoodTrigger(ai); };
                 creators["no drink"] = [](PlayerbotAI* ai) { return new NoDrinkTrigger(ai); };
                 creators["no mana gem"] = [](PlayerbotAI* ai) { return new NoManaGemTrigger(ai); };
+                creators["arcane surge"] = [](PlayerbotAI* ai) { return new ArcaneSurgeTrigger(ai); };
+                creators["icicles"] = [](PlayerbotAI* ai) { return new IciclesTrigger(ai); };
             }
         };
 
@@ -240,6 +242,8 @@ namespace ai
                 creators["arcane blast"] = [](PlayerbotAI* ai) { return new CastArcaneBlastAction(ai); };
                 creators["arcane barrage"] = [](PlayerbotAI* ai) { return new CastArcaneBarrageAction(ai); };
                 creators["arcane missiles"] = [](PlayerbotAI* ai) { return new CastArcaneMissilesAction(ai); };
+                creators["arcane surge"] = [](PlayerbotAI* ai) { return new CastArcaneSurgeAction(ai); };
+                creators["icicles"] = [](PlayerbotAI* ai) { return new CastIciclesAction(ai); };
                 creators["counterspell on enemy healer"] = [](PlayerbotAI* ai) { return new CastCounterspellOnEnemyHealerAction(ai); };
                 creators["fire ward"] = [](PlayerbotAI* ai) { return new CastFireWardAction(ai); };
                 creators["frost ward"] = [](PlayerbotAI* ai) { return new CastFrostWardAction(ai); };

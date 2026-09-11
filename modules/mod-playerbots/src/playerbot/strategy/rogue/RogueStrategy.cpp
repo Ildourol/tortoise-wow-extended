@@ -15,11 +15,17 @@ public:
         creators["kidney shot"] = &kidney_shot;
         creators["slice and dice"] = &slice_and_dice;
         creators["eviscerate"] = &eviscerate;
+        creators["surprise attack"] = &surprise_attack;
+        creators["envenom"] = &envenom;
         creators["sap"] = &sap;
     }
 
 private:
     ACTION_NODE_A(sinister_strike, "sinister strike", "melee");
+
+    ACTION_NODE_A(surprise_attack, "surprise attack", "sinister strike");
+
+    ACTION_NODE_A(envenom, "envenom", "eviscerate");
 
     ACTION_NODE_A(kick, "kick", "kidney shot");
 

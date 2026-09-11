@@ -15,6 +15,10 @@ NextAction** FrostMageStrategy::GetDefaultCombatActions()
 void FrostMageStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     MageStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "icicles",
+        NextAction::array(0, new NextAction("icicles", ACTION_NORMAL + 2), NULL)));
 }
 
 void FrostMageStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

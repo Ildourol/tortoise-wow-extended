@@ -15,6 +15,10 @@ void CombatRogueStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         NextAction::array(0, new NextAction("riposte", ACTION_HIGH + 3), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "surprise attack",
+        NextAction::array(0, new NextAction("surprise attack", ACTION_HIGH + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "slice and dice",
         NextAction::array(0, new NextAction("slice and dice", ACTION_HIGH + 2), NULL)));
 

@@ -150,6 +150,7 @@ namespace ai
                 creators["devastate"] = [](PlayerbotAI* ai) { return new DevastateAvailableTrigger(ai); };
                 creators["revenge"] = [](PlayerbotAI* ai) { return new RevengeAvailableTrigger(ai); };
                 creators["overpower"] = [](PlayerbotAI* ai) { return new OverpowerAvailableTrigger(ai); };
+                creators["counterattack"] = [](PlayerbotAI* ai) { return new CounterattackTrigger(ai); };
                 creators["mocking blow"] = [](PlayerbotAI* ai) { return new MockingBlowTrigger(ai); };
                 creators["rampage"] = [](PlayerbotAI* ai) { return new RampageAvailableTrigger(ai); };
                 creators["mortal strike"] = [](PlayerbotAI* ai) { return new MortalStrikeDebuffTrigger(ai); };
@@ -189,6 +190,7 @@ namespace ai
             {
                 creators["devastate"] = [](PlayerbotAI* ai) { return new CastDevastateAction(ai); };
                 creators["overpower"] = [](PlayerbotAI* ai) { return new CastOverpowerAction(ai); };
+                creators["counterattack"] = [](PlayerbotAI* ai) { return new CastCounterattackAction(ai); };
                 creators["charge"] = [](PlayerbotAI* ai) { return new CastChargeAction(ai); };
                 creators["bloodthirst"] = [](PlayerbotAI* ai) { return new CastBloodthirstAction(ai); };
                 creators["rend"] = [](PlayerbotAI* ai) { return new CastRendAction(ai); };

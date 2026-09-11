@@ -13,6 +13,7 @@ public:
         creators["arcane blast"] = &arcane_blast;
         creators["arcane barrage"] = &arcane_barrage;
         creators["arcane missiles"] = &arcane_missiles;
+        creators["arcane surge"] = &arcane_surge;
     }
 
 private:
@@ -21,6 +22,8 @@ private:
     ACTION_NODE_A(arcane_barrage, "arcane barrage", "arcane missiles");
 
     ACTION_NODE_A(arcane_missiles, "arcane missiles", "shoot");
+
+    ACTION_NODE_A(arcane_surge, "arcane surge", "arcane missiles");
 };
 
 ArcaneMageStrategy::ArcaneMageStrategy(PlayerbotAI* ai) : MageStrategy(ai)
@@ -38,6 +41,10 @@ NextAction** ArcaneMageStrategy::GetDefaultCombatActions()
 void ArcaneMageStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     MageStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "arcane surge",
+        NextAction::array(0, new NextAction("arcane surge", ACTION_HIGH + 1), NULL)));
 }
 
 void ArcaneMageStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

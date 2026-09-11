@@ -36,6 +36,14 @@ namespace ai
         EviscerateTrigger(PlayerbotAI* ai, uint8 comboPoints = 4) : ComboPointsAvailableTrigger(ai, comboPoints) {}
     };
 
+    CAN_CAST_TRIGGER(SurpriseAttackTrigger, "surprise attack");
+
+    class EnvenomTrigger : public ComboPointsAvailableTrigger
+    {
+    public:
+        EnvenomTrigger(PlayerbotAI* ai, uint8 comboPoints = 4) : ComboPointsAvailableTrigger(ai, comboPoints) {}
+    };
+
     class CloakOfShadowsTrigger : public NeedCureTrigger
     {
     public:

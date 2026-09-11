@@ -13,6 +13,7 @@ public:
         creators["mutilate back"] = &mutilate_back;
         creators["mutilate"] = &mutilate;
         creators["backstab"] = &backstab;
+        creators["envenom"] = &envenom;
     }
 
 private:
@@ -23,6 +24,8 @@ private:
     ACTION_NODE_A(mutilate, "mutilate", "sinister strike");
 
     ACTION_NODE_A(backstab, "backstab", "sinister strike");
+
+    ACTION_NODE_A(envenom, "envenom", "eviscerate");
 };
 
 AssassinationRogueStrategy::AssassinationRogueStrategy(PlayerbotAI* ai) : RogueStrategy(ai)
@@ -35,6 +38,10 @@ AssassinationRogueStrategy::AssassinationRogueStrategy(PlayerbotAI* ai) : RogueS
 void AssassinationRogueStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     RogueStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "envenom",
+        NextAction::array(0, new NextAction("envenom", ACTION_HIGH + 3), NULL)));
 
     triggers.push_back(new TriggerNode(
         "eviscerate",

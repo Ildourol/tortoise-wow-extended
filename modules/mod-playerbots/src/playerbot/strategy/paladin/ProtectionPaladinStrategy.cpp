@@ -15,6 +15,7 @@ public:
         creators["judgement"] = &judgement;
         creators["holy strike"] = &holy_strike;
         creators["crusader strike"] = &crusader_strike;
+        creators["bulwark of the righteous"] = &bulwark_of_the_righteous;
     }
 
 private:
@@ -27,6 +28,8 @@ private:
     ACTION_NODE_A(holy_strike, "holy strike", "crusader strike");
 
     ACTION_NODE_A(crusader_strike, "crusader strike", "holy strike");
+
+    ACTION_NODE_A(bulwark_of_the_righteous, "bulwark of the righteous", "holy shield");
 };
 
 ProtectionPaladinStrategy::ProtectionPaladinStrategy(PlayerbotAI* ai) : PaladinStrategy(ai)
@@ -60,6 +63,10 @@ void ProtectionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& trig
     triggers.push_back(new TriggerNode(
         "holy shield",
         NextAction::array(0, new NextAction("holy shield", ACTION_HIGH + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "bulwark of the righteous",
+        NextAction::array(0, new NextAction("bulwark of the righteous", ACTION_HIGH + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
         "medium mana",

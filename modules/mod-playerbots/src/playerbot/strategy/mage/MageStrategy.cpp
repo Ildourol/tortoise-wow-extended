@@ -22,10 +22,13 @@ public:
         creators["molten armor"] = &molten_armor;
         creators["mage armor"] = &mage_armor;
         creators["ice armor"] = &ice_armor;
+        creators["icicles"] = &icicles;
     }
 
 private:
     ACTION_NODE_A(frostbolt, "frostbolt", "shoot");
+
+    ACTION_NODE_A(icicles, "icicles", "frostbolt");
 
     ACTION_NODE_A(frost_nova, "frost nova", "cone of cold");
 

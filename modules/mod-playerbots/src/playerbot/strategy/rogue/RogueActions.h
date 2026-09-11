@@ -280,6 +280,18 @@ namespace ai
         CastKidneyShotAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "kidney shot") {}
     };
 
+    class CastSurpriseAttackAction : public CastMeleeSpellAction
+    {
+    public:
+        CastSurpriseAttackAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "surprise attack") {}
+    };
+
+    class CastEnvenomAction : public CastMeleeSpellAction
+    {
+    public:
+        CastEnvenomAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "envenom") {}
+    };
+
     class CastComboAction : public CastMeleeSpellAction
     {
     public:

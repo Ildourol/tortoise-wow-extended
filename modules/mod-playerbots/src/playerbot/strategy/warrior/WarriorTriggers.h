@@ -17,6 +17,7 @@ namespace ai
     CAN_CAST_TRIGGER(DevastateAvailableTrigger, "devastate");
     CAN_CAST_TRIGGER(RevengeAvailableTrigger, "revenge");
     CAN_CAST_TRIGGER(OverpowerAvailableTrigger, "overpower");
+    CAN_CAST_TRIGGER(CounterattackTrigger, "counterattack");
     BUFF_TRIGGER(RampageAvailableTrigger, "rampage");
     BUFF_TRIGGER_A(BloodrageBuffTrigger, "bloodrage");
     CAN_CAST_TRIGGER(VictoryRushTrigger, "victory rush");

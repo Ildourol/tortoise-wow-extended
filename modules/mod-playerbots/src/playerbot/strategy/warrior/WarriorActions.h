@@ -25,6 +25,7 @@ namespace ai
     SNARE_ACTION(CastThunderClapSnareAction, "thunder clap");
     SNARE_ACTION(CastHamstringAction, "hamstring");
     MELEE_ACTION(CastOverpowerAction, "overpower");
+    MELEE_ACTION(CastCounterattackAction, "counterattack");
     MELEE_ACTION(CastMockingBlowAction, "mocking blow");
     BUFF_ACTION(CastRetaliationAction, "retaliation");
     // arms 3.3.5
