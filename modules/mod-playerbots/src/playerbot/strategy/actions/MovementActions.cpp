@@ -19,11 +19,35 @@
 #include "Entities/Vehicle.h"
 #endif
 #include "playerbot/strategy/generic/CombatStrategy.h"
+#include "Battlegrounds/BattleGround.h"
+#include "Battlegrounds/BattleGroundAV.h"
 #ifdef MANGOSBOT_ZERO
 #include "Battlegrounds/BattleGroundTG.h"
 #endif
 
 using namespace ai;
+
+namespace
+{
+    bool ShouldLockAvCaptainRoom(Player* bot)
+    {
+        if (!bot || !bot->InBattleGround())
+            return false;
+
+        BattleGround* bg = bot->GetBattleGround();
+        if (!bg || bg->GetTypeId() != BATTLEGROUND_AV)
+            return false;
+
+        uint32 enemyCaptainSlot = bot->GetTeam() == ALLIANCE ? BG_AV_CAPTAIN_H : BG_AV_CAPTAIN_A;
+
+        Creature* captain = bot->GetMap()->GetCreature(bg->GetSingleCreatureGuid(enemyCaptainSlot, 0));
+
+        if (!captain || captain->GetHealth() == 0)
+            return false;
+
+        return sServerFacade.GetDistance2d(bot, captain) <= 60.0f;
+    }
+}
 
 void MovementAction::CreateWp(Player* wpOwner, float x, float y, float z, float o, uint32 entry, bool important)
 {
@@ -3044,6 +3068,10 @@ bool MovementAction::Flee(Unit *target)
     if (!sPlayerbotAIConfig.fleeingEnabled)
         return false;
 
+    // Do not flee out of Galvangar/Balinda's room.
+    if (ShouldLockAvCaptainRoom(bot))
+        return false;
+
     if (!ai->CanMove())
     {
         ai->TellError(GetMaster(), "I am stuck while fleeing");
@@ -3444,6 +3472,9 @@ bool FleeAction::Execute(Event& event)
 
 bool FleeWithPetAction::Execute(Event& event)
 {
+    if (ShouldLockAvCaptainRoom(bot))
+        return false;
+
     Pet* pet = bot->GetPet();
     if (pet)
     {
