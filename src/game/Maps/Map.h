@@ -54,6 +54,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <shared_mutex>
+#include <atomic>
 
 using Movement::Vector3;
 
@@ -533,6 +534,11 @@ class Map : public GridRefManager<NGridType>
         bool HasActiveZone(uint32 zoneId) const { return m_realPlayerZones.find(zoneId) != m_realPlayerZones.end(); }
         bool HasActiveZones() const { return !m_realPlayerZones.empty(); }
         bool HasRealPlayers() const { return m_hasRealPlayers; }
+
+        double GetAverageUpdateTimeMs10s() const { return static_cast<double>(m_averageUpdateTimeUs10s.load()) / 1000.0; }
+        uint32 GetAverageUpdateTimeSamples10s() const { return m_averageUpdateTimeSamples10s.load(); }
+        float GetBotActivityPercentage() const { return m_botActivityPercentage.load(std::memory_order_relaxed); }
+        void SetBotActivityPercentage(float percentage) { m_botActivityPercentage.store(percentage, std::memory_order_relaxed); }
         // GetTransports: cmangos has Map::GetTransports returning a set/vector.
         // Note: GenericTransport is a typedef in shim; forward-decl as struct avoids "class" keyword conflict.
         //
@@ -1149,6 +1155,15 @@ class Map : public GridRefManager<NGridType>
         uint32 GetLastPlayerLeftTime() const { return _lastPlayerLeftTime; }
 
     private:
+        // Continent partition update timing
+        uint64 m_updateTimeAccumulatorUs = 0;
+        uint32 m_updateTimeSampleCount = 0;
+        uint32 m_updateTimeWindowMs = 0;
+
+        std::atomic<uint64> m_averageUpdateTimeUs10s{0};
+        std::atomic<uint32> m_averageUpdateTimeSamples10s{0};
+        std::atomic<float> m_botActivityPercentage{-1.0f};
+
 #ifdef ENABLE_ELUNA
         ElunaInfo m_elunaInfo;
 #endif

@@ -1654,6 +1654,27 @@ void Map::Update(uint32 t_diff)
     // Continent only
     if (IsContinent())
     {
+        std::chrono::high_resolution_clock::time_point const partitionWorkEnd = std::chrono::high_resolution_clock::now();
+        uint64 const elapsedUs = static_cast<uint64>(std::chrono::duration_cast<std::chrono::microseconds>(partitionWorkEnd - start).count());
+
+        m_updateTimeAccumulatorUs += elapsedUs;
+        ++m_updateTimeSampleCount;
+        m_updateTimeWindowMs += t_diff;
+
+        if (m_updateTimeWindowMs >= 10000)
+        {
+            if (m_updateTimeSampleCount)
+            {
+                uint64 const samples = m_updateTimeSampleCount;
+                m_averageUpdateTimeUs10s.store(m_updateTimeAccumulatorUs / samples);
+                m_averageUpdateTimeSamples10s.store(m_updateTimeSampleCount);
+            }
+
+            m_updateTimeAccumulatorUs = 0;
+            m_updateTimeSampleCount = 0;
+            m_updateTimeWindowMs = 0;
+        }
+
         if (sWorld.getConfig(CONFIG_UINT32_MAPUPDATE_TICK_LOWER_GRID_ACTIVATION_DISTANCE) && updateMapTime > sWorld.getConfig(CONFIG_UINT32_MAPUPDATE_TICK_LOWER_GRID_ACTIVATION_DISTANCE))
         {
             --m_GridActivationDistance;

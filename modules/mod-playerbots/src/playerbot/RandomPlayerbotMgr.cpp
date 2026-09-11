@@ -1026,6 +1026,17 @@ float RandomPlayerbotMgr::getActivityPercentage(Player* bot)
 {
     float activityPercentage = getActivityPercentage();
 
+    if (sPlayerbotAIConfig.continentInstancedActivityScaling && bot && bot->IsInWorld())
+    {
+        Map* map = bot->GetMap();
+        if (map && map->IsContinent() && map->GetInstanceId() != 0 && map->GetAverageUpdateTimeSamples10s())
+        {
+            float const localActivity = map->GetBotActivityPercentage();
+            if (localActivity >= 0.0f)
+                activityPercentage = localActivity;
+        }
+    }
+
     uint32 const remoteActivityCap = remoteBotActivityCap.load(std::memory_order_relaxed);
 
     if (remoteActivityCap >= 100 || !bot || !bot->IsInWorld())
@@ -1058,6 +1069,57 @@ void RandomPlayerbotMgr::ScaleBotActivity()
     activityPercentage = std::max(0.0f, std::min(100.0f, activityPercentage));
 
     setActivityPercentage(activityPercentage);
+
+    if (sPlayerbotAIConfig.continentInstancedActivityScaling)
+    {
+        time_t const now = time(nullptr);
+
+        if (!continentInstancedActivityTimer || now >= continentInstancedActivityTimer + 10)
+        {
+            continentInstancedActivityTimer = now;
+
+            for (auto const& mapPair : sMapMgr.Maps())
+            {
+                Map* map = mapPair.second;
+
+                if (!map || !map->IsContinent() || map->GetInstanceId() == 0)
+                {
+                    continue;
+                }
+
+                if (!map->GetAverageUpdateTimeSamples10s())
+                    continue;
+
+                uint32 const wantedMs = map->HasRealPlayers() ? sPlayerbotAIConfig.continentInstancedTargetMsWithPlayer : sPlayerbotAIConfig.continentInstancedTargetMsEmpty;
+
+                float const currentMs = static_cast<float>(map->GetAverageUpdateTimeMs10s());
+
+                float previousActivity = map->GetBotActivityPercentage();
+
+                if (previousActivity < 0.0f)
+                    previousActivity = getActivityPercentage();
+
+                float const errorMs = static_cast<float>(wantedMs) - currentMs;
+
+                float activityDelta = errorMs * 0.5f;
+
+                activityDelta = std::max(-10.0f, std::min(10.0f, activityDelta));
+
+                float const configuredMaxDelta = sPlayerbotAIConfig.maxActivityRatePerTick;
+
+                if (configuredMaxDelta > 0.0f)
+                {
+                    activityDelta = std::max(-configuredMaxDelta, std::min(configuredMaxDelta, activityDelta));
+                }
+
+                float newActivity = previousActivity + activityDelta;
+
+                newActivity = std::max(0.0f, std::min(100.0f, newActivity));
+
+                map->SetBotActivityPercentage(newActivity);
+            }
+        }
+    }
 
     if (sPlayerbotAIConfig.hasLog("activity_pid.csv"))
     {

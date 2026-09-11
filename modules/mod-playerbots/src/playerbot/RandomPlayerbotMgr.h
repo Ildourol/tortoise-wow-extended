@@ -195,6 +195,7 @@ public:
         //pid values are set in constructor
         botPID pid = botPID(1, 50, -50, 0, 0, 0);
         float activityMod = 0.25;
+        time_t continentInstancedActivityTimer = 0;
         std::map<std::string, uint32> databaseDelay;
         uint32 GetEventValue(uint32 bot, std::string event);
         std::string GetEventData(uint32 bot, std::string event);

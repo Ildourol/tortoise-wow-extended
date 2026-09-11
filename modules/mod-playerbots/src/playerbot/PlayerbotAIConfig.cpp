@@ -668,6 +668,10 @@ bool PlayerbotAIConfig::Initialize()
     botActiveAloneBattleground = config.GetIntDefault("AiPlayerbot.ActiveAloneBattleground", config.GetIntDefault("AiPlayerbot.botActiveAloneBattleground", 10));
     diffWithPlayer = config.GetIntDefault("AiPlayerbot.DiffWithPlayer", 100);
     diffEmpty = config.GetIntDefault("AiPlayerbot.DiffEmpty", 200);
+    continentInstancedActivityScaling = config.GetBoolDefault("AiPlayerbot.ContinentInstancedActivityScaling", false);
+    continentInstancedTargetMsWithPlayer = config.GetIntDefault("AiPlayerbot.ContinentInstancedTargetMsWithPlayer", 40);
+    continentInstancedTargetMsEmpty = config.GetIntDefault("AiPlayerbot.ContinentInstancedTargetMsEmpty", 40);
+    maxActivityRatePerTick = config.GetFloatDefault("AiPlayerbot.MaxActivityRatePerTick", 0.0f);
     RandombotsWalkingRPG = config.GetBoolDefault("AiPlayerbot.RandombotsWalkingRPG", false);
     RandombotsWalkingRPGInDoors = config.GetBoolDefault("AiPlayerbot.RandombotsWalkingRPG.InDoors", false);
     minEnchantingBotLevel = config.GetIntDefault("AiPlayerbot.minEnchantingBotLevel", 60);

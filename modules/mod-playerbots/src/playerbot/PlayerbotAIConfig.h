@@ -281,6 +281,10 @@ public:
     uint32 botActiveAloneBattleground;
     uint32 diffWithPlayer;
     uint32 diffEmpty;
+    bool continentInstancedActivityScaling;
+    uint32 continentInstancedTargetMsWithPlayer;
+    uint32 continentInstancedTargetMsEmpty;
+    float maxActivityRatePerTick;
     uint32 minEnchantingBotLevel;
     uint32 randombotStartingLevel;
     bool randomBotSayWithoutMaster;
