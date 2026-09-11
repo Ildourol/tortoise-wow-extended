@@ -1,6 +1,7 @@
 // See PlayerbotMgr.cpp: botpch.h supplied <regex>, and the module build has
 // no precompiled header.
 #include <regex>
+#include <iomanip>
 #include "DetailedWorkDiagnostics.h"
 #include "WorkSlice.h"
 #include "PopulationSpatialIndex.h"
@@ -4440,7 +4441,7 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
         horde[i] = 0;
     }
 
-    std::map<uint8, int> perRace, perClass;
+    std::map<uint8, int> perRace, perClass, allianceClass, hordeClass;
     for (uint8 race = RACE_HUMAN; race < MAX_RACES; ++race)
     {
         perRace[race] = 0;
@@ -4448,18 +4449,31 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
     for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
     {
         perClass[cls] = 0;
+        allianceClass[cls] = 0;
+        hordeClass[cls] = 0;
     }
+
+    uint32 allianceTotal = 0;
+    uint32 hordeTotal = 0;
 
     uint32 dps = 0, heal = 0, tank = 0, active = 0, update = 0, randomize = 0, teleport = 0, changeStrategy = 0, dead = 0, combat = 0, revive = 0, taxi = 0, moving = 0, mounted = 0, afk = 0;
     int stateCount[(uint8)TravelState::MAX_TRAVEL_STATE + 1] = { 0 };
     std::vector<std::pair<Quest const*, int32>> questCount;
 
-    ForEachPlayerbot([this, &dps, &heal, &tank, &active, &update, &randomize, &teleport, &changeStrategy, &dead, &combat, &revive, &taxi, &moving, &mounted, &afk, &alliance, &horde, &perRace, &perClass, &stateCount, &questCount](Player* bot)
+    ForEachPlayerbot([this, &dps, &heal, &tank, &active, &update, &randomize, &teleport, &changeStrategy, &dead, &combat, &revive, &taxi, &moving, &mounted, &afk, &alliance, &horde, &perRace, &perClass, &allianceClass, &hordeClass, &allianceTotal, &hordeTotal, &stateCount, &questCount](Player* bot)
     {
         if (IsAlliance(bot->getRace()))
+        {
             alliance[bot->GetLevel() / 10]++;
+            allianceClass[bot->getClass()]++;
+            allianceTotal++;
+        }
         else
+        {
             horde[bot->GetLevel() / 10]++;
+            hordeClass[bot->getClass()]++;
+            hordeTotal++;
+        }
 
         perRace[bot->getRace()]++;
         perClass[bot->getClass()]++;
@@ -4597,12 +4611,18 @@ void RandomPlayerbotMgr::PrintStats(uint32 requesterGuid)
 
     for (uint8 cls = CLASS_WARRIOR; cls < MAX_CLASSES; ++cls)
     {
-        if (perClass[cls])
-        {
-            ss.str(""); ss << "    " << ChatHelper::formatClass(cls) << ": " << perClass[cls];
-            sLog.outString("%s", ss.str().c_str());
-            if (requester) { requester->SendMessageToPlayer(ss.str()); }
-        }
+        if (!perClass[cls])
+            continue;
+
+        double alliancePercent = allianceTotal ? (static_cast<double>(allianceClass[cls]) / static_cast<double>(allianceTotal)) * 100.0 : 0.0;
+        double hordePercent = hordeTotal ? (static_cast<double>(hordeClass[cls]) / static_cast<double>(hordeTotal)) * 100.0 : 0.0;
+
+        ss.str("");
+        ss << "    " << ChatHelper::formatClass(cls) << ": " << perClass[cls] << " total"
+           << " | Alliance: " << allianceClass[cls] << " (" << std::fixed << std::setprecision(1) << alliancePercent << "%)"
+           << " | Horde: " << hordeClass[cls] << " (" << std::fixed << std::setprecision(1) << hordePercent << "%)";
+        sLog.outString("%s", ss.str().c_str());
+        if (requester) { requester->SendMessageToPlayer(ss.str()); }
     }
 
     ss.str(""); ss << "Bots role:";
