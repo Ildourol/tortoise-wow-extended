@@ -7,6 +7,8 @@
 
 using namespace ai;
 
+static std::string formatSpell(SpellEntry const* sInfo);
+
 bool AutoLearnSpellAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();

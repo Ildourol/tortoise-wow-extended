@@ -4329,7 +4329,7 @@ void RandomPlayerbotMgr::OnPlayerLogin(Player* player)
         }
     });
 
-    if (player->IsBot() && IsFreeBot(player))
+    if (GetBotAI(player) && IsFreeBot(player))
     {
         uint32 guid = player->GetGUIDLow();
         if (!sPlayerbotAIConfig.IsFreeAltBot(player))
