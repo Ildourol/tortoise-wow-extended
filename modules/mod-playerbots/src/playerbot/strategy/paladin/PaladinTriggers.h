@@ -117,7 +117,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
@@ -137,7 +137,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
@@ -157,7 +157,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
@@ -177,7 +177,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
@@ -197,7 +197,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
@@ -217,7 +217,7 @@ namespace ai
         Value<Unit*>* GetTargetValue() override
         {
             const std::string qualifier = spell + ",greater " + spell + "-" + (ignoreTanks ? "1" : "0");
-            return context->GetValue<Unit*>("friendly unit without aura", qualifier);
+            return context->GetValue<Unit*>("party member without aura", qualifier);
         }
     };
 
