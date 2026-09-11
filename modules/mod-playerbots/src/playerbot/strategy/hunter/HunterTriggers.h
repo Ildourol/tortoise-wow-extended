@@ -362,6 +362,9 @@ private:
             if (AI_VALUE2(bool, "mounted", "self target"))
             return false;
 
+            if (AI_VALUE(bool, "pet dead"))
+                return false;
+
             if (bot->GetPetGuid())
             return false;
 

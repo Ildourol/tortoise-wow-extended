@@ -1,5 +1,6 @@
 
 #include "playerbot/playerbot.h"
+#include "Objects/Pet.h"
 #include <memory>
 #include "StatsValues.h"
 
@@ -26,33 +27,24 @@ bool IsDeadValue::Calculate()
 
 bool PetIsDeadValue::Calculate()
 {
-    if (bot->GetPet())
-        petDbCached = false;
+    if (Pet* pet = bot->GetPet())
+        return sServerFacade.GetDeathState(pet) != ALIVE;
 
-#ifdef MANGOSBOT_ZERO
-#ifdef MANGOS
-    PetDatabaseStatus status = Pet::GetStatusFromDB(bot);
-    if (status == PET_DB_DEAD)
-#endif
-#endif
-    if (!bot->GetPet())
-    {
-        uint32 const now = WorldTimer::getMSTime();
-        if (!petDbCached || WorldTimer::getMSTimeDiff(lastPetDbCheckMs, now) >= 30000)
-        {
-            uint32 ownerid = bot->GetGUIDLow();
-            auto result = CharacterDatabase.PQuery("SELECT id FROM character_pet WHERE owner = '%u' LIMIT 1", ownerid);
-            std::unique_ptr<QueryResult> result_guard(result);
-            hasStoredPet = result != nullptr;
-            lastPetDbCheckMs = now;
-            petDbCached = true;
-        }
-        return hasStoredPet;
-    }
-    if (bot->GetPetGuid() && !bot->GetPet())
-        return true;
+    uint32 ownerId = bot->GetGUIDLow();
 
-    return bot->GetPet() && sServerFacade.GetDeathState(bot->GetPet()) != ALIVE;
+    auto result = CharacterDatabase.PQuery("SELECT `curhealth` "
+                                           "FROM `character_pet` "
+                                           "WHERE `owner` = '%u' "
+                                           "AND (`slot` = '%u' OR `slot` > '%u') "
+                                           "LIMIT 1",
+                                           ownerId, uint32(PET_SAVE_AS_CURRENT), uint32(PET_SAVE_LAST_STABLE_SLOT));
+
+    if (!result)
+        return false;
+
+    std::unique_ptr<QueryResult> result_guard(result);
+    Field* fields = result->Fetch();
+    return fields[0].GetUInt32() == 0;
 }
 
 bool PetIsHappyValue::Calculate()
