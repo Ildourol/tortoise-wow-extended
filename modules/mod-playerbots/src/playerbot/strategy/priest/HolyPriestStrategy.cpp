@@ -31,6 +31,10 @@ void HolyPriestStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     PriestStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "lightwell",
+        NextAction::array(0, new NextAction("lightwell", ACTION_HIGH + 5), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "party member critical health",
         NextAction::array(0, new NextAction("power word: shield on party", ACTION_CRITICAL_HEAL + 1),
                              new NextAction("flash heal on party", ACTION_CRITICAL_HEAL), NULL)));
@@ -160,7 +164,7 @@ void HolyPriestAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers
 
     triggers.push_back(new TriggerNode(
         "medium aoe heal",
-        NextAction::array(0, new NextAction("circle of healing", ACTION_MEDIUM_HEAL), NULL)));
+        NextAction::array(0, new NextAction("lightwell", ACTION_MEDIUM_HEAL), NULL)));
 }
 
 void HolyPriestAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

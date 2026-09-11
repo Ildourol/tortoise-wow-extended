@@ -44,7 +44,16 @@ namespace ai
     HEAL_PARTY_ACTION(CastBindingHealAction, "binding heal");
     
     BUFF_ACTION(CastPrayerOfHealingAction, "prayer of healing");
-    AOE_HEAL_ACTION(CastLightwellAction, "lightwell");
+    class CastLightwellAction : public CastBuffSpellAction
+    {
+    public:
+        CastLightwellAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "lightwell") {}
+        virtual std::string GetTargetName() override { return "self target"; }
+        virtual bool isUseful() override
+        {
+            return bot->IsInCombat() && (bot->GetGroup() != nullptr);
+        }
+    };
     AOE_HEAL_ACTION(CastCircleOfHealingAction, "circle of healing");
 
     SPELL_ACTION(CastSmiteAction, "smite");
@@ -117,11 +126,34 @@ namespace ai
         std::string GetTargetName() override { return "self target"; }
     };
 
-    class CastFearWardAction : public CastSpellTargetAction
+    class CastFearWardAction : public CastBuffSpellAction
     {
     public:
-        CastFearWardAction(PlayerbotAI* ai) : CastSpellTargetAction(ai, "fear ward", "buff targets", true, true) {}
-        std::string GetTargetName() override { return "self target"; }
+        CastFearWardAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "fear ward") {}
+
+        virtual Unit* GetTarget() override
+        {
+            // 1. Prioritize tank in party without Fear Ward
+            Unit* tankTarget = AI_VALUE2(Unit*, "party tank without aura", "fear ward");
+            if (tankTarget && tankTarget != bot && sServerFacade.IsDistanceLessThan(sServerFacade.GetDistance2d(bot, tankTarget), 30.0f))
+                return tankTarget;
+
+            // 2. Self if missing Fear Ward
+            if (!ai->HasAura("fear ward", bot))
+                return bot;
+
+            // 3. Any friendly unit in group without Fear Ward
+            Unit* partyTarget = AI_VALUE2(Unit*, "friendly unit without aura", "fear ward-0");
+            if (partyTarget && sServerFacade.IsDistanceLessThan(sServerFacade.GetDistance2d(bot, partyTarget), 30.0f))
+                return partyTarget;
+
+            return nullptr;
+        }
+
+        virtual bool isUseful() override
+        {
+            return GetTarget() != nullptr;
+        }
     };
 }
 

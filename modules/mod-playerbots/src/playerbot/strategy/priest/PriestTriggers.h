@@ -112,11 +112,51 @@ namespace ai
         std::string GetTargetName() override { return "self target"; }
     };
 
-    class FearWardTrigger : public SpellTargetTrigger
+    class FearWardTrigger : public Trigger
     {
     public:
-        FearWardTrigger(PlayerbotAI* ai) : SpellTargetTrigger(ai, "fear ward", "buff targets", true, true) {}
-        std::string GetTargetName() override { return "self target"; }
+        FearWardTrigger(PlayerbotAI* ai) : Trigger(ai, "fear ward", 4) {}
+
+        virtual bool IsActive() override
+        {
+            if (!ai->CanCastSpell("fear ward", bot))
+                return false;
+
+            // 1. Tank without Fear Ward
+            Unit* tankTarget = AI_VALUE2(Unit*, "party tank without aura", "fear ward");
+            if (tankTarget && tankTarget != bot && sServerFacade.IsDistanceLessThan(sServerFacade.GetDistance2d(bot, tankTarget), 30.0f))
+                return true;
+
+            // 2. Self without Fear Ward
+            if (!ai->HasAura("fear ward", bot))
+                return true;
+
+            // 3. Party member without Fear Ward
+            Unit* partyTarget = AI_VALUE2(Unit*, "friendly unit without aura", "fear ward-0");
+            if (partyTarget && sServerFacade.IsDistanceLessThan(sServerFacade.GetDistance2d(bot, partyTarget), 30.0f))
+                return true;
+
+            return false;
+        }
+    };
+
+    class LightwellTrigger : public Trigger
+    {
+    public:
+        LightwellTrigger(PlayerbotAI* ai) : Trigger(ai, "lightwell", 3) {}
+
+        virtual bool IsActive() override
+        {
+            if (!ai->CanCastSpell("lightwell", bot))
+                return false;
+
+            if (!bot->IsInCombat() || !bot->GetGroup())
+                return false;
+
+            return AI_VALUE(bool, "party member low health") ||
+                   AI_VALUE(bool, "party member critical health") ||
+                   AI_VALUE(bool, "medium aoe heal");
+        }
     };
 
     // TurtleWoW Shadow Priest: Spirit Tap proc-window awareness.

@@ -199,6 +199,7 @@ namespace ai
                 creators["shadowguard"] = [](PlayerbotAI* ai) { return new ShadowguardTrigger(ai); };
                 creators["starshards"] = [](PlayerbotAI* ai) { return new StarshardsTrigger(ai); };
                 creators["fear ward"] = [](PlayerbotAI* ai) { return new FearWardTrigger(ai); };
+                creators["lightwell"] = [](PlayerbotAI* ai) { return new LightwellTrigger(ai); };
                 creators["feedback"] = [](PlayerbotAI* ai) { return new FeedbackTrigger(ai); };
                 // TurtleWoW Shadow redesign awareness:
                 creators["spirit tap buff"] = [](PlayerbotAI* ai) { return new SpiritTapBuffTrigger(ai); };
