@@ -23,6 +23,9 @@ bool BroadcastHelper::BroadcastTest(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     //return something to ignore the logic
     return false;
 
@@ -224,6 +227,9 @@ bool BroadcastHelper::BroadcastLootingItem(
     ItemQualifier& itemQualifier
     )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     placeholders["%item_link"] = ai->GetChatHelper()->formatItem(itemQualifier);
     AreaTableEntry const* current_area = ai->GetCurrentArea();
@@ -319,6 +325,9 @@ bool BroadcastHelper::BroadcastQuestAccepted(
     const Quest* quest
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceQuestAccepted)
     {
         std::map<std::string, std::string> placeholders;
@@ -350,6 +359,9 @@ bool BroadcastHelper::BroadcastQuestUpdateAddKill(
     std::string obectiveName
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     AreaTableEntry const* current_area = ai->GetCurrentArea();
     AreaTableEntry const* current_zone = ai->GetCurrentZone();
@@ -396,6 +408,9 @@ bool BroadcastHelper::BroadcastQuestUpdateAddItem(
     const ItemPrototype* proto
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     AreaTableEntry const* current_area = ai->GetCurrentArea();
     AreaTableEntry const* current_zone = ai->GetCurrentZone();
@@ -440,6 +455,9 @@ bool BroadcastHelper::BroadcastQuestUpdateFailedTimer(
     Quest const* quest
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceQuestUpdateFailedTimer)
     {
         std::map<std::string, std::string> placeholders;
@@ -468,6 +486,9 @@ bool BroadcastHelper::BroadcastQuestUpdateComplete(
     Quest const* quest
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceQuestUpdateComplete)
     {
         std::map<std::string, std::string> placeholders;
@@ -497,6 +518,9 @@ bool BroadcastHelper::BroadcastQuestTurnedIn(
     Quest const* quest
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceQuestTurnedIn)
     {
         std::map<std::string, std::string> placeholders;
@@ -525,6 +549,9 @@ bool BroadcastHelper::BroadcastCreatureKill(
     Creature *creature
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     placeholders["%victim_name"] = creature->GetName();
     AreaTableEntry const* current_area = ai->GetCurrentArea();
@@ -630,6 +657,9 @@ bool BroadcastHelper::BroadcastPlayerKill(
     Player* victim
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     placeholders["%victim_name"] = victim->GetName();
     AreaTableEntry const* current_area = ai->GetCurrentArea();
@@ -663,6 +693,9 @@ bool BroadcastHelper::BroadcastLevelup(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     uint32 level = bot->GetLevel();
 
     std::map<std::string, std::string> placeholders;
@@ -711,6 +744,9 @@ bool BroadcastHelper::BroadcastGuildMemberPromotion(
     Player* player
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceGuildManagement)
     {
         std::map<std::string, std::string> placeholders;
@@ -731,6 +767,9 @@ bool BroadcastHelper::BroadcastGuildMemberDemotion(
     Player* player
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceGuildManagement)
     {
         std::map<std::string, std::string> placeholders;
@@ -753,6 +792,9 @@ bool BroadcastHelper::BroadcastGuildGroupOrRaidInvite(
     Guild* guild
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     std::map<std::string, std::string> placeholders;
     placeholders["%name"] = player->GetName();
     AreaTableEntry const* current_area = ai->GetCurrentArea();
@@ -794,6 +836,9 @@ bool BroadcastHelper::BroadcastSuggestInstance(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestInstance)
     {
         std::map<std::string, std::string> placeholders;
@@ -824,6 +869,9 @@ bool BroadcastHelper::BroadcastSuggestQuest(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestQuest)
     {
 
@@ -855,6 +903,8 @@ bool BroadcastHelper::BroadcastSuggestGrindMaterials(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestGrindMaterials)
     {
 
@@ -883,6 +933,9 @@ bool BroadcastHelper::BroadcastSuggestGrindReputation(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestGrindReputation)
     {
 
@@ -919,6 +972,9 @@ bool BroadcastHelper::BroadcastSuggestSell(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestSell)
     {
 
@@ -947,6 +1003,9 @@ bool BroadcastHelper::BroadcastSuggestSomething(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestSomething)
     {
         std::map<std::string, std::string> placeholders;
@@ -975,6 +1034,9 @@ bool BroadcastHelper::BroadcastSuggestSomethingToxic(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestSomethingToxic)
     {
         //items
@@ -1008,6 +1070,9 @@ bool BroadcastHelper::BroadcastSuggestToxicLinks(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestToxicLinks)
     {
         //quests
@@ -1068,6 +1133,9 @@ bool BroadcastHelper::BroadcastSuggestThunderfury(
     Player* bot
 )
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (urand(1, sPlayerbotAIConfig.broadcastChanceMaxValue) <= sPlayerbotAIConfig.broadcastChanceSuggestThunderfury)
     {
         //items

@@ -32,6 +32,9 @@ SuggestWhatToDoAction::SuggestWhatToDoAction(PlayerbotAI* ai, std::string name)
 
 bool SuggestWhatToDoAction::isUseful()
 {
+    if (!sPlayerbotAIConfig.enableBroadcasts)
+        return false;
+
     if (!sRandomPlayerbotMgr.IsRandomBot(bot) || bot->GetGroup() || bot->GetInstanceId())
         return false;
 

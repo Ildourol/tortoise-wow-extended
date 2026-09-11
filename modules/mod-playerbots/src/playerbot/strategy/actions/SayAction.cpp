@@ -482,6 +482,14 @@ void ChatReplyAction::ChatReplyDo(Player* bot, uint32 type, uint32 guid1, uint32
 
     ChatChannelSource chatChannelSource = GetBotAI(bot)->GetChatChannelSource(bot, type, chanName);
 
+    if (!sPlayerbotAIConfig.enableBroadcasts &&
+        chatChannelSource != ChatChannelSource::SRC_WHISPER &&
+        chatChannelSource != ChatChannelSource::SRC_PARTY &&
+        chatChannelSource != ChatChannelSource::SRC_RAID)
+    {
+        return;
+    }
+
     if ((boost::algorithm::istarts_with(msg, "LFG") || boost::algorithm::istarts_with(msg, "LFM"))
         && HandleLFGQuestsReply(bot, chatChannelSource, msg, name))
     {

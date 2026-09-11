@@ -2084,6 +2084,20 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
                     if (lang == LANG_ADDON)
                         return;
 
+                    if (!sPlayerbotAIConfig.enableBroadcasts &&
+                        (msgtype == CHAT_MSG_CHANNEL ||
+                         chatChannelSource == ChatChannelSource::SRC_WORLD ||
+                         chatChannelSource == ChatChannelSource::SRC_GENERAL ||
+                         chatChannelSource == ChatChannelSource::SRC_TRADE ||
+                         chatChannelSource == ChatChannelSource::SRC_LOOKING_FOR_GROUP ||
+                         chatChannelSource == ChatChannelSource::SRC_LOCAL_DEFENSE ||
+                         chatChannelSource == ChatChannelSource::SRC_WORLD_DEFENSE ||
+                         chatChannelSource == ChatChannelSource::SRC_GUILD_RECRUITMENT ||
+                         chatChannelSource == ChatChannelSource::SRC_SAY ||
+                         chatChannelSource == ChatChannelSource::SRC_YELL ||
+                         chatChannelSource == ChatChannelSource::SRC_GUILD))
+                        return;
+
                     if (boost::algorithm::istarts_with(message, sPlayerbotAIConfig.toxicLinksPrefix)
                         && (GetChatHelper()->ExtractAllItemIds(message).size() > 0 || GetChatHelper()->ExtractAllQuestIds(message).size() > 0)
                         && sPlayerbotAIConfig.toxicLinksRepliesChance)
@@ -3715,7 +3729,7 @@ bool PlayerbotAI::SayToGuild(std::string msg, bool likePlayer)
 
 bool PlayerbotAI::SayToWorld(std::string msg)
 {
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3739,7 +3753,7 @@ bool PlayerbotAI::SayToWorld(std::string msg)
 
 bool PlayerbotAI::SayToGeneral(std::string msg)
 {
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3772,7 +3786,7 @@ bool PlayerbotAI::SayToGeneral(std::string msg)
 
 bool PlayerbotAI::SayToTrade(std::string msg)
 {
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3813,7 +3827,7 @@ bool PlayerbotAI::SayToTrade(std::string msg)
 
 bool PlayerbotAI::SayToLFG(std::string msg)
 {
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3845,7 +3859,7 @@ bool PlayerbotAI::SayToLFG(std::string msg)
 
 bool PlayerbotAI::SayToLocalDefense(std::string msg)
 {
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3885,7 +3899,7 @@ bool PlayerbotAI::SayToWorldDefense(std::string msg)
         return false;
     }
 #endif
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
@@ -3911,7 +3925,7 @@ bool PlayerbotAI::SayToWorldDefense(std::string msg)
 bool PlayerbotAI::SayToGuildRecruitment(std::string msg)
 {
     //check for bot's level? level 60?
-    if (msg.empty())
+    if (!sPlayerbotAIConfig.enableBroadcasts || msg.empty())
     {
         return false;
     }
