@@ -764,7 +764,7 @@ bool MovementAction::MinimalMove(PlayerbotAI* ai)
 
     for (auto it = std::next(nextStep); it != path.end(); ++it)
     {
-        time += (nextStep->point.distance(bot) / bot->GetSpeedInMotion()) * 1000;
+        time += (nextStep->point.distance(it->point) / bot->GetSpeedInMotion()) * 1000;
 
         nextStep = it;
 
@@ -772,7 +772,7 @@ bool MovementAction::MinimalMove(PlayerbotAI* ai)
             break;
     }
 
-    lastMove.nextTeleport = now + (time / 1000);
+    lastMove.nextTeleport = now + std::max<time_t>(1, (time + 999) / 1000);
 
     lastMove.lastPath.cutTo(*nextStep, false);
 
