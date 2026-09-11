@@ -21,3 +21,9 @@ Before investigating or editing a subsystem, consult `docs/CORE_SYSTEMS_GUIDE.md
 - Regenerate source indexes with `tools/audit-core-contracts.ps1` after relevant changes. DB refresh is explicit and read-only; never infer production write/deploy authority from an audit.
 - Distinguish C++ script selection, EventAI events, native spell lists, dynamic summons and area-trigger routes. Missing filenames, empty event lists, rank flags and blank instance bindings are not sufficient to declare content broken.
 - Update the guide and focused regression coverage when changing a native contract. Track diagnostic additions/removal in `doc/TURTLE_DIAGNOSTICS.md`.
+
+## Batch Compile and Audit Policy (Git Commit & Push Standard)
+
+- **NEVER Batch-Commit to Git**: Multiple upstream donor commits must **NEVER** be squashed, combined, or batched into a single target git commit. Each donor commit must be applied and committed to Git individually (1 donor commit = 1 git commit) to ensure complete provenance and `git bisect` capability.
+- **Push One-by-One as Default**: Every commit must be pushed to `origin/playerbots` individually (`git push origin <sha>:playerbots`) as default. Do not push composite batch SHAs.
+- **Batch Compile and Audit Command**: Run `tools/batch-compile-and-audit.ps1` to execute high-throughput batch compilation and link verification across all CPU cores. When porting multiple commits, audit candidates in batch, commit one-by-one, push one-by-one, and execute a single batch compilation pass to avoid lengthy repetitive MSVC Whole-Program Optimization / Link-Time Code Generation passes (`/GL` / `/LTCG`).
