@@ -174,7 +174,7 @@ Map::Map(uint32 id, time_t expiry, uint32 InstanceId)
       i_data(nullptr), i_script_id(0), m_unloading(false), m_crashed(false),
       _processingSendObjUpdates(false), _processingUnitsRelocation(false),
       m_updateFinished(false), m_updateDiffMod(0), m_GridActivationDistance(DEFAULT_VISIBILITY_DISTANCE),
-      _lastPlayersUpdate(WorldTimer::getMSTime()), _lastMapUpdate(WorldTimer::getMSTime()),
+      _lastPlayersUpdate(WorldTimer::getMSTime()), _lastResponsivePlayersUpdate(WorldTimer::getMSTime()), _lastMapUpdate(WorldTimer::getMSTime()),
       _lastCellsUpdate(WorldTimer::getMSTime()),
       _objUpdatesThreads(0), _unitRelocationThreads(0), _lastPlayerLeftTime(0),
       m_lastMvtSpellsUpdate(0), _bonesCleanupTimer(0), m_uiScriptedEventsTimer(1000),
@@ -1277,7 +1277,8 @@ void Map::UpdatePlayers(bool responsiveOnly)
 {
     TurtleDiagnostics::Scope diagnosticPlayers(TurtleDiagnostics::PlayerCore);
     uint32 now = WorldTimer::getMSTime();
-    uint32 diff = WorldTimer::getMSTimeDiff(_lastPlayersUpdate, now);
+    uint32& lastUpdate = responsiveOnly ? _lastResponsivePlayersUpdate : _lastPlayersUpdate;
+    uint32 diff = WorldTimer::getMSTimeDiff(lastUpdate, now);
 
     if (diff < sWorld.getConfig(CONFIG_UINT32_MAPUPDATE_UPDATE_PLAYERS_DIFF))
         return;
@@ -1363,7 +1364,7 @@ void Map::UpdatePlayers(bool responsiveOnly)
         updateScheduled(m_activeZoneBackgroundPlayers, m_activeZoneBackgroundStride, false);
         updateScheduled(m_hibernatedBackgroundPlayers, m_hibernatedBackgroundStride, true);
     }
-    _lastPlayersUpdate = now;
+    lastUpdate = now;
 
     uint32 const reportInterval = sWorld.getConfig(CONFIG_UINT32_PERFLOG_PLAYER_SUMMARY_INTERVAL);
     if (reportInterval && WorldTimer::getMSTimeDiff(m_playerPerfReportStart, now) >= reportInterval)

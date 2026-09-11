@@ -886,6 +886,7 @@ class Map : public GridRefManager<NGridType>
         uint32 _lastMapUpdate = 0;
         uint32 _lastPlayerLeftTime = 0;
         uint32 _lastPlayersUpdate;
+        uint32 _lastResponsivePlayersUpdate = 0;
         uint32 m_lastAIUpdate = 0;
         uint32 m_idleAICursorGuid = 0;
         uint32 m_idleAIBudgetPercent = 100, m_idleAIRecoveryStreak = 0;
