@@ -991,8 +991,60 @@ uint32 RandomPlayerbotMgr::BackgroundLoginBudget(uint32 requested)
     return soft && memoryAdmissionMb >= soft && requested ? std::max<uint32>(1, requested / 2) : requested;
 }
 
+void RandomPlayerbotMgr::UpdateRemoteBotActivityCap()
+{
+    uint32 activityCap = 100;
+
+    for (auto const& mapPair : sMapMgr.Maps())
+    {
+        Map* map = mapPair.second;
+
+        if (!map || !map->HasRealPlayers())
+            continue;
+
+        if (map->IsBattleGround())
+        {
+            activityCap = std::min(activityCap, sPlayerbotAIConfig.botActiveAloneBattleground);
+        }
+        else if (map->IsRaid())
+        {
+            activityCap = std::min(activityCap, sPlayerbotAIConfig.botActiveAloneRaid);
+        }
+        else if (map->IsNonRaidDungeon())
+        {
+            activityCap = std::min(activityCap, sPlayerbotAIConfig.botActiveAloneDungeon);
+        }
+
+        if (activityCap == 1)
+            break;
+    }
+
+    remoteBotActivityCap.store(activityCap, std::memory_order_relaxed);
+}
+
+float RandomPlayerbotMgr::getActivityPercentage(Player* bot)
+{
+    float activityPercentage = getActivityPercentage();
+
+    uint32 const remoteActivityCap = remoteBotActivityCap.load(std::memory_order_relaxed);
+
+    if (remoteActivityCap >= 100 || !bot || !bot->IsInWorld())
+        return activityPercentage;
+
+    Map* map = bot->GetMap();
+
+    if (map && map->GetInstanceId() != 0 && map->HasRealPlayers())
+    {
+        return activityPercentage;
+    }
+
+    return std::min(activityPercentage, static_cast<float>(remoteActivityCap));
+}
+
 void RandomPlayerbotMgr::ScaleBotActivity()
 {
+    UpdateRemoteBotActivityCap();
+
     float activityPercentage = getActivityPercentage();
 
     //if (activityPercentage >= 100.0f || activityPercentage <= 0.0f) pid.reset(); //Stop integer buildup during max/min activity

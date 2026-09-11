@@ -663,6 +663,9 @@ bool PlayerbotAIConfig::Initialize()
     limitCombatActivity = config.GetBoolDefault("AiPlayerbot.LimitCombatActivity", false);
     guildOrderAlwaysActive = config.GetBoolDefault("AiPlayerbot.GuildOrderAlwaysActive", true);
     botActiveAlone = config.GetIntDefault("AiPlayerbot.botActiveAlone", 10);
+    botActiveAloneDungeon = config.GetIntDefault("AiPlayerbot.ActiveAloneDungeon", config.GetIntDefault("AiPlayerbot.botActiveAloneDungeon", 10));
+    botActiveAloneRaid = config.GetIntDefault("AiPlayerbot.ActiveAloneRaid", config.GetIntDefault("AiPlayerbot.botActiveAloneRaid", 10));
+    botActiveAloneBattleground = config.GetIntDefault("AiPlayerbot.ActiveAloneBattleground", config.GetIntDefault("AiPlayerbot.botActiveAloneBattleground", 10));
     diffWithPlayer = config.GetIntDefault("AiPlayerbot.DiffWithPlayer", 100);
     diffEmpty = config.GetIntDefault("AiPlayerbot.DiffEmpty", 200);
     RandombotsWalkingRPG = config.GetBoolDefault("AiPlayerbot.RandombotsWalkingRPG", false);

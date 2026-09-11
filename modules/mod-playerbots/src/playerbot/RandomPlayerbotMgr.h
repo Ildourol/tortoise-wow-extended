@@ -2,6 +2,7 @@
 #define _RandomPlayerbotMgr_H
 
 #include <mutex>
+#include <atomic>
 #include "Common.h"
 #include <unordered_set>
 #include "PlayerbotAIBase.h"
@@ -171,7 +172,9 @@ public:
 
         float getActivityMod() { return activityMod; }
         float getActivityPercentage() { return activityMod * 100.0f; }
+        float getActivityPercentage(Player* bot);
         void setActivityPercentage(float percentage) { activityMod = percentage / 100.0f; }
+        void UpdateRemoteBotActivityCap();
 
         void PrintTeleportCache();
 
@@ -331,6 +334,7 @@ public:
         uint32 loginCursorGuid = 0;
         uint32 memoryAdmissionSampleMs = 0, memoryAdmissionMb = 0;
         bool memoryAdmissionPaused = false;
+        std::atomic<uint32> remoteBotActivityCap{100};
 
         std::unordered_map<uint32, std::vector<std::pair<int32,int32>>> playerBotMoveLog;
         typedef std::unordered_map <uint32, std::list<float>> botPerformanceMetric;
