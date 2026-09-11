@@ -19,6 +19,7 @@ public:
         creators["wing clip"] = &wing_clip;
         creators["raptor strike"] = &raptor_strike;
         creators["mongoose bite"] = &mongoose_bite;
+        creators["carve"] = &carve;
         creators["intimidation"] = &intimidation;
         creators["scatter shot"] = &scatter_shot;
         creators["feign death threat"] = &feign_death_threat;
@@ -43,6 +44,8 @@ private:
     ACTION_NODE_A(raptor_strike, "raptor strike", "mongoose bite");
 
     ACTION_NODE_A(mongoose_bite, "mongoose bite", "raptor strike");
+
+    ACTION_NODE_A(carve, "carve", "raptor strike");
 
     ACTION_NODE_A(intimidation, "intimidation", "wing clip");
 

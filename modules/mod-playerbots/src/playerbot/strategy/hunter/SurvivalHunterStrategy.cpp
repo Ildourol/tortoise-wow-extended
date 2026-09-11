@@ -10,6 +10,8 @@ using namespace ai;
 void SurvivalHunterStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     HunterStrategy::InitCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode("carve", NextAction::array(0, new NextAction("carve", ACTION_NORMAL + 2), NULL)));
 }
 
 void SurvivalHunterStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

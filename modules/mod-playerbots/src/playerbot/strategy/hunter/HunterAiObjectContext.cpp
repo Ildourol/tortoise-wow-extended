@@ -231,6 +231,7 @@ namespace ai
                 creators["counterattack"] = [](PlayerbotAI* ai) { return new CounterattackCanCastTrigger(ai); };
                 creators["wyvern sting"] = [](PlayerbotAI* ai) { return new WybernStingSnareTrigger(ai); };
                 creators["mongoose bite"] = [](PlayerbotAI* ai) { return new MongooseBiteCastTrigger(ai); };
+                creators["carve"] = [](PlayerbotAI* ai) { return new CarveTrigger(ai); };
                 creators["viper sting"] = [](PlayerbotAI* ai) { return new ViperStingTrigger(ai); };
                 creators["aimed shot"] = [](PlayerbotAI* ai) { return new AimedShotTrigger(ai); };
                 creators["bestial wrath"] = [](PlayerbotAI* ai) { return new BestialWrathBoostTrigger(ai); };
@@ -297,6 +298,7 @@ namespace ai
                 creators["counterattack"] = [](PlayerbotAI* ai) { return new CastCounterattackAction(ai); };
                 creators["wyvern sting"] = [](PlayerbotAI* ai) { return new WyvernStingSnareAction(ai); };
                 creators["mongoose bite"] = [](PlayerbotAI* ai) { return new MongooseBiteAction(ai); };
+                creators["carve"] = [](PlayerbotAI* ai) { return new CastCarveAction(ai); };
                 creators["black arrow on snare target"] = [](PlayerbotAI* ai) { return new CastBlackArrowSnareAction(ai); };
                 creators["silencing shot"] = [](PlayerbotAI* ai) { return new CastSilencingShotAction(ai); };
                 creators["silencing shot on enemy healer"] = [](PlayerbotAI* ai) { return new CastSilencingShotOnHealerAction(ai); };

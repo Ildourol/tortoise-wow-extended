@@ -503,4 +503,6 @@ namespace ai
     CAN_CAST_TRIGGER(ChainLightningTrigger, "chain lightning");
 
     CAN_CAST_TRIGGER(StormstrikeTrigger, "stormstrike");
+
+    CD_TRIGGER(EarthshakerSlamTrigger, "earthshaker slam");
 }

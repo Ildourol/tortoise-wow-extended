@@ -55,6 +55,10 @@ void EnhancementShamanStrategy::InitCombatTriggers(std::list<TriggerNode*>& trig
     ShamanStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "lose aggro",
+        NextAction::array(0, new NextAction("earthshaker slam", ACTION_HIGH + 3), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "stormstrike",
         NextAction::array(0, new NextAction("stormstrike", ACTION_NORMAL + 1), NULL)));
 

@@ -17,9 +17,12 @@ public:
         creators["earth shock"] = &earth_shock;
         creators["wind shear"] = &wind_shear;
         creators["water shield"] = &water_shield;
+        creators["earthshaker slam"] = &earthshaker_slam;
     }
 
 private:
+    ACTION_NODE_A(earthshaker_slam, "earthshaker slam", "earth shock");
+
     ACTION_NODE_A(wind_shear, "wind shear", "earth shock");
 
     ACTION_NODE_A(earth_shock, "earth shock", "flame shock");

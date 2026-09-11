@@ -72,6 +72,12 @@ namespace ai
 		CastLightningShieldAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "lightning shield") {}
 	};
 
+    class CastEarthshakerSlamAction : public CastMeleeSpellAction
+    {
+    public:
+        CastEarthshakerSlamAction(PlayerbotAI* ai) : CastMeleeSpellAction(ai, "earthshaker slam") {}
+    };
+
     class CastEarthlivingWeaponAction : public CastEnchantItemAction 
     {
     public:

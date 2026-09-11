@@ -251,6 +251,7 @@ public:
     MELEE_ACTION(CastCounterattackAction, "counterattack");
     SNARE_ACTION(WyvernStingSnareAction, "wyvern sting");
     MELEE_ACTION(MongooseBiteAction, "mongoose bite");
+    MELEE_ACTION(CastCarveAction, "carve");
 
     class TameBeastAction : public CastSpellAction
     {

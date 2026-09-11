@@ -319,6 +319,17 @@ private:
             return target && bot->CanReachWithMeleeAttack(target) && SpellCanBeCastedTrigger::IsActive();
         }
     };
+
+    class CarveTrigger : public SpellCanBeCastedTrigger
+    {
+    public:
+        CarveTrigger(PlayerbotAI* ai) : SpellCanBeCastedTrigger(ai, "carve") {}
+        virtual bool IsActive() override
+        {
+            Unit* target = GetTarget();
+            return target && bot->CanReachWithMeleeAttack(target) && SpellCanBeCastedTrigger::IsActive();
+        }
+    };
     BOOST_TRIGGER(BestialWrathBoostTrigger, "bestial wrath");
 
     INTERRUPT_TRIGGER(SilencingShotInterruptTrigger, "silencing shot");

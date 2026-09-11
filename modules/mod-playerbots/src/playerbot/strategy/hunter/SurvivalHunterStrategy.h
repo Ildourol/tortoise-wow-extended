@@ -7,7 +7,7 @@ namespace ai
     {
     public:
         SurvivalHunterPlaceholderStrategy(PlayerbotAI* ai) : SpecPlaceholderStrategy(ai) {}
-        int GetType() override { return STRATEGY_TYPE_DPS | STRATEGY_TYPE_RANGED; }
+        int GetType() override { return STRATEGY_TYPE_DPS | STRATEGY_TYPE_RANGED | STRATEGY_TYPE_MELEE; }
         std::string getName() override { return "survival"; }
     };
 

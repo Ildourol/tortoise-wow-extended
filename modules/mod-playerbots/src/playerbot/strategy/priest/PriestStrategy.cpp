@@ -605,6 +605,10 @@ void PriestOffdpsStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
         NextAction::array(0, new NextAction("holy fire", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "chastise",
+        NextAction::array(0, new NextAction("chastise", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "very often",
         NextAction::array(0, new NextAction("starshards", ACTION_NORMAL + 1), NULL)));
 
