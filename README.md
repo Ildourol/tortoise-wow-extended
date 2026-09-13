@@ -153,11 +153,7 @@ Two are deliberately manual, in `sql/tools/`, because both depend on per-server 
 
 - Release builds on MSVC ship debug symbols, so a crash dump is readable
 - Eluna is integrated as a pinned Git submodule, built by default, and controlled at
-  runtime by `Eluna.Enabled`. See `docs/ELUNA.md` for checkout, configuration,
-  architecture, compatibility, and update guidance
-- `INSTALL-LINUX.md` and `INSTALL-WINDOWS.md` are start-to-finish walkthroughs, including
-  the OpenSSL 3 legacy provider, the database procedure that actually works, and reading a
-  crash dump
+  runtime by `Eluna.Enabled`
 - The **world database is in this repository** — `sql/base` holds 190 files, 131 MB, plus
   the migrations under `sql/database_updates`. Only client data (maps, DBC, vmaps, mmaps)
   has to be extracted from a game client, with the tools under `tools/`
