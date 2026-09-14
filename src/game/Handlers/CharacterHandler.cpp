@@ -496,6 +496,15 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPacket & recv_data)
         return;
     }
 
+    PlayerCacheData* cacheData = sObjectMgr.GetPlayerDataByGUID(playerGuid.GetCounter());
+    if (!cacheData || cacheData->uiAccount != GetAccountId())
+    {
+        WorldPacket data(SMSG_CHARACTER_LOGIN_FAILED, 1);
+        data << (uint8)1;
+        SendPacket(&data);
+        return;
+    }
+
     DEBUG_LOG("WORLD: Recvd Player Logon Message");
 
     LoginQueryHolder *holder = new LoginQueryHolder(GetAccountId(), playerGuid);
